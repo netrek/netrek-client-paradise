@@ -1,10 +1,6 @@
-$Id: TODO,v 1.4 2000/03/20 17:58:03 glamm Exp $
+$Id: TODO,v 1.5 2000/03/24 23:53:32 glamm Exp $
 
 Things to do for the TedTurner client:
-
-2000/03/17
-Sets of images need to be color-quantized (e.g., all FED ships should
-share the same set of colors).  This is mostly for old 8-bit displays..
 
 2000/03/15 (conversation with Rado):
 Messaging - when invoked with the message command (cursor on local or map),
@@ -13,28 +9,6 @@ controlled by an .xtrekrc option. (it irritated [Rado] more than once when
 [he] typed something and came over the right border that it interpreted
 [his] text as commands, almost always draining or killing [him].)
 Suggestion for option-name: continuousMessage.
-
-On Sat, Feb 27, 1999 at 02:07:43PM +0100, Rado Smiljanic wrote:
-> Heja,
->
-> when I lock on the playerlist onto a cloaked player, then my clients crash
-> with seg violation.
-> Clients: Solaris P and new TT 1.3.1 .
->
-> Strangely this doesn't happen on Paradise-servers, only on Broncos.
->
-> Rado
-
-
-- From Rado Smiljanic <am3a035@math.uni-hamburg.de>
-
->The RCD-macros for doing1 doing2 other1 other2 had a hardcoded "lal"
->instead of a variable planet name, either nearest or by mousepointer.
-
-
-- Eric reported that the client bug that appears when flying near the right
-edge is a Paradise-server specific pproblem.  It does not happen in non-
-Paradise servers.
 
 - From Rado Smiljanic <am3a035@math.uni-hamburg.de>
 
@@ -50,6 +24,10 @@ Paradise servers.
 >        remote AIX-Display it gets ugly slow !
 >        (normal rtt and avrt of 20 ms increases to 1000 ms, with the old "P"
 >        it didn't, at least not that much that it would raise attention)
+
+- Eric reported that the client bug that appears when flying near the right
+edge is a Paradise-server specific pproblem.  It does not happen in non-
+Paradise servers.
 
 - From Jeffrey Watts:
 
@@ -68,8 +46,9 @@ I can't reproduce this bug under IRIX 6.5 and Solaris 2.5.1.  It looks like
 a Linux specific bug, and I can't say whether it is TT related or a bug
 in the kernel/glibc/X/etc. -Dave
 
-- TT should not expire if connecting to a Bronco server.  Should this
-carry over to Paradise servers (i.e. no expiration at all)?
+I *have* seen this bug under Irix.  Somehow some pixmaps (FED SB, I think)
+are being spewed all over beyond the rightmost-edge of the galaxy and
+causing the client to crawl.
 
 - Update on the bug reported by Nick:
 
@@ -111,19 +90,8 @@ carry over to Paradise servers (i.e. no expiration at all)?
 
 - Planets < 4 armies should not disappear off galactic.
 
-- Updated sample .tedrc.
-
-- Change some of the default bitmaps for Bronco.
-
-- Trekhopd support.
-
 - Some people have reported sluggishness with TT.  I don't notice this,
 but maybe some feedback or testing might help.
-
-- Port to Intel/Win32.  This is in the works now; if you want to help,
-please contact me.
-
-- Implement SP2.
 
 - Documentation.
 
