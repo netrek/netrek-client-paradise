@@ -1,4 +1,11 @@
-	$Id: ChangeLog,v 1.4 2000/03/17 16:46:51 glamm Exp $
+	$Id: ChangeLog,v 1.5 2000/03/17 18:18:24 glamm Exp $
+
+2000-03-17	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Fixed problem with locking on cloaked players from Bronco
+	observer mode.
+
+	* Fixed up some Ind and weapon XBMs.
 
 2000-03-15	Bob Glamm <glamm@users.sourceforge.net>
 
