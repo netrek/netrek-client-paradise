@@ -2561,9 +2561,19 @@ handleStatus2(struct status_spacket2 *packet)
 static void
 handlePlanet2(struct planet_spacket2 *packet)
 {
+    static int first_planet_packet = 1;
+
     SANITY_PLANNUM(packet->pnum);
-    if((packet->pnum+1) > nplanets)
+    if(first_planet_packet)
+    {
+      first_planet_packet = 0;
       nplanets = packet->pnum+1;
+    }
+    else
+    {
+      if((packet->pnum+1) > nplanets)
+        nplanets = packet->pnum+1;
+    }
 
     planets[packet->pnum].pl_owner = packet->owner;
     planets[packet->pnum].pl_info = packet->info;
