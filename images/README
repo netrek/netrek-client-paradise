@@ -1,0 +1,134 @@
+Full-color Paradise-Netrek BETA client README
+----------------------------------------
+
+The pixmaps in this tarfile are for the Paradise full-color client.
+To use them you must create a bitmaps directory, and put the following line
+in your .xtrekrc or .paradiserc:
+
+shipBitmapPath: (full path to bitmap directory here)
+
+The client requires a considerable chunk of memory --
+don't try to run it on a machine with a black and white monitor, 
+or on less than an 8-bit color display.
+
+The client also requires a reasonable CPU.  Although I thought this could
+be inferred from the rest of the document, apparently it slipped by some
+people.  When I say "considerable", I mean on the order of a 50 Mhz
+processor or better (it doesn't matter what architecture -- most architectures
+that can handle 50 Mhz can handle the client.  I play from a 40 Mhz Sparc,
+which is probably close to the performance of a Local-bus video 486/66dx.
+The client can appear slow on my machine, but most of this "slowless" is
+from not expecting full-color pixmaps to only be updated 5 times/sec.  The
+client only gets 5 updates per second, and is bound to look flickery because
+of the complexity of the images.  For reference, television has a framerate
+of 24 frames/sec, and most (IBM and Mac) games using 8-bit color have do about
+15-20 frames/sec.
+
+Other notes -->
+
+     * TURN LOCAL BUFFERING OFF, unless you have a FAST machine and X server.
+       (FAST meaning 60 Mhz Pentium w/localbus video, 70 Mhz Sparc, etc.)
+
+     * Two pixmap sets currently exist -- one "paradise"/Next
+       Generation set, and one "bronco"/The Motion Picture set.  The ships
+       in them are from those respective 'trek "eras".  The bronco Romulan
+       ships are provided in both "plain" and "painted" versions -- the painted
+       ships have stylized birds painted on the hulls, whereas the plain do not.
+
+       The default setup has only the Rom DD, CA, and BB as painted vessels, where
+       the SC and AS are not painted.  High ranking or prestigious Romulan
+       Commanders often had painted vessels, and, as a rule of thumb, such
+       Commanders only flew powerful vessels like CAs and BBs.  The DD is
+       painted because it's a commonly used vessel, and it makes telling Rom
+       and Klingon DDs apart much easier.  The AS and SC are pretty distinct,
+       and didn't need to appear painted, IMO.  You can pick and choose which
+       vessels you want painted and which ones you don't by merely renaming
+       some files in the Rom subdirectory.  The ones WITHOUT the ".plain" or
+       ".painted" extensions are the ones being used by the client.
+
+     * I've started a Star Wars set, which is only included in this
+       tarfile because I didn't want to have to bother removing it for
+       the BETA release.  I think the TIE fighter is probably the only
+       ship actually residing in the starwars directories.  I'm still
+       working on the others.     
+
+
+     * There are green and orange torp pixmaps, blue and orange plasma
+       pixmaps, accompanying explosions, and a NEW SHIP EXPLOSION -- which
+       I really want you to take a look at if you have the time.
+       They're called "torp.green", etc, and the explosion is "explosion2.xpm"
+       rename them to use them.
+
+     * Other pixmap sets will soon be available (when I have the time).
+       These will include the Independants (a collection of vessels from
+       both series), the Tholians, the Gorn, the Cardassians, and those
+       wierd-talking "So-and-so, when the walls fell" guys who I don't
+       remember the name of, but remember the ship. :)  I'll make some
+       assorted other vessels too, and put them in some sort of set. :)
+       I made 'em all with XPaint 2.1.1 -- grab it, compile it, and
+       make some of your own if you've got some cool ideas you'd want
+       to see flying around.
+
+                                                   -Mike McGrath
+                                                       September 1st, 1994
+                                           (last update March 6th, 1995)
+
+     * I (Ola Andersson) have added two other pixmap sets, because I thought
+       that it was too difficult to tell which ship is on which team.
+       Change the <team>.colored or <team>.bronco.colored to just <team>
+       to check it out.
+       What I have done is that I have changed the colors of the original
+       paradise and bronco pixmap sets so that the Feds are yellow, the
+       Roms are red and so on, instead of all teams being gray.
+
+New .xtrekrc/.paradiserc options:
+
+xpm: on/off
+local.buffered: on/off
+showLocal: R-F-S-T/r-f-s-t (example "showLocal: Rt" will give you
+                            (R)esource planets with (t)eam overlays)
+showGalactic: R-F-S-T (example "showGalactic: F" will give you
+                        (F)acility planets)
+preload: on/off
+
+Credits:
+
+PIXMAP CODE AND ASSORTED CLIENT MODS
+Bill Dyess (current beta code)
+Rob Forsman (original alpha code)
+
+ARTWORK
+Brandon Gillespie
+Mike McGrath
+Joe Rumsey
+Ola Andersson
+
+SOUND SUPPORT:
+Sujal Patel
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
