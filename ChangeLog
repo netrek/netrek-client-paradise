@@ -1,4 +1,8 @@
-	$Id: ChangeLog,v 1.12 2000/04/05 16:17:37 glamm Exp $
+	$Id: ChangeLog,v 1.13 2000/04/07 03:40:48 watts Exp $
+
+2000-04-06	Jeffrey Watts <watts@users.sourceforge.net>
+	* Added some colors other than the primary colors to the *.colored
+	pixmaps.  This makes the colored pixmaps look a lot nicer.
 
 2000-04-05
 	
