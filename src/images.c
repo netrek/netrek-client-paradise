@@ -30,6 +30,24 @@ static int shipImageOffset[] = {
   I_FED_PU - I_FED_AS,
 };
 
+/* doh, no pucks in colored */
+static int enemyShipImageOffset[] = {
+  I_FED_COLORED_SC - I_FED_COLORED_AS,
+  I_FED_COLORED_DD - I_FED_COLORED_AS,
+  I_FED_COLORED_CA - I_FED_COLORED_AS,
+  I_FED_COLORED_BB - I_FED_COLORED_AS,
+  I_FED_COLORED_AS - I_FED_COLORED_AS,
+  I_FED_COLORED_SB - I_FED_COLORED_AS,
+  I_FED_COLORED_AT - I_FED_COLORED_AS,
+  I_FED_COLORED_JS - I_FED_COLORED_AS,
+  I_FED_COLORED_FR - I_FED_COLORED_AS,
+  I_FED_COLORED_WB - I_FED_COLORED_AS,
+  I_FED_COLORED_CL - I_FED_COLORED_AS,
+  I_FED_COLORED_CV - I_FED_COLORED_AS,
+  I_FED_COLORED_UT - I_FED_COLORED_AS,
+  I_FED_COLORED_PT - I_FED_COLORED_AS
+};
+
 static int shipBroncoImageOffset[] = {
   I_FED_BRONCO_SC - I_FED_BRONCO_AS,
   I_FED_BRONCO_DD - I_FED_BRONCO_AS,
@@ -10675,11 +10693,16 @@ getShipImage(struct player *p)
 
   if(paradise)
   {
-    sio = shipImageOffset;
     if(friendlyPlayer(p))
+    {
+      sio = shipImageOffset;
       tio = teamImageOffset;
+    }
     else
+    {
+      sio = enemyShipImageOffset;
       tio = enemyImageOffset;
+    }
   }
   else
   {
