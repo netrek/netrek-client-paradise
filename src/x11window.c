@@ -21,7 +21,13 @@
 #include <X11/cursorfont.h>
 #include "str.h"
 
+#ifdef HAVE_XPM_H
 #include <xpm.h>
+#else
+#ifdef HAVE_X11_XPM_H
+#include <X11/xpm.h>
+#endif
+#endif
 
 #include "Wlib.h"
 #include "defs.h"
