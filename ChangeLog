@@ -1,6 +1,11 @@
-	$Id: ChangeLog,v 1.11 2000/04/03 19:52:05 glamm Exp $
+	$Id: ChangeLog,v 1.12 2000/04/05 16:17:37 glamm Exp $
 
-2000-03-03
+2000-04-05
+	
+	* Fixed configure, configure.in to properly recognize libXpm.*
+	when it was stuck in the X11 lib directory.
+
+2000-04-03
 
 	* Added two new boolean options, colorFriends (off by default)
 	and colorEnemies (on by default).  Controls whether to use the

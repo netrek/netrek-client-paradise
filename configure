@@ -1755,7 +1755,7 @@ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   ac_save_LIBS="$LIBS"
-LIBS="-lXpm -lX11
+LIBS="-lXpm ${X_LIBS} ${X_PRE_LIBS} ${X_EXTRA_LIBS} -lX11
  $LIBS"
 cat > conftest.$ac_ext <<EOF
 #line 1762 "configure"
