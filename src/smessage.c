@@ -92,7 +92,7 @@ void
 smessage(int ichar)
 {
     register int i;
-    char    twochar[2];
+    char    twochar[2], *delim;
 
     if (messpend == 0) {
 	if(lowercaset && ichar == 't')
@@ -158,9 +158,36 @@ smessage(int ichar)
 	break;
 
     default:			/* add character */
-	if (lcount >= 79) {
-	    W_Beep();
-	    break;
+	if (lcount >= 79) {	/* send mesg & continue mesg */
+             if (addr == 'M')
+                  if ((delim = strchr(buf, '>') + 1) == NULL) {
+                       W_Beep();
+                       break;
+                  }
+                  else {
+                       i = delim - buf;
+                       buf[lcount - ADDRLEN + 1] = '\0';
+                       sendCharMessage(buf, addr);
+                       memset(delim, '\0', sizeof(buf) - i);
+                       BLANKCHAR(i, lcount + 1);
+                       W_WriteText(messagew, M_XOFF, M_YOFF, textColor,
+                                   addr_str, strlen(addr_str), W_RegularFont);
+                       W_WriteText(messagew, 
+		                   M_XOFF+(strlen(addr_str) + 1) * W_Textwidth,
+                                   M_YOFF, textColor, buf, strlen(buf), 
+				   W_RegularFont);
+                       lcount = i + ADDRLEN;
+                       DRAWCURSOR(i + ADDRLEN);
+                  }
+             else {
+                  buf[lcount - ADDRLEN + 1] = '\0';
+                  sendCharMessage(buf, addr);
+                  BLANKCHAR(0, lcount + 1);
+                  W_WriteText(messagew, M_XOFF, M_YOFF, textColor, addr_str,
+                              strlen(addr_str), W_RegularFont);
+                  lcount = ADDRLEN;
+                  DRAWCURSOR(ADDRLEN);
+             }
 	}
 	if (iscntrl((unsigned char) ichar & ~(0x80)))
 	    break;
