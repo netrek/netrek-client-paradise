@@ -1,0 +1,141 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
+/* Automatic check for RFCURSORS */
+#undef HAVE_LIBXMU
+
+/* If libXmu exists, we can use RFCURSORS */
+#ifdef HAVE_LIBXMU
+#define RFCURSORS
+#endif
+
+/* Check for STDC_HEADERS */
+#undef STDC_HEADERS
+
+/* Check for sys/wait.h that is POSIX */
+#undef HAVE_SYS_WAIT_H
+
+/* Check for specific headers. */
+#undef HAVE_ASSERT_H
+#undef HAVE_FCNTL_H
+#undef HAVE_LIMITS_H
+#undef HAVE_MACHINE_ENDIAN_H
+#undef HAVE_MEMORY_H
+#undef HAVE_STDDEF_H
+#undef HAVE_STRING_H
+#undef HAVE_STRINGS_H
+#undef HAVE_TIME_H
+#undef HAVE_UNISTD_H
+#undef HAVE_VALUES_H
+#undef HAVE_WAIT_H
+
+#undef HAVE_SYS_FCNTL_H
+#undef HAVE_SYS_FILE_H
+#undef HAVE_SYS_IOCTL_H
+#undef HAVE_SYS_SELECT_H
+#undef HAVE_SYS_TIME_H
+#undef HAVE_SYS_TIMEB_H
+
+/* Check for unsigned char */
+#undef __CHAR_UNSIGNED__
+
+/* Check for working const. */
+#undef const
+
+/* Check for mode_t */
+#undef mode_t
+
+/* Check for TIME_WITH_SYS_TIME_H */
+#undef TIME_WITH_SYS_TIME
+#undef TM_IN_SYS_TIME
+
+/* types for uid, gid */
+#undef uid_t
+#undef gid_t
+
+/* signal() return type */
+#undef RETSIGTYPE
+
+/* vprintf variable */
+#undef HAVE_VPRINTF
+
+/* Misc. functions */
+#undef HAVE_FTIME
+#undef HAVE_GETTIMEOFDAY
+#undef HAVE_MKFIFO
+#undef HAVE_SELECT
+#undef HAVE_SOCKET
+#undef HAVE_STRDUP
+#undef HAVE_STRERROR
+#undef HAVE_STRSTR
+#undef HAVE_STRTOL
+#undef HAVE_STRCMPI
+#undef HAVE_STRNCMPI
+#undef HAVE_STRCASECMP
+#undef HAVE_STRNCASECMP
+#undef HAVE_WAIT3
+#undef HAVE_INDEX
+#undef HAVE_RINDEX
+#undef HAVE_STRCHR
+#undef HAVE_STRRCHR
+#undef HAVE_BZERO
+#undef HAVE_BCOPY
+#undef HAVE_MEMSET
+#undef HAVE_MEMMOVE
+#undef HAVE_MEMCPY
+#undef HAVE_SRANDOM
+#undef HAVE_RANDOM
+#undef HAVE_SRAND48
+#undef HAVE_LRAND48
+#undef HAVE_SIGNAL
+#undef HAVE_TOUPPER
+#undef HAVE_TOLOWER
+
+#ifdef HAVE_STRCHR
+#ifndef HAVE_INDEX
+#define index(s,c) strchr((s),(c))
+#endif
+#endif
+
+#ifdef HAVE_STRRCHR
+#ifndef HAVE_RINDEX
+#define rindex(s,c) strrchr((s),(c))
+#endif
+#endif
+
+#ifdef HAVE_MEMSET
+#ifndef HAVE_BZERO
+#define bzero(s,l) memset((s),(char)0,(l))
+#endif
+#endif
+
+#ifdef HAVE_MEMMOVE
+#ifndef HAVE_BCOPY
+#define bcopy(s,d,l) memmove((d),(s),(l))
+#endif
+#endif
+
+#ifndef HAVE_SRANDOM
+#define srandom(x) srand48(x)
+#define random lrand48
+#endif
+
+#ifdef HAVE_MEMCPY
+#define MCOPY(b1,b2,l) memcpy(b2,b1,l)
+#else
+#define MCOPY(b1,b2,l) bcopy(b1,b2,l)
+#endif
+
+#ifdef HAVE_STRCASECMP
+#ifndef HAVE_STRCMPI
+#define strcmpi(x,y) strcasecmp(x,y)
+#endif
+#endif
+
+#ifdef HAVE_STRNCASECMP
+#ifndef HAVE_STRNCMPI
+#define strncmpi(x,y,z) strncasecmp(x,y,z)
+#endif
+#endif
+
+#endif

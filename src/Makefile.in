@@ -1,0 +1,205 @@
+# NetrekII: Paradise Client Makefile
+#
+
+SHELL=/bin/sh
+
+XPMDIR=./@XPMDIR@
+ZLIBDIR=./@ZLIBDIR@
+RSADIR=./@RSADIR@
+GMPDIR=./@GMPDIR@
+SCRAMBLER=../scripts/scrambleargs
+SCRIPTDIR=../scripts
+VERSION=`cat ../etc/version`
+PERLSCRIPTS=`egrep -l "^\#!.*perl" ${SCRIPTDIR}/*`
+IMAGEDIR=../images
+
+# Set some commonly used variables.
+CFLAGS=@CFLAGS@
+CPP=@CPP@
+CPPFLAGS=@CPPFLAGS@
+DEFS=@DEFS@ $(SYSDEFS)
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@
+AUTHLIBS=@AUTHLIBS@
+LIBOBJS=
+CC=@CC@
+PERL=@PERL@
+XMKMF=@XMKMF@
+XMKMF_BUILD=@XMKMF_BUILD@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+INSTALL_DATA=@INSTALL_DATA@
+MYDEPLIBS=@MYDEPLIBS@
+MYDEPAUTHLIBS=@MYDEPAUTHLIBS@
+@SET_MAKE@
+STATIC=
+ARCH=`uname -s`
+SYSVER=`uname -r`
+SYS=$(ARCH)-$(SYSVER)
+
+EXE=../TedTurner-$(VERSION).$(SYS)
+
+###########################################################################
+# If you're using the time lord
+#TL_OBJS = limitplay.o
+#CDEFS=$(CDEFS) -DTIMELORD
+
+###########################################################################
+
+OBJS = $(TL_OBJS) colors.o credits.o dashboard.o data.o uname.o \
+	death.o detonate.o defaults.o defwin.o die.o distress.o dmessage.o \
+	enter.o findslot.o gameconf.o getname.o getship.o helpwin.o \
+	inform.o interface.o keymap.o local.o macros.o macrowin.o \
+	map.o motdwin.o newstats.o newwin.o option.o packets.o \
+	parsemeta.o planetlist.o planets.o playerlist.o ranklist.o \
+	ratings.o rotate.o sintab.o smessage.o socket.o stats.o \
+	util.o varydamage.o war.o warning.o udpopt.o blk_parsemotd.o \
+	shortcomm.o spopt.o ping.o pingstats.o wide_plist.o feature.o \
+	beeplite.o recorder.o senddist.o tools.o hockey.o images.o \
+	sound.o main.o input.o redraw.o x11window.o version.o strfuncs.o
+
+#SRCS = `echo $(BASE_OBJS) | sed -e 's/\.o/.c/g'`
+SRCS=${OBJS:.o=.c}
+
+INCLUDES =  Wlib.h copyright.h copyright2.h data.h defaultlogos.h \
+	defs.h die.h gameconf.h gppackets.h images.h packets.h proto.h \
+	struct.h wtext.h sound.h
+
+
+###########################################################################
+
+# Should do something with configure here, will let Joe do it
+#
+# Amiga/DNet version:  need libdnet.a.
+#   Also need iff.library at run-time...
+#
+AMIGALIB = -Ldnet:amiga/lib -ldnet
+AMIGASRC = amiga.c amigawindow.c dnetcomms.c radkprintf.c sound.c speech.c
+AMIGAOBJS =  amigawindow.o amiga.o dnetcomms.o radkprintf.o sound.o speech.o
+
+###########################################################################
+
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFS) -c $<
+
+all:
+	@echo "Use 'make help' for a list of make rules"
+	$(MAKE) generic
+
+uname.c:
+	echo char MACHINE_UNAME[] = \"${ARCH}\"\; > uname.c
+
+version.c:
+	echo char CLIENTVERS[] = \"Ted Turner ${VERSION}\"\; > version.c
+
+help:
+	@echo "Use make <parameter> where <parameter> can be:"; \
+	echo "	authorizing		Authorizing binary."; \
+	echo "	generic			non-authorizing binary."; \
+	echo "	damiga			Amiga client (Dnet, 68030/68881)."; \
+	echo "	damiga.68000		Amiga client (Dnet, Any CPU)."; \
+	echo "	clean			clean up this directory (includes object files)."; \
+	echo "	dust			clean this directory (leaves object files)."; \
+	echo "	depend			update dependency information."; \
+	echo "	makefile		Rebuild the Makefile"; \
+	echo "	static_images		Configure to include images in binary."; \
+	echo "	dynamic_images		Configure to dynamically load images (default)."
+
+###########################################################################
+# These rules recall make...
+
+damiga:
+	$(MAKE) paradise.amiga.dnet "SYSCFLAGS = -O2 -m68030 -m68881 -Wl,-s" "SYSDEFS= -DDNET -DSOUND -DSCALE_BITMAPS -DSCALE_WINDOWS -DW_PHASERLINE -DTORPBITS -DNOSHIPBITMAPS"
+
+damiga.68000:
+	$(MAKE) paradise.amiga.dnet "SYSCFLAGS = -O2 -m68000 -mc68000 -Wl,-s" "SYSDEFS= -DDNET -DSOUND -DSCALE_BITMAPS -DSCALE_WINDOWS -DW_PHASERLINE -DTORPBITS -DNOSHIPBITMAPS"
+
+###########################################################################
+
+paradise.amiga.dnet: $(OBJS) $(AMIGAOBJS)
+	rm -f $(EXE)
+	$(CC) $(CFLAGS) -o $(EXE) `$(SCRAMBLER) $(OBJS) $(AMIGAOBJS)` $(AMIGALIB) $(LIBS)
+
+paradise.sndsrv.linux: paradise.sndsrv.linux.c
+	rm -f $(EXE)
+	$(CC) $(CFLAGS) -o $(EXE) $@.c
+
+paradise.sndsrv.freebsd: paradise.sndsrv.freebsd.c
+	rm -f $(EXE)
+	$(CC) $(CFLAGS) -o $(EXE) $@.c
+
+authorizing: $(MYDEPLIBS) $(RSADIR)/librsa.a $(MYDEPAUTHLIBS) static_images $(OBJS)
+	rm -f $(EXE)
+	$(CC) $(CFLAGS) $(STATIC) $(LDFLAGS) -o $(EXE) `$(SCRAMBLER) $(OBJS)` $(AUTHLIBS)
+
+generic: $(MYDEPLIBS) $(OBJS) 
+	rm -f $(EXE)
+	$(CC) $(CFLAGS) $(STATIC) $(LDFLAGS) -o $(EXE) $(OBJS) $(LIBS)
+
+tags: $(SRCS)
+	ctags $(SRCS) $(INCLUDES) $(AMIGAOBJS) $(TL_OBJS)
+
+install: generic
+	rm -f ../$(EXE)
+	cp -f $(EXE) ../$(EXE)
+
+proto:
+#	-echo "" > proto.h; \
+#	for sourcefile in $(SRCS); \
+#        do \
+#	  echo $${sourcefile}; \
+#	  $(CPP) $(DEFS) $(CPPFLAGS) $(SRCS)
+#          
+#	cextract +C +F +a -H_proto_h $(DEFS) $(CPPFLAGS) $(SRCS) > proto.h
+
+depend:
+	makedepend -- $(DEFS) $(CPPFLAGS) -- $(SRCS)
+
+static_images:
+	$(SCRIPTDIR)/mkimgsrc -c $(IMAGEDIR)
+	$(SCRIPTDIR)/mkcredits -c $(IMAGEDIR)
+	@touch static_images
+	-rm -f dynamic_images
+
+dynamic_images:
+	$(SCRIPTDIR)/mkimgsrc $(IMAGEDIR)
+	$(SCRIPTDIR)/mkcredits -c $(IMAGEDIR)
+	@touch dynamic_images
+	-rm -f static_images
+
+unused_images:
+	$(SCRIPTDIR)/unused_images images.h $(SRCS)
+
+hackedxpm: $(XPMDIR)/lib/libXpm.a
+
+$(XPMDIR)/lib/libXpm.a:
+	@cd $(XPMDIR)/lib; rm -f Makefile
+	@cd $(XPMDIR)/lib; $(XMKMF_BUILD); make
+
+$(ZLIBDIR)/libz.a:
+	@cd $(ZLIBDIR); $(MAKE) libz.a
+
+$(RSADIR)/librsa.a:
+	@cd $(RSADIR); $(MAKE) librsa.a "SYSDEFS=$(SYSDEFS)"
+
+$(GMPDIR)/libgmp.a:
+	@cd $(GMPDIR); $(MAKE) libgmp.a
+
+dust:
+	rm -f $(EXE) *~ *.orig *.bak *.BAK
+
+clean:
+	rm -f $(EXE) *.o
+	cd $(ZLIBDIR); $(MAKE) $@
+	cd $(GMPDIR); $(MAKE) $@
+	-cd $(XPMDIR); $(MAKE) $@
+	cd $(RSADIR); $(MAKE) $@
+	rm -f static_images dynamic_images
+
+patchable: clean dust org_scripts
+	rm -f defines.h Makefile version.c uname.c
+	rm -f $(XPMDIR)/Makefile $(XPMDIR)/Makefile.bak
+	rm -f static_images dynamic_images
+	rm -f $(XPMDIR)/libXpm.a $(RSADIR)/librsa.a $(GMPDIR)/libgmp.a
+	rm -f $(ZLIBDIR)/libz.a
+	cd rsa; $(MAKE) $@

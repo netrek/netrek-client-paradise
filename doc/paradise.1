@@ -1,0 +1,143 @@
+.\" -*- nroff -*-
+.\" Copyright (c) 1995
+.\" written by Bob Glamm
+.TH paradise 1 "2 February 1995" "Paradise Hackers" "Paradise hackers"
+.de BP
+.sp
+.ti \-.2i
+\(**
+..
+
+.SH NAME
+paradise \(em\& Space Conquest game based loosely on Star Trek
+
+.SH SYNOPSIS
+paradise [-h host] [-p port] [-C name] [-P password] 
+         [-r defaults_file] [-t title] [-d display] 
+         [-F file] [-U port] [-R] [-o] [-m] [-e]
+         [-f] [-u] [-2] [-G playernum] [-s port]
+
+.SH DESCRIPTION
+.I paradise
+is a multiplayer network game based loosely on Star Trek.  In the standard
+version, two teams play against each other to take planets, shoot at each
+other, and to just generally have a good time.
+
+.SH OPTIONS
+.I paradise
+accepts the following options:
+
+.TP
+.I \-h host
+Connects to a specific
+.I host
+server.  Default is to connect to the metaserver (see 
+.I -m
+below).
+
+.TP
+.I \-p port
+Connect to a specific
+.I port
+on a specific
+.I host
+.  The default is port number 2592, which is correct for the current paradise
+servers.  Usually the 
+.I -h
+and
+.I -p
+options are used together for league games.
+
+.TP
+.I \-C name
+Use
+.I name
+as your alias when connecting to a paradise server.
+
+.TP
+.I \-P password
+Use
+.I password
+as your password when connecting to a paradise server.
+
+.TP
+.I \-r defaults_file
+Use
+.I defaults_file
+as your paradise defaults file instead of ~/.xtrekrc or ~/.paradiserc.
+
+.TP
+.I \-t title
+Use
+.I title
+as the title for your paradise window.
+
+.TP
+.I \-d display
+Sets paradise window to display
+.I display
+instead of the display pointed to by the environment variable DISPLAY.
+
+.TP
+.I \-F file
+Replays a paradise game stored in
+.I file
+.  Use the recorder option within paradise to generate the file.
+
+.TP
+.I \-U port
+Specifies
+.I port
+as local UDP port number to use.
+
+.TP
+.I \-R
+Use normal RSA client authentication (default).  Required for some older
+Bronco servers.
+
+.TP
+.I \-o
+Use old (non-RSA) authorization.  Useful for when the client expires and we
+haven't distributed a new client yet.
+
+.TP
+.I \-m
+Connect to metaserver to display a list of active servers with the number of
+players on each.
+
+.TP
+.I \-e
+Checks the expire time on the client.  Clients expire because of RSA 
+requirements.
+
+.TP
+.I \-f
+Displays a short message on how to get a new client via ftp.
+
+.TP
+.I \-u
+Print usage information, including a list of options and a reference to the
+current WWW documentation page.
+
+.TP
+.I \-2
+Force client to act as if it is connecting to a paradise server.  Generally,
+this option is not needed, except for an emergency reconnect.
+
+.TP
+.I \-G playernum
+.TP
+.I \-s port
+Use these options to do an emergency reconnect to the paradise server you
+were on.  The arguments to
+.I -G
+and
+.I -s
+are output when the paradise client is connected to the server.
+
+.SH FILES
+paradise                The executable
+.br
+~/.xtrekrc,             Defaults file for paradise
+.br
+~/.paradiserc

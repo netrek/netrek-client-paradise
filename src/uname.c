@@ -1,0 +1,1 @@
+char MACHINE_UNAME[] = "IRIX";

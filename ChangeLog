@@ -1,0 +1,108 @@
+	$Id: ChangeLog,v 1.1 2000/01/06 21:26:44 ahn Exp $
+	
+2000-01-06	Dave Ahn <ahn@sourceforge.net>
+	
+	* VERSION: 1.3.1.1-export
+	
+	* RELEASE: 1.3.1.1-export is an interim CVS tag to facilitate
+ 	migration to sourceforge.net.  If you are interested in
+ 	contributing to Paradise client and/or server development, please
+ 	visit http://www.sourceforge.net and create an account there.  You
+ 	can then email me with your Source Forge account name or UID, and
+ 	I can add you to the project.
+
+1999-01-28	Dave Ahn <ahn@vec.wfubmc.edu>
+
+	* BUGFIX (configure.in): Changed XPMDIR from xpm to xpm/lib.
+
+	* BUGFIX (configure.in): From Mike Roda <mroda@ipass.net>, I
+ 	scavenged some code for the configure.in script so that it will
+ 	correctly find the X libraries and X includes on linux [this will
+ 	probably work on other OSes as well].  I also found the reason I
+ 	was getting errors when running the configure script: configure.in
+ 	was using parentheses in a few places where it should have been
+ 	using curly braces.  Lastly, I changed configure.in to force the
+ 	makefile to use the libz.a in the zlib subdirectory, otherwise the
+ 	compiler kept trying to use the libz.a I had in /usr/lib which
+ 	wasn't compatible.  So anyway, I fixed up configure.in, ran
+ 	autoconf, and now the whole thing builds "out-of-the-box" on my
+ 	system.
+
+1999-01-22	Dave Ahn <ahn@vec.wfubmc.edu>
+
+	* RELEASE: Source exported to FTP site.
+
+	* VERSION: 1.3.1
+
+	* BUGFIX (shortcomm.c): thetorp->t_fuse was being set to INTMAX,
+ 	which is -1, changed to 10000, a big number.  This was causing a
+ 	serious bug where torp explosions were not animated.
+
+1999-01-22	Dave Ahn <ahn@vec.wfubmc.edu>
+
+	* RELEASE: Source exported to FTP site.
+
+	* VERSION: 1.3
+
+	* UPDATE: Export out of private CVS tree, import into public CVS
+	repository at ftp.netrek.org.
+
+	* PORT: FreeBSD 3.0-STABLE
+
+1999-01-21	Dave Ahn <ahn@vec.wfubmc.edu>
+
+	* UPDATE: Removed #ifdef ATM.
+
+	* UPDATE (credits.c): Added Dave Ahn, Eric Dorman.
+
+	* UPDATE (socket.c): Changed .pnetrek.org to netrek.org.
+
+	* UPDATE (main.c): Changed instructions to get client.
+
+1999-01-20	Dave Ahn <ahn@vec.wfubmc.edu>
+
+	* VERSION: 1.3 beta
+
+	* FEATURE: Added autoSetWar functionality from 2.4p1a.
+
+	* UPDATE: Default server changed to tanya.ucsd.edu.
+
+	* BUGFIX: Numerous fixes to remove compiler warnings.
+
+	* BUGFIX (getship.c): do not destroy downloaded images.
+
+	* FEATURE (paradise.sndsrv.freebsd.2.c): USS-Lite compatible sound
+ 	for FreeBSD from 2.4p1a, UNTESTED.
+
+	* FEATURE (paradise.sndsrv.hp.c): USS-Lite compatible sound for
+ 	HP/UX from 2.4p1a, UNTESTED.
+
+	* FEATURE (paradise.sndsrv.linux.2.c): USS-Lite compatible sound
+ 	for Linux from 2.4p1a, UNTESTED.
+
+	* FEATURE (paradise.sndsrv.sun.c): VoxWare compatible sound for
+ 	SunOS from 2.4p1a, UNTESTED.
+
+	* FEATURE (sound2.c): Platform independent sound support from
+ 	2.4p1a, UNTESTED.
+
+	* BUGFIX (macro.c): Escape control character fix from 2.4p1a.
+
+	* UPDATE: default metaserver changed to metaserver.netrek.org.
+
+	* BUGFIX (playerlist.c): NULL terminate desig.
+
+	* BUGFIX (senddist.c): mbuf removed, multiply defined.
+
+	* UPDATE (version.c): Client version updated.
+
+	* BUGFIX (x11window.c): w_MakeWindow() for scrollbar had invalid
+ 	arg that causes core dump or floating review_team window.
+
+	* UPDATE: Use zlib 1.1.3.
+
+	* UPDATE: Use xpm 3.4k.
+
+	* UPDATE (configure): Use autoconf 2.13.
+
+	* BUGFIX: Flickering problem during window clear fixed.
