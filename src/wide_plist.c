@@ -584,7 +584,7 @@ Sorted_playerlist2(void)
 
   /* 20, not 16, is the max for non-paradise! Mostly the extra 4 are */
   /* robots, but might as well show them and be safe... -JR*/
-  numplayers = (paradise) ? nplayers : 20;
+  numplayers = (paradise) ? nplayers : 36;
 
     /*
        if (++num % 21 == 0) { boolflag = 1; num = 0; }
@@ -677,7 +677,7 @@ wideplayerlist2(void)
 
     /* 20, not 16, is the max for non-paradise! Mostly the extra 4 are */
     /* robots, but might as well show them and be safe... -JR */
-    numplayers = (paradise) ? nplayers : 20;
+    numplayers = (paradise) ? nplayers : 36;
 
     if (old_playerList != playerList) {
 	wideplayerlist();	/* refresh if playerList changed */

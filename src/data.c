@@ -67,7 +67,7 @@ int     useOR = 0;		/* turn Rob's color allocator on so GXor can
 char   *imagedir = NULL;	/* dir containing image files [BDyess] */
 char   *imagedirend = NULL;	/* end of original imagedir [BDyess] */
 
-int     nplayers = 32;
+int     nplayers = 36;
 int     nshiptypes = 15;
 int     ntorps = 8;
 int     npthingies = 20;
