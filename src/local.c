@@ -893,7 +893,8 @@ local(void)
 	if (j->p_status == PALIVE) {
             W_Image *shipimage;
 
-	    shipimage = getShipImage(j->p_teami + 1, j->p_ship->s_bitmap);
+            shipimage = getShipImage(j);
+	    /*shipimage = getShipImage(j->p_teami + 1, j->p_ship->s_bitmap);*/
 	    if (j->p_flags & PFCLOAK && 
 	       (j->p_cloakphase == (cloakimage->frames - 1))) {
 		if (myPlayer(j)) {
@@ -1153,8 +1154,9 @@ local(void)
 		break;
 	    theta = atan2((double) (px - dx), (double) (dy - py)) + M_PI / 2.0;
 	    dir = (unsigned char) (theta / M_PI * 128.0);
-	    target_width = getShipImage(victim->p_teami + 1,
-				        victim->p_ship->s_bitmap)->width;
+	    target_width = getShipImage(victim)->width;
+	    /*target_width = getShipImage(victim->p_teami + 1,
+				        victim->p_ship->s_bitmap)->width;*/
 	    if (!(victim->p_flags & PFSHIELD))
 		target_width /= 2;
 	    lx[0] = px + (Cos[dir] * (target_width / 2));

@@ -1891,6 +1891,9 @@ W_LoadExternalImage(W_Image *image)
 	       image->filename+1, getImageNum(image));
 /* NEW STUFF */
       /*abort();*/
+      /* GAH don't try the alternate before the built-in one if it exists! */
+      if(image->compiled_in)
+        return(W_LoadInternalImage(image));
       /* uh oh, no good image files.  Lets try the alternate [BDyess] */
       if(image->alternate == -1) { /* bad news, no alternate [BDyess] */
 	return 1;		/* let the calling function handle it [BDyess]*/
@@ -2055,6 +2058,7 @@ W_LoadImage(W_Image *image)
   if(image->loaded) return 0;
   if(image->bad) {
     fprintf(stderr,"Error, tried to load bad image (%s).\n",image->filename);
+    abort();
     return 1;
   }
 
@@ -2068,7 +2072,7 @@ W_LoadImage(W_Image *image)
     }
   }
 
-  if(useExternalImages) {
+  if(useExternalImages && getImageNum(image) != I_DEFAULT) {
     ret = W_LoadExternalImage(image);
     if(ret) ret = W_LoadInternalImage(image);	/* external load failed */
   } else if(image->compiled_in) {

@@ -2,16 +2,6 @@
    data [BDyess] */
 /* automatically created by scripts/mkimgsrc */
 
-#include "Wlib.h"
-
-extern W_Image imagearray[];
-extern int shipImageOffset[];
-extern int teamImageOffset[];
-W_Image * getImage P((int offset));
-W_Image * getShipImage P((int team, int ship));
-void loadImageByFilename P((char *filename));
-void loadAllImages P((void));
-
 #define I_FIRST			0
 #define I_FED_BRONCO_COLORED_AS 0
 #define I_FED_BRONCO_COLORED_AT 1

@@ -6,6 +6,7 @@
 #include "Wlib.h"
 #include "images.h"
 #include "struct.h"
+#include "data.h"
 #include "proto.h"
 
 /* convert between ship number to image offset.  For example, to get the
@@ -29,6 +30,16 @@ static int shipImageOffset[] = {
   I_FED_PU - I_FED_AS,
 };
 
+static int shipBroncoImageOffset[] = {
+  I_FED_BRONCO_SC - I_FED_BRONCO_AS,
+  I_FED_BRONCO_DD - I_FED_BRONCO_AS,
+  I_FED_BRONCO_CA - I_FED_BRONCO_AS,
+  I_FED_BRONCO_BB - I_FED_BRONCO_AS,
+  I_FED_BRONCO_AS - I_FED_BRONCO_AS,
+  I_FED_BRONCO_SB - I_FED_BRONCO_AS,
+  I_FED_BRONCO_AT - I_FED_BRONCO_AS
+};
+
 static int teamImageOffset[] = {
   I_IND_AS,
   I_FED_AS,
@@ -36,6 +47,33 @@ static int teamImageOffset[] = {
   I_KLI_AS,
   I_ORI_AS,
   I_IND_AS,
+};
+
+static int enemyImageOffset[] = {
+  I_IND_AS,
+  I_FED_COLORED_AS,
+  I_ROM_COLORED_AS,
+  I_KLI_COLORED_AS,
+  I_ORI_COLORED_AS,
+  I_IND_AS
+};
+
+static int teamBroncoImageOffset[] = {
+  I_IND_AS,
+  I_FED_BRONCO_AS,
+  I_ROM_BRONCO_AS,
+  I_KLI_BRONCO_AS,
+  I_ORI_BRONCO_AS,
+  I_IND_AS
+};
+
+static int enemyBroncoImageOffset[] = {
+  I_IND_AS,
+  I_FED_BRONCO_COLORED_AS,
+  I_ROM_BRONCO_COLORED_AS,
+  I_KLI_BRONCO_COLORED_AS,
+  I_ORI_BRONCO_COLORED_AS,
+  I_IND_AS
 };
 
 /* compiled in images in alphabetical order, XBM before XPM. [BDyess] */
@@ -10630,9 +10668,28 @@ getImage(int offset)
 }
 
 W_Image *
-getShipImage(int team, int ship)
+/*getShipImage(int team, int ship)*/
+getShipImage(struct player *p)
 {
-  return getImage(teamImageOffset[team] + shipImageOffset[ship]);
+  int *tio, *sio;
+
+  if(paradise)
+  {
+    sio = shipImageOffset;
+    if(friendlyPlayer(p))
+      tio = teamImageOffset;
+    else
+      tio = enemyImageOffset;
+  }
+  else
+  {
+    sio = shipBroncoImageOffset;
+    if(friendlyPlayer(p))
+      tio = teamBroncoImageOffset;
+    else
+      tio = enemyBroncoImageOffset;
+  }
+  return getImage(tio[p->p_teami+1] + sio[p->p_ship->s_bitmap]);
 }
 
 int

@@ -1,4 +1,28 @@
-	$Id: ChangeLog,v 1.6 2000/03/20 23:54:13 glamm Exp $
+	$Id: ChangeLog,v 1.7 2000/03/22 20:56:51 glamm Exp $
+
+2000-03-22	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Made all XBM images compiled in by default as something for the
+	client to fall back on.  Also made rainbow dashboard XPM and
+	MOTD header XPM compiled in by default (it was easier than
+	modifying the code to handle those two cases).
+
+	* Made useExternalImages on by default.  This way an external
+	image always overrides an internal image (either XBM or XPM).
+
+	* Fixed up handling for external images if they did not exist.
+
+	* Added context-sensitive ship images.  If the complete set
+	of images exists:
+
+	  1) on a P-server, the <team> and <team>.colored pixmaps are used;
+	     on a B-server, the <team>.bronco & <team>.bronco.colored pixmaps
+	     are used.
+	  2) Friendly players use the normal (grey) pixmaps; non-friendly
+	     players use the colored pixmaps.
+
+	This way we get easy distinction between server types, AND we
+	get easy distinction between who's friendly and who's not.
 
 2000-03-20	Bob Glamm <glamm@users.sourceforge.net>
 

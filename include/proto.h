@@ -646,7 +646,8 @@ void tactical_hockey P((void));
 int cmpfilenames P((const void *left, const void *right));
 W_Image * getImage P((int offset));
 int getImageNum P((W_Image *image));
-W_Image * getShipImage P((int team, int ship));
+/*W_Image * getShipImage P((int team, int ship));*/
+W_Image *getShipImage P((struct player *));
 void loadAllImages P((void));
 void loadImageByFilename P((char *filename));
 
