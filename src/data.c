@@ -74,7 +74,7 @@ int     npthingies = 20;
 int     ngthingies = 0;
 int     nplasmas = 1;
 int     nphasers = 1;
-int     nplanets = 60;
+int     nplanets = 0;		/* get this info dyn. from server */
 
 /* hockey stuff [BDyess] */
 int	galacticHockeyLines = 1;  /* draw lines on the galactic? [BDyess] */

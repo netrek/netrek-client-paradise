@@ -44,7 +44,6 @@ ship_type(struct ship *shp)
 #define TEAM_SHORTP(pl) ( teaminfo[mask_to_idx((pl).pl_owner)].shortname )
 #define reviewWin	messWin[WREVIEW].window
 #define MAXTORP	ntorps
-#define MAXPLANETS	nplanets
 #define MAXPLASMA	nplasmas
 
 /* from here on all SHORT_PACKETS */
@@ -734,11 +733,11 @@ handleVPlanet(unsigned char *sbuf)
 
     numofplanets = (unsigned char) sbuf[1];
 
-    if (numofplanets > MAXPLANETS + 1)
+    if (numofplanets > nplanets + 1)
 	return;
 
     for (i = 0; i < numofplanets; i++, packet++) {
-	if (packet->pnum < 0 || packet->pnum >= MAXPLANETS)
+	if (packet->pnum < 0 || packet->pnum >= nplanets)
 	    continue;
 
 	plan = &planets[packet->pnum];

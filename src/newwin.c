@@ -93,9 +93,9 @@ newwin(char *hostmon, char *progname)
     messagew = W_MakeWindow("message", winside+3*BORDER, 
                mapside + 5*BORDER + MESSAGESIZE, mapside, MESSAGESIZE, baseWin,
 	       "xterm", BORDER, foreColor);
-    planetw = W_MakeTextWindow("planet", 10, 10, 75, (nplanets + 16) / 2, w, 
+    planetw = W_MakeTextWindow("planet", 10, 10, 75, (MAXPLANETS + 16) / 2, w, 
                                (char *) 0, 2);
-    planetw2 = W_MakeTextWindow("planet2", 10, 10, 75, (nplanets + 16) / 2, 
+    planetw2 = W_MakeTextWindow("planet2", 10, 10, 75, (MAXPLANETS + 16) / 2, 
                                 mapw, (char *) 0, 2);
     rankw = W_MakeTextWindow("rank", 50, 100, 65, nranks2 + 8, w, (char*) 0, 2);
     playerw = W_MakeTextWindow("Player", winside + 3*BORDER, 

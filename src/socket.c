@@ -812,6 +812,7 @@ computesize:
     return (1);
 }
 
+#ifdef DEBUG
 #define SANITY_TORPNUM(idx) \
 	if ( (unsigned)(idx) >= ntorps*nplayers) { \
 	    fprintf(stderr, "torp index %d out of bounds\n", (idx)); \
@@ -843,7 +844,7 @@ computesize:
 	}
 
 #define SANITY_PLANNUM(idx) \
-	if ( (unsigned)(idx) >= nplanets) { \
+	if ( (unsigned)(idx) >= MAXPLANETS) { \
 	    fprintf(stderr, "planet index %d out of bounds\n", (idx)); \
 	    return; \
 	}
@@ -853,6 +854,15 @@ computesize:
 	    fprintf(stderr, "ship type %d out of bounds\n", (idx)); \
 	    return; \
 	}
+#else
+#define SANITY_TORPNUM(idx)
+#define SANITY_PNUM(idx)
+#define SANITY_PHASNUM(idx)
+#define SANITY_PLASNUM(idx)
+#define SANITY_THINGYNUM(idx)
+#define SANITY_PLANNUM(idx)
+#define SANITY_SHIPNUM(idx)
+#endif
 
 
 static void
@@ -1235,6 +1245,7 @@ handlePlanet(struct planet_spacket *packet)
     int     hockey_update = 0;
 
     SANITY_PLANNUM(packet->pnum);
+    nplanets = 60;
 
     plan = &planets[packet->pnum];
     if (plan->pl_owner != packet->owner) {
@@ -2551,6 +2562,8 @@ static void
 handlePlanet2(struct planet_spacket2 *packet)
 {
     SANITY_PLANNUM(packet->pnum);
+    if((packet->pnum+1) > nplanets)
+      nplanets = packet->pnum+1;
 
     planets[packet->pnum].pl_owner = packet->owner;
     planets[packet->pnum].pl_info = packet->info;

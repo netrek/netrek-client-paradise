@@ -179,9 +179,9 @@ initialize_planets(void)
 {
     int     i;
 
-    planets = (struct planet *) malloc(sizeof(*planets) * nplanets);
+    planets = (struct planet *)malloc(sizeof(*planets) * MAXPLANETS);
 
-    for (i = 0; i < nplanets; i++) {
+    for(i = 0; i < MAXPLANETS; i++) {
 	struct planet *curr = &planets[i];
 	curr->pl_no = i;
 	curr->pl_flags = 0;

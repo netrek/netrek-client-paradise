@@ -53,6 +53,10 @@ planet_list_normal(void)
     wind = planetw;
 
     for (i = 0, j = &planets[i]; i < nplanets; i++, j++) {
+        /* ignore invisible planets */
+        if (j->pl_x < 0 || j->pl_y < 0)
+	  continue;
+
 	if (i == 0 || i == nplanets / 2) {
 	    if (i != 0) {
 		wind = planetw2;
@@ -168,7 +172,7 @@ planet_list_paradise(void)
     }
 
     k++;
-    for (i = 0; i < (number_of_teams + 2); i++) {
+    for (i = 0; i < (number_of_teams + 1); i++) {
 	W_Color cur_color;
 
 	cur_color = shipCol[i];

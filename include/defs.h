@@ -8,6 +8,7 @@
 #include "copyright.h"
 #include "config.h"
 
+#define MAXPLANETS 60		/* maximum planets any server will send us */
 #define MAX_PLAYER 257		/* Maximum number of players we can configure
 				   the game for, not the server's max
 				   players.  */
