@@ -53,7 +53,7 @@ main(int argc, char **argv)
     char   *name, *ptr, *cp;
     struct passwd *pwent;
     int     passive = 0;
-    int     xpmopt = 0;
+    int     xpmopt = 1;
     int     useORopt = 0;
     int     useCookieOpt = 0;
     int     dontUseCookieOpt = 0;
@@ -183,7 +183,7 @@ The newest version of the Paradise client can be found at:\n\
 		    }
 		    break;
 		case 'x':
-		    xpmopt = 1;
+		    xpmopt = 0;
 		    break;
 		case 'k':		/* cookie mode [BDyess] */
 		    useCookieOpt = 1;
@@ -503,28 +503,31 @@ printUsage(char *prog)
 Where options are\n\
     [-h] host          server host name\n\
     [-p] port          server port number\n\
-    [-r] xtrekrc       defaults file to replace ~/.xtrekrc\n\
-    [-t] title         window manager title\n\
-    [-d] display       set Xwindows display\n\
-    [-C] name          netrek pseudonym\n\
-    [-P] passwd        passwd to use to attempt autologin\n\
-    [-R]               use RSA authorization (default)\n\
-    [-o]               use old (non-RSA) authorization\n\
-    [-s] port          wait for connection from ntserv on a port (debugging)\n\
-    [-m]               check metaserver for active servers\n\
-    [-F] file          Replay from file instead of connecting\n\
-    [-x]               enable XPM mode.\n\
-    [-v]               verbose image loading.\n\
-    [-O]               turn on OR display mode when in XPM mode.\n\
+\n\
+    [-x]               disable XPM mode.\n\
     [-k/-K]            turn on/off Cookie mode.\n\
-    [-e]               check the expire time on the client\n\
-    [-f]               how to get the newest client\n\
-    [-u]               print usage\n\
-    [-c]               dump .paradiserc defaults\n\
+    [-O]               turn on OR display mode when in XPM mode.\n\
+\n\
   For emergency restart:\n\
     [-2]               force paradise - use if you were on a paradise server\n\
     [-G] playernum     specify player number to use\n\
     [-s] port          specify socket number to use\n\
+\n\
+  Other options:\n\
+    [-c]               dump .paradiserc defaults\n\
+    [-d] display       set Xwindows display\n\
+    [-e]               check the expire time on the client\n\
+    [-f]               how to get the newest client\n\
+    [-m]               check metaserver for active servers\n\
+    [-o]               use old (non-RSA) authorization\n\
+    [-r] xtrekrc       defaults file to replace ~/.xtrekrc\n\
+    [-t] title         window manager title\n\
+    [-u]               print usage (this message)\n\
+    [-v]               verbose image loading.\n\
+    [-C] name          netrek pseudonym\n\
+    [-F] file          Replay from file instead of connecting\n\
+    [-P] passwd        passwd to use to attempt autologin\n\
+    [-R]               use RSA authorization (default)\n\
 \n\
 Paradise/TedTurner Client %s\n\
 For more information on how to play Paradise, go to\n\

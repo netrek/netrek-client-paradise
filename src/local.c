@@ -1113,6 +1113,8 @@ local(void)
     /* showTractorPressor is a variable set by xtrekrc. */
     /* modified to show all T/P's 1/28/94 [BDyess] */
     /* fixed display bug 1/29/94 [BDyess] */
+    /* Allow showAllTractorPressor in both Vanilla & Paradise
+       (Trient Piepho, 3/13/2000 */
     dx = dy = center;
     if (showTractorPressor) {
 	double  theta;
@@ -1120,7 +1122,7 @@ local(void)
 	int     lx[2], ly[2], px, py, target_width;
 	struct player *victim = &players[me->p_tractor];
 	int     last;
-	if (paradise && showAllTractorPressor && allowShowAllTractorPressor) {
+	if (showAllTractorPressor && allowShowAllTractorPressor) {
 	    /* check everybody */
 	    last = nplayers;
 	    j = &players[0];
@@ -1133,8 +1135,6 @@ local(void)
 	}
 	for (; i < last; i++, j++) {
 	    if (!(j->p_flags & (PFTRACT | PFPRESS) && isAlive(j)))
-		continue;
-	    if (!paradise && RSA_Client > 0 && j != me)
 		continue;
 	    victim = &players[j->p_tractor];
 	    if (victim->p_flags & PFCLOAK)

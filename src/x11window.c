@@ -338,7 +338,7 @@ W_Initialize(char *str)
     W_Colormap = DefaultColormap(W_Display, W_Screen);
     myroot.window = W_Root;
     myroot.type = WIN_GRAPH;
-    s = strdup(stringDefault("shipBitmapPath","."));
+    s = strdup(stringDefault("shipBitmapPath", SHIP_BITMAP_PATH));
     s = expandFilename(s);
     imagedir = (char*)malloc(strlen(s) + 100);
     strcpy(imagedir,s);
@@ -1804,6 +1804,12 @@ W_CreateCombinedImage(W_Image **imagelist, W_Color color)
   return image;
 }
 
+/* modification - even if there IS an image loading error I don't want
+   to see it.  The load-all-images attempts to load every image even
+   if it would never be a valid image.  We'll let the developers take
+   care of insuring that there is a complete image set available by
+   default; end users wishing to customize their display can do so on
+   their own with the help of -v. */
 int
 W_LoadExternalImage(W_Image *image)
 {
@@ -1846,7 +1852,7 @@ W_LoadExternalImage(W_Image *image)
   }
 
   if (error) {
-    if(ErrorStatus != XpmOpenFailed) {
+    if(ErrorStatus != XpmOpenFailed && verbose_image_loading) {
       printf("Error reading in %s%s: %s.\n", imagedir, image->filename, error);
     }
     /* 
@@ -1858,15 +1864,16 @@ W_LoadExternalImage(W_Image *image)
     ErrorStatus = XReadBitmapFile(W_Display, W_Root, imagedir,
 		  &image->width, &image->height, &image->clipmask,NULL,NULL);
     if( ErrorStatus != BitmapSuccess) {
-      printf( "Bitmap read failed for %s (%d).\n"
-	, imagedir, getImageNum(image));
+      if(verbose_image_loading)
+        printf("Bitmap read failed for %s (%d).\n" , 
+	       imagedir, getImageNum(image));
 /* NEW STUFF */
       /*abort();*/
       /* uh oh, no good image files.  Lets try the alternate [BDyess] */
       if(image->alternate == -1) { /* bad news, no alternate [BDyess] */
 	return 1;		/* let the calling function handle it [BDyess]*/
       }
-      if(image->alternate == I_DEFAULT) {
+      if(image->alternate == I_DEFAULT && verbose_image_loading) {
         printf("Using compiled in default image...\n");
       } else {
 	/*printf("Trying to load alternate (%d)...\n",image->alternate);*/
@@ -1902,7 +1909,7 @@ W_LoadExternalImage(W_Image *image)
     return 0;
   }
   if(verbose_image_loading) printf("xpm\n");
-  if (warn)
+  if (warn && verbose_image_loading)
       printf("Warning reading in %s: %s.\n", imagedir, warn);
   /* ok, xpm loaded successfully.  Lets store the data and get outta here
      [BDyess] */
@@ -2029,7 +2036,7 @@ W_LoadImage(W_Image *image)
     return 1;
   }
 
-  if(!image->compiled_in || verbose_image_loading) {
+  if(!image->compiled_in && verbose_image_loading) {
     sprintf(buf,"%s %s...",image->compiled_in ? "Storing" : "Loading",
             image->filename);
     warning(buf);

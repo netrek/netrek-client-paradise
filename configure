@@ -3044,6 +3044,9 @@ fi
 fi
 
 
+SHIP_BITMAP_PATH=${datadir}/paradise/images
+
+
 
 
 
@@ -3207,6 +3210,7 @@ s%@AUTH_OBJS@%$AUTH_OBJS%g
 s%@AUTH_DEFS@%$AUTH_DEFS%g
 s%@SCRAMBLER@%$SCRAMBLER%g
 s%@EXPIRE_DATE@%$EXPIRE_DATE%g
+s%@SHIP_BITMAP_PATH@%$SHIP_BITMAP_PATH%g
 
 CEOF
 EOF
