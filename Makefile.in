@@ -22,6 +22,3 @@ clean:
 distclean: clean
 	(cd src && $(MAKE) distclean)
 	-rm -f Makefile config.* include/config.h
-
-cvsclean: distclean
-	-rm -f configure

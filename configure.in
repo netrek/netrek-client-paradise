@@ -96,7 +96,7 @@ HAVE_X11_XPM_H=no
 AC_CHECK_HEADERS(xpm.h, [HAVE_XPM_H=yes],
   AC_CHECK_HEADERS(X11/xpm.h, [HAVE_X11_XPM_H=yes]))
 
-if test "x$HAVE_XPM_H" = xno -a "x$HAVE_X11_XPM_H" != xno; then
+if test "x$HAVE_XPM_H" = xno -a "x$HAVE_X11_XPM_H" = xno; then
   echo
   echo "*** Could not find XPM library header (xpm.h)."
   echo "*** Make sure that it is installed and set"
