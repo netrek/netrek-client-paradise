@@ -58,7 +58,7 @@ struct list_s {
 
 /* --------------------------------------------------------------- */
 
-#define DEFMETAFILE ".paradise-metaserver"
+#define DEFMETAFILE ".paradise/metaserver-cache"
 
 int     pid = 1;
 int     num_servers = 0;

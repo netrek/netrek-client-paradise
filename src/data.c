@@ -63,6 +63,8 @@ int     cookie = 0;		/* cookie mode [BDyess] */
 int	verbose_image_loading = 0; /* image loading logging [BDyess] */
 int     useOR = 0;		/* turn Rob's color allocator on so GXor can
                                    be used to draw images [BDyess] */
+int     colorEnemies = 1;	/* use .colored for enemies by default */
+int     colorFriends = 0;	/* don't use .colored for friends by default */
 
 char   *imagedir = NULL;	/* dir containing image files [BDyess] */
 char   *imagedirend = NULL;	/* end of original imagedir [BDyess] */

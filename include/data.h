@@ -65,6 +65,8 @@ extern int cookie;		/* cookie mode [BDyess] */
 extern int verbose_image_loading; /* image loading logging [BDyess] */
 extern int useOR;		/* turn Rob's color allocator on so GXor can
                                    be used to draw images [BDyess] */
+extern int colorFriends;	/* use .colored for friendly ships */
+extern int colorEnemies;	/* use .colored for enemy ships */
 
 extern char *imagedir;		/* dir containing image files [BDyess] */
 extern char *imagedirend;	/* end of original imagedir [BDyess] */

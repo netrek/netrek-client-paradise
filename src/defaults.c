@@ -27,7 +27,11 @@
 #define MAXLINE 1024
 
 /* list of files to search for [BDyess] */
-static char *filelist[] = {".paradiserc",".netrekrc",".xtrekrc",NULL};
+static char *filelist[] = {".paradise/paradiserc", 
+                           ".paradiserc",
+			   ".netrekrc",
+			   ".xtrekrc",
+			   NULL};
 
 /* Prototypes */
 static FILE *findDefaults P((char *home, char **deffile, char *base));
@@ -581,6 +585,9 @@ resetDefaults(void)
     lockLine = booleanDefault("lockLine", lockLine);
     mapSort = booleanDefault("mapSort", mapSort);
     autoSetWar = intDefault("autoSetWar", autoSetWar);
+
+    colorFriends = booleanDefault("colorFriends", colorFriends);
+    colorEnemies = booleanDefault("colorEnemies", colorEnemies);
 
     /* metaFork = booleanDefault("metaFork",metaFork); */
 

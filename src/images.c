@@ -10693,7 +10693,8 @@ getShipImage(struct player *p)
 
   if(paradise)
   {
-    if(friendlyPlayer(p))
+    if((friendlyPlayer(p) && !colorFriends) ||
+       (!friendlyPlayer(p) && !colorEnemies))
     {
       sio = shipImageOffset;
       tio = teamImageOffset;
@@ -10707,7 +10708,8 @@ getShipImage(struct player *p)
   else
   {
     sio = shipBroncoImageOffset;
-    if(friendlyPlayer(p))
+    if((friendlyPlayer(p) && !colorFriends) ||
+       (!friendlyPlayer(p) && !colorEnemies))
       tio = teamBroncoImageOffset;
     else
       tio = enemyBroncoImageOffset;

@@ -1,4 +1,26 @@
-	$Id: ChangeLog,v 1.10 2000/03/24 23:50:08 glamm Exp $
+	$Id: ChangeLog,v 1.11 2000/04/03 19:52:05 glamm Exp $
+
+2000-03-03
+
+	* Added two new boolean options, colorFriends (off by default)
+	and colorEnemies (on by default).  Controls whether to use the
+	.colored or the normal XPMs.
+
+	* Fixed up most paths so that they refer to ~/.paradise/ instead
+	of having multiple . files in the home directory.
+
+2000-04-01	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Eliminated torp color bug.  Torp colors are always correct
+	now.
+
+	* Fixed bug in client socket code state machine that would cause
+	it to hang periodically.
+
+ 	* Eliminated lag by setting QoS field of all packets to
+	"This packet is on fire we need it delivered IMMEDIATELY"
+
+	* Happy April Fool's ;)
 
 2000-03-24	Bob Glamm <glamm@users.sourceforge.net>
 

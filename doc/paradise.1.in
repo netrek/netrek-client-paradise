@@ -275,6 +275,15 @@ by default).  Default is off.
 Shows shields around ship if on.  Default is on.
 
 .TP
+.I colorFriends: (on|off)
+.TP
+.I colorEnemies: (on|off)
+Use the 
+.I .colored 
+XPMs for friendly or enemy ships if on.  Default is off for friendly ships
+and on for enemy ships.
+
+.TP
 .I showstats
 
 .TP
