@@ -229,6 +229,9 @@ char   *w_texts[] =
 
 
 void    add_whydead P((char *, int));
+void    new_flags P((unsigned int, int));
+
+int shortversion = SHORTVERSION;
 
 extern int vtisize[];
 extern unsigned char numofbits[];
@@ -373,7 +376,27 @@ handleVPlayer(unsigned char *sbuf)
     if (sbuf[1] & (unsigned char) 128) {	/* Short Header + Extended */
 	sbuf += 4;
 	offset = 32;		/* more than 32 players? */
-    } else if (sbuf[1] & 64) {	/* Short Header  */
+    }
+    else if (sbuf[1] & 64) {	/* Short Header  */
+
+        if (shortversion == SHORTVERSION) {
+            if (sbuf[2] == 2) {
+                int *tmp = (int *) &sbuf[4];
+
+                new_flags(ntohl(*tmp), sbuf[3]);
+                tmp++;
+                new_flags(ntohl(*tmp), 0);
+                sbuf += 8;
+
+            }
+            else if (sbuf[2] == 1) {
+                int *tmp = (int *) &sbuf[4];
+
+                new_flags(ntohl(*tmp), sbuf[3]);
+                sbuf += 4;
+
+            }
+        }
 	sbuf += 4;
 	offset = 0;
     } else {
@@ -386,10 +409,21 @@ handleVPlayer(unsigned char *sbuf)
 		pl->p_status = PEXPLODE;
 		pl->p_explode = 0;
 	    }
-	} else
-	{
-	    pl->p_x = my_x = ntohl(packet->x);
-	    pl->p_y = my_y = ntohl(packet->y);
+	}
+        else {
+            if (shortversion == SHORTVERSION) {
+
+                struct player_s2_spacket *pa2=(struct player_s2_spacket *)sbuf;
+
+                pl->p_x = my_x = SCALE * ntohs(pa2->x);
+                pl->p_y = my_y = SCALE * ntohs(pa2->y);
+                new_flags(ntohl(pa2->flags), 0);
+
+            } else {
+	        pl->p_x = my_x = ntohl(packet->x);
+	        pl->p_y = my_y = ntohl(packet->y);
+
+            }
 	    if (rotate) {
 		rotate_coord(&pl->p_x, &pl->p_y,
 			     rotate_deg, spgwidth / 2, spgwidth / 2);
@@ -421,14 +455,15 @@ handleVPlayer(unsigned char *sbuf)
 	pl->p_dir = newdir;	/* realDIR */
 
 	sbuf++;
-	x = (unsigned char) *sbuf++;
-	y = (unsigned char) *sbuf++;	/* The lower 8 Bits are saved */
+
+        x = (unsigned char) *sbuf++;
+	y = (unsigned char) *sbuf++;/* The lower 8 Bits are saved */
 
 	/* Now we must preprocess the coordinates */
 	if ((unsigned char) save & 64)
-	    x |= 256;
+            x |= 256;
 	if ((unsigned char) save & 128)
-	    y |= 256;
+            y |= 256;
 	/*
 	   MAY CHANGE!  dead_warp is still an experiment, some servers are
 	   also sending illegal co-ords for dead players, so we'll just
@@ -501,12 +536,22 @@ handleShortReply(struct shortreply_spacket *packet)
 {
     switch (packet->repl) {
     case SPK_VOFF:
-	recv_short = 0;
-	sprefresh(SPK_VFIELD);
+        if (shortversion == SHORTVERSION && recv_short == 0) {
+            printf("Using Short Packet Version 1.\n");
+            shortversion = OLDSHORTVERSION;
+            sendShortReq(SPK_VON);
+        }
+        else {
+	    recv_short = 0;
+	    sprefresh(SPK_VFIELD);
+            sendUdpReq(COMM_UPDATE);
+        }
 	break;
     case SPK_VON:
 	recv_short = 1;
 	sprefresh(SPK_VFIELD);
+
+        printf("Receiving Short Packet Version %d\n", shortversion);
 
 	spwinside = (CARD16) ntohs(packet->winside);
 	/*
@@ -745,7 +790,7 @@ sendShortReq(int state)
 
     shortReq.type = CP_S_REQ;
     shortReq.req = state;
-    shortReq.version = SHORTVERSION;
+    shortReq.version = shortversion;
     switch (state) {
     case SPK_VON:
 	warning("Sending short packet request");
@@ -1227,4 +1272,209 @@ add_whydead(char *s, int m)		/* 7/22/93 LAB */
 	b[79] = '\0';
 	strcpy(s, b);
     }
+}
+
+void handleVKills(unsigned char *sbuf)
+{
+  int i, numofkills, pnum;
+  unsigned short pkills;
+  unsigned char *data = &sbuf[2];
+
+  numofkills = (unsigned char) sbuf[1];
+
+  for (i = 0; i < numofkills; i++)
+    {
+      pkills = (unsigned short) *data++;
+      pkills |= (unsigned short) ((*data & 0x03) << 8);
+      pnum = (unsigned char) *data++ >> 2;
+
+      if (pnum < 0 || pnum >= nplayers)
+        {
+          fprintf(stderr, "handleKills: bad index %d\n", pnum);
+          return;
+        }
+
+      if (players[pnum].p_kills != ((float) pkills / 100.0))
+        {
+          players[pnum].p_kills = pkills / 100.0;
+          /* FAT: prevent redundant player update */
+          updatePlayer[pnum] |= ALL_UPDATE;
+
+#ifdef ARMY_SLIDER
+          if (me == &players[(int) pnum])
+            {
+              calibrate_stats();
+              redrawStats();
+            }
+#endif /* ARMY_SLIDER */
+        }
+
+    }                                            /* for */
+
+}                                                /* handleVKills */
+
+void handleVPhaser(unsigned char *sbuf)
+{
+  struct phaser *phas;
+  struct player *j;
+  struct phaser_s_spacket *packet = (struct phaser_s_spacket *) &sbuf[0];
+
+  /* not nice but.. */
+  register int pnum, status, target, x, y, dir;
+
+  status = packet->status & 0x0f;
+  pnum = packet->pnum & 0x3f;
+
+  switch (status)
+    {
+    case PHFREE:
+      break;
+    case PHHIT:
+      target = (unsigned char) packet->target & 0x3f;
+      break;
+    case PHMISS:
+      dir = (unsigned char) packet->target;
+      break;
+    case PHHIT2:
+      x = SCALE * (ntohs(packet->x));
+      y = SCALE * (ntohs(packet->y));
+      target = packet->target & 0x3f;
+      break;
+    default:
+      x = SCALE * (ntohs(packet->x));
+      y = SCALE * (ntohs(packet->y));
+      target = packet->target & 0x3f;
+      dir = (unsigned char) packet->dir;
+      break;
+    }
+  phas = &phasers[pnum];
+  phas->ph_status = status;
+  phas->ph_dir = dir;
+  phas->ph_x = x;
+  phas->ph_y = y;
+  phas->ph_target = target;
+  phas->ph_fuse = 0;
+
+  if (rotate)
+    {
+      rotate_coord(&phas->ph_x, &phas->ph_y, rotate_deg, GWIDTH / 2, GWIDTH / 2)
+;
+      rotate_dir(&phas->ph_dir, rotate_deg);
+    }
+}
+
+void handle_s_Stats(struct stats_s_spacket *packet)
+{
+  struct player *pl;
+
+  if (packet->pnum < 0 || packet->pnum >= nplayers)
+    {
+      fprintf(stderr, "handleStats: bad index %d\n", packet->pnum);
+      return;
+    }
+
+  pl = &players[packet->pnum];
+
+  pl->p_stats.st_tkills = ntohs(packet->tkills);
+  pl->p_stats.st_tlosses = ntohs(packet->tlosses);
+  pl->p_stats.st_kills = ntohs(packet->kills);
+  pl->p_stats.st_losses = ntohs(packet->losses);
+  pl->p_stats.st_tticks = ntohl(packet->tticks);
+  pl->p_stats.st_tplanets = ntohs(packet->tplanets);
+  pl->p_stats.st_tarmsbomb = ntohl(packet->tarmies);
+  pl->p_stats.st_sbkills = ntohs(packet->sbkills);
+  pl->p_stats.st_sblosses = ntohs(packet->sblosses);
+  pl->p_stats.st_armsbomb = ntohs(packet->armies);
+  pl->p_stats.st_planets = ntohs(packet->planets);
+  if ((pl->p_ship->s_type == STARBASE))
+    {
+      pl->p_stats.st_sbticks = ntohl(packet->maxkills);
+    }
+  else
+    {
+      pl->p_stats.st_maxkills = ntohl(packet->maxkills) / 100.0;
+    }
+  pl->p_stats.st_sbmaxkills = ntohl(packet->sbmaxkills) / 100.0;
+
+  updatePlayer[packet->pnum] |= LARGE_UPDATE;
+}
+
+void    new_flags(unsigned int data, int which)
+{
+  int pnum, status;
+  unsigned int new, tmp;
+  unsigned int oldflags;
+  struct player *j;
+
+  tmp = data;
+  for (pnum = which * 16; pnum < (which + 1) * 16 && pnum < nplayers; pnum++)
+    {
+      new = tmp & 0x03;
+      tmp >>= 2;
+      j = &players[pnum];
+
+      oldflags = j->p_flags;
+      switch (new)
+        {
+        case 0:                          /* PDEAD/PEXPLODE */
+          status = PEXPLODE;
+          j->p_flags &= ~PFCLOAK;
+          break;
+        case 1:                          /* PALIVE & PFCLOAK */
+          status = PALIVE;
+          j->p_flags |= PFCLOAK;
+          break;
+        case 2:                          /* PALIVE & PFSHIELD */
+          status = PALIVE;
+          j->p_flags |= PFSHIELD;
+          j->p_flags &= ~PFCLOAK;
+          break;
+        case 3:                          /* PALIVE & NO shields */
+          status = PALIVE;
+          j->p_flags &= ~(PFSHIELD | PFCLOAK);
+          break;
+        default:
+          break;
+        }
+
+      if (oldflags != j->p_flags)
+        redrawPlayer[pnum] = 1;
+
+      if (j->p_status == status)
+        continue;
+
+      if (status == PEXPLODE)
+        {
+          if (j->p_status == PALIVE)
+            {
+              j->p_explode = 0;
+              j->p_status = status;
+            }
+          else                                   /* Do nothing */
+            continue;
+        }
+      else
+        {                                        /* really PALIVE ? */
+          if (j == me)
+            {
+              /* Wait for POUTFIT */
+              if (j->p_status == POUTFIT || j->p_status == PFREE)
+                {
+                  if (j->p_status != PFREE)
+                    j->p_kills = 0.;
+
+                  j->p_status = PALIVE;
+                }
+            }
+          else
+            {
+              if (j->p_status != PFREE)
+                j->p_kills = 0.;
+
+              j->p_status = status;
+            }
+        }
+      redrawPlayer[pnum] = 1;
+      updatePlayer[pnum] |= ALL_UPDATE;
+    }                                            /* for */
 }

@@ -518,7 +518,7 @@ sendVersion(void)
 
     if (!version_sent) {
 	version_sent = 1;
-	sprintf(buf, "@%s", CLIENTVERS);
+	sprintf(buf, "@ Paradise %s", CLIENTVERS);
 	pmessage(buf, me->p_no, MINDIV | MCONFIG);
     }
 }

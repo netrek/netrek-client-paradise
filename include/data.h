@@ -423,6 +423,8 @@ extern int recv_kmesg;
 extern int recv_threshold;
 extern char recv_threshold_s[];
 extern int recv_warn;
+extern int shortversion;
+
 extern int godToAllOnKills;
 
 /* ping client stuff, ick */

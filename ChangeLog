@@ -1,4 +1,10 @@
-	$Id: ChangeLog,v 1.8 2000/03/22 21:06:35 glamm Exp $
+	$Id: ChangeLog,v 1.9 2000/03/24 06:04:40 ahn Exp $
+
+2000-03-23	Dave Ahn <ahn@users.sourceforge.net>
+	
+	* Added UDP_PORTSWAP code back in, enabled by default.
+	
+	* Added SP2 support.  Needs testing.
 
 2000-03-22	Bob Glamm <glamm@users.sourceforge.net>
 

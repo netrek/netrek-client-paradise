@@ -358,7 +358,7 @@ int     udpDebug = 0;		/* UDP: debugging info on/off */
 int     udpClientSend = 1;	/* UDP: send our packets using UDP? */
 int     udpClientRecv = 1;	/* UDP: receive with simple UDP */
 int     udpSequenceChk = 1;	/* UDP: check sequence numbers */
-int     updateSpeed = 5;	/* updates per second */
+int     updateSpeed = 10;	/* updates per second */
 
 /* MOTD data */
 struct page *currpage = NULL;

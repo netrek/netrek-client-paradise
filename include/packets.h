@@ -127,7 +127,8 @@ typedef char INT8;
 
 /* variable length packets */
 #define VPLAYER_SIZE    4
-#define SHORTVERSION    10	/* other number blocks, like UDP Version */
+#define SHORTVERSION    11	/* other number blocks, like UDP Version */
+#define OLDSHORTVERSION	10
 
 #define SP_GPARAM	51	/* game params packet */
 
@@ -139,6 +140,12 @@ typedef char INT8;
 /* end of packet 52 subtypes */
 #define SP_TERRAIN2	53	/* Terrain packets */
 #define SP_TERRAIN_INFO2 54	/* Terrain info */
+
+/* SP2 */
+#define SP_S_SEQUENCE	56
+#define SP_S_PHASER	57
+#define SP_S_KILLS	58
+#define SP_S_STATS	59
 
 /* feature_spacket, response to feature_cpacket requests. identical structures */
 #define SP_FEATURE              60
@@ -1060,6 +1067,21 @@ struct player_s_spacket {
     INT32   x, y;		/* To get the absolute Position */
 };
 
+struct player_s2_spacket
+  {
+    char    type;                                /* SP_S_PLAYER Header */
+    char    packets;                             /* How many player-packets *
+                                                  *
+                                                  * * are in this packet  ( *
+                                                  * * only the firs t 6 bits *
+                                                  * * are relevant ) */
+    unsigned char dir;
+    char    speed;
+    short   x, y;                                /* absolute position / 40 */
+    unsigned int flags;                          /* 16 playerflags */
+  };
+
+
 /* The format of the body:
 struct player_s_body_spacket {	Body of new Player Packet
 	CARD8 pnum;	 0-4 = pnum, 5 local or galactic, 6 = 9. x-bit, 7 9. y-bit
@@ -1095,5 +1117,52 @@ struct mesg_s_cpacket {
     INT8    length;		/* Size of whole packet   */
     INT8    mesg[80];
 };
+
+struct kills_s_spacket
+  {
+    char    type;                                /* SP_S_KILLS */
+    char    pnum;                                /* How many kills in packet */
+    unsigned short kills;                        /* 6 bit player numer   */
+    /* 10 bit kills*100     */
+    unsigned short mkills[32];
+    	/* NOTE: this must be identical to MAXPLAYER in Vanilla server */
+  };
+
+struct phaser_s_spacket
+  {
+    char    type;                                /* SP_S_PHASER */
+    char    status;                              /* PH_HIT, etc... */
+    unsigned char pnum;                          /* both bytes are used for *
+                                                  *
+                                                  * * more */
+    unsigned char target;                        /* look into the code   */
+    short   x;                                   /* x coord /40 */
+    short   y;                                   /* y coord /40 */
+    unsigned char dir;
+    char    pad1;
+    char    pad2;
+    char    pad3;
+  };
+
+struct stats_s_spacket
+  {
+    char    type;                                /* SP_S_STATS */
+    char    pnum;
+    unsigned short tplanets;                     /* Tournament planets */
+    unsigned short tkills;                       /* Tournament kills */
+    unsigned short tlosses;                      /* Tournament losses */
+    unsigned short kills;                        /* overall */
+    unsigned short losses;                       /* overall */
+    unsigned int tticks;                         /* ticks of tournament play
+                                                  * * * time */
+    unsigned int tarmies;                        /* Tournament armies */
+    unsigned int maxkills;
+    unsigned short sbkills;                      /* Starbase kills */
+    unsigned short sblosses;                     /* Starbase losses */
+    unsigned short armies;                       /* non-tourn armies */
+    unsigned short planets;                      /* non-tourn planets */
+    unsigned int sbmaxkills;                     /* max kills as sb * 100 */
+  };
+
 
 #endif

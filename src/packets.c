@@ -7,6 +7,8 @@
 #include "packets.h"
 #include "gppackets.h"
 #include "wtext.h"
+#include "struct.h"
+#include "data.h"
 
 size_t  client_packet_sizes[] = {
     0,
@@ -252,7 +254,10 @@ size_of_spacket(unsigned char *pkt)
 	if (pkt[1] & 128) {	/* Small +extended Header */
 	    return padto4(((pkt[1] & 0x3f) * 4) + 4);
 	} else if (pkt[1] & 64) {	/* Small Header */
-	    return padto4(((pkt[1] & 0x3f) * 4) + 4);
+            if (shortversion >= SHORTVERSION)
+	      return padto4(((pkt[1] & 0x3f) * 4) + 4 + (pkt[2] * 4));
+            else
+	      return padto4(((pkt[1] & 0x3f) * 4) + 4);
 	} else {		/* Big Header */
 	    return padto4((pkt[1] * 4 + 12));
 	}
@@ -262,6 +267,23 @@ size_of_spacket(unsigned char *pkt)
 	return padto4((vtisize[numofbits[pkt[1]]] + numofbits[pkt[3]]));
     case SP_S_PLANET:
 	return padto4((pkt[1] * VPLANET_SIZE) + 2);
+    case SP_S_PHASER:
+      	switch(pkt[1] & 0x0f) {
+            case PHFREE:
+            case PHHIT:
+            case PHMISS:
+                return 4;
+            case PHHIT2:
+                return 8;
+            default:
+                return sizeof(struct phaser_s_spacket);
+        }
+    case SP_S_KILLS:
+        return padto4((pkt[1] * 2) + 2);
+
+    case SP_S_STATS:
+        return sizeof(struct stats_s_spacket);
+
     case SP_PARADISE_EXT1:
 	switch (pkt[1]) {
 	case SP_PE1_MISSING_BITMAP:

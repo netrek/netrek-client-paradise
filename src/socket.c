@@ -61,6 +61,8 @@
 
 #define BIGINT 2000000000
 
+#define UDP_PORTSWAP
+
 int     send_total = 0;
 int     receive_total = 0;
 
@@ -103,6 +105,9 @@ static void handleSequence P((struct sequence_spacket * packet));
 static void handleUdpReply P((struct udp_reply_spacket * packet));
 static void informScan P((int p));
 static int openUdpConn P((void));
+#ifdef UDP_PORTSWAP
+static int connUdpConn P((void));
+#endif
 static int recvUdpConn P((void));
 static void printUdpInfo P((void));
 /*static void dumpShip P((struct ship *shipp ));*/
@@ -127,6 +132,8 @@ static void handleEmpty();
 void    handleShortReply(), handleVPlayer(), handleVTorp(),
         handleSelfShort(), handleSelfShip(), handleVPlanet(), handleSWarning();
 void    handleVTorpInfo(), handleSMessage();
+
+void	handleVPhaser(), handleVKills(), handle_s_Stats();
 
 void    handleFeature();	/* feature.c */
 
@@ -186,12 +193,12 @@ struct packet_handler handlers[] = {
     {handleGameparams},
     {handleExtension1},
     {handleTerrain2},		/* 53 */
-    {handleTerrainInfo2},
-    {handleEmpty},
-    {handleEmpty},
-    {handleEmpty},
-    {handleEmpty},
-    {handleEmpty},		/* 59 */
+    {handleTerrainInfo2},	/* 54 */
+    {handleEmpty},		/* 55 */
+    {handleEmpty},		/* SP_S_SEQUENCE */
+    {handleVPhaser},		/* SP_S_PHASER */
+    {handleVKills},		/* SP_S_KILLS */
+    {handle_s_Stats},		/* SP_S_STATS */
     {handleFeature},		/* SP_FEATURE */
 };
 
@@ -1951,7 +1958,11 @@ sendUdpReq(int req)
     packet.type = CP_UDP_REQ;
     packet.request = req;
     packet.port = htonl(udpLocalPort);
+#ifdef UDP_PORTSWAP
+    packet.connmode = CONNMODE_PORT;	/* have him send his port */
+#else
     packet.connmode = CONNMODE_PACKET;	/* we get addr from packet */
+#endif
     sendServerPacket((struct player_spacket *) & packet);
 
     /* update internal state stuff */
@@ -1965,6 +1976,7 @@ sendUdpReq(int req)
     UDPDIAG(("Sent request for %s mode\n", (req == COMM_TCP) ?
 	     "TCP" : "UDP"));
 
+#ifndef UDP_PORTSWAP
     if ((req == COMM_UDP) && recvUdpConn() < 0) {
 	UDPDIAG(("Sending TCP reset message\n"));
 	packet.request = COMM_TCP;
@@ -1977,6 +1989,7 @@ sendUdpReq(int req)
 	commSwitchTimeout = 0;
 	closeUdpConn();
     }
+#endif
 
     if (udpWin)
 	udprefresh(UDP_STATUS);
@@ -2016,6 +2029,27 @@ handleUdpReply(struct udp_reply_spacket *packet)
 	    if (commModeReq != COMM_UDP) {
 		UDPDIAG(("Got unsolicited SWITCH_UDP_OK; ignoring\n"));
 	    } else {
+#ifdef UDP_PORTSWAP
+                udpServerPort = ntohl(packet->port);
+
+                if (connUdpConn() < 0) {
+                    UDPDIAG(("Unable to connect, resetting\n"));
+                    warning("Connection attempt failed");
+                    commModeReq = COMM_TCP;
+                    commStatus = STAT_CONNECTED;
+                    if (udpSock >= 0)
+                        closeUdpConn();
+                    if (udpWin) {
+                        udprefresh(UDP_STATUS);
+                        udprefresh(UDP_CURRENT);
+                    }
+                    response.request = COMM_TCP;
+                    response.port = 0;
+                    goto send;
+                }
+
+#endif
+
 		UDPDIAG(("Connected to server's UDP port\n"));
 		commStatus = STAT_VERIFY_UDP;
 		if (udpWin)
@@ -2023,6 +2057,9 @@ handleUdpReply(struct udp_reply_spacket *packet)
 		response.request = COMM_VERIFY;	/* send verify request on UDP */
 		response.port = 0;
 		commSwitchTimeout = 25;	/* wait 25 updates */
+#ifdef UDP_PORTSWAP
+	send:
+#endif
 		sendServerPacket((struct player_spacket *) & response);
 	    }
 	}
@@ -2110,6 +2147,33 @@ openUdpConn(void)
     }
     return (0);
 }
+
+#ifdef UDP_PORTSWAP
+static int connUdpConn(void)
+{
+    struct sockaddr_in addr;
+    int     len;
+
+    if (playback)
+        return 0;
+
+    addr.sin_addr.s_addr = serveraddr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(udpServerPort);
+
+    UDPDIAG(("Connecting to host 0x%x on port %d\n", serveraddr, udpServerPort))
+;
+    if (connect(udpSock, &addr, sizeof(addr)) < 0) {
+        fprintf(stderr, "Error %d: ");
+        perror("netrek: unable to connect UDP socket");
+        printUdpInfo();         /* debug */
+        return (-1);
+    }
+
+    return (0);
+}
+#endif
+
 
 static int
 recvUdpConn(void)

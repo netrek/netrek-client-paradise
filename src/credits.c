@@ -15,7 +15,7 @@
 #include "proto.h"
 
 static char *credits = "\
-NetrekII (Paradise) is Copyright 1994-1999 by the Paradise Working Group\n\
+NetrekII (Paradise) is Copyright 1994-2000 by the Paradise Working Group\n\
 \n\
 NetrekII (Paradise) was created by:\n\
    Larry Denys         (a fungusamoungus)  <sl1yn@paradise.declab.usu.edu>\n\

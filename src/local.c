@@ -541,6 +541,8 @@ redraw_asteroids(void)
       *bottomrightsquare, *topleftrounded, *toprightrounded,
       *bottomleftrounded, *bottomrightrounded;
 
+  if (!paradise)
+    return;
 
   if(received_terrain_info) {
     int conv = blk_gwidth / 250;

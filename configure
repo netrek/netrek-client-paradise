@@ -3044,7 +3044,7 @@ fi
 fi
 
 
-SHIP_BITMAP_PATH=~/.tedturner/images:${datadir}/paradise/images
+SHIP_BITMAP_PATH=~/.paradise/images:${datadir}/paradise/images
 
 
 
