@@ -16,8 +16,9 @@
    and then edit expire.c to move the time line where it goes.
    [BDyess]
 */
+/* Ha, it's done from ./configure now */
 
-static time_t expire = 946530000;
+static time_t expire = @EXPIRE_DATE@;
 
 void 
 checkExpire(verbose)

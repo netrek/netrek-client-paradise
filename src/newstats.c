@@ -4,28 +4,13 @@
  * As best I can tell, this was written by Tundra Dan.
  */
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
 #include <stdio.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#endif
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
-#ifdef HAVE_VALUES_H
-#include <values.h>
-#endif
-#ifndef MAXINT
-#ifdef INT_MAX
-#define MAXINT INT_MAX
-#endif
-#endif
-#include "config.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
@@ -323,11 +308,6 @@ void updateNewStats()
     rs = &race_vars[me->p_teami];
 
     stat_timer(1, 26, 375);			/* writes the time */
-#if hmmm
-    box(1, 48, 373, 1, 13, W_White);		/* draws line above and below */
-    box(1, 47, 375, 1, 9, W_White);             /* the time */
-#endif /*hmmm*/
-
     /* draws the converging dots at the top of the window */
     if (tick != -2) {
        box(1, 32 + tick, 2, 2, 2, W_Black); 
@@ -351,10 +331,6 @@ void updateNewStats()
        }
     }
     /* clear parts of the screen? */
-#ifdef hmmm
-    box(1, 0, 184, 40, 18, W_Black); 
-    box(1, 0, 202, 50, 25, W_Black); 
-#endif /*hmmm*/
     changed_flags = me->p_flags ^ old_flags;
     old_flags = me->p_flags;
     if (changed_flags & PFBOMB) {
@@ -999,9 +975,7 @@ void updateNewStats()
 }
 
 static void 
-box(filled, x, y, wid, hei, color)
-    int     filled, x, y, wid, hei;
-    W_Color color;
+box(int filled, int x, int y, int wid, int hei, W_Color color)
 {
     if (wid == 0)
 	return;
@@ -1019,7 +993,7 @@ box(filled, x, y, wid, hei, color)
 
 
 void 
-calibrate_Newstats()
+calibrate_Newstats(void)
 {
     register int i;
     static struct ship *oldship = NULL;

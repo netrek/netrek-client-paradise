@@ -2,21 +2,11 @@
  * defs.h
  */
 
-#ifndef defs_h_
-#define defs_h_
-
-#ifdef __STDC__
-#define P(s) s
-#else
-#define P(s) ()
-#endif
+#ifndef DEFS_H
+#define DEFS_H
 
 #include "copyright.h"
-
-/* for debugging [BDyess] */
-#ifdef DEBUGMALLOC
-#define malloc(x) debugmalloc(__FUNCTION__,(x))
-#endif /*DEBUGMALLOC*/
+#include "config.h"
 
 #define MAX_PLAYER 257		/* Maximum number of players we can configure
 				   the game for, not the server's max
@@ -25,17 +15,11 @@
 /* defs for HUD warnings [BDyess] */
 #define HUD_Y	4
 
-#ifdef HOCKEY
 /* defs for hockey [BDyess] */
 #define NUM_HOCKEY_LINES 13
-#endif /*HOCKEY*/
 
-#ifdef SIZE_LOGGING
 /* redefine EXIT as print totals followed by a normal exit [BDyess] */
 #define EXIT(x) {print_totals();exit(x);}
-#else
-#define EXIT exit
-#endif				/* SIZE_LOGGING */
 
 /* defs for new message window data structure [BDyess] */
 #define WREVIEW		0
@@ -60,12 +44,10 @@
 #define LARGE_UPDATE	2	/* update blk_bozo players     */
 #define ALL_UPDATE	(SMALL_UPDATE|LARGE_UPDATE)	/* update both */
 
-#ifdef ASTEROIDS
 /* defs for terrain */
 #define TERRAIN_STARTED 1
 #define TERRAIN_DONE    2
 
-#endif /* ASTEROIDS */
 /* defs for timer [BDyess] */
 #define T_NONE		0	/* no timer */
 #define T_DAY		1	/* time of day */
@@ -73,18 +55,17 @@
 #define T_SHIP		3	/* time in ship */
 #define T_USER		4	/* user reset timer */
 #define T_TOTAL		5	/* number of T_ defs */
+#define TIMESTRLEN	10	/* used in db_timer(), timeString() */
 
 /* defs for mapmode */
 #define GMAP_NEVER	0
 #define GMAP_FREQUENT 	1
 #define GMAP_INFREQUENT	2
 
-#ifdef METASERVER
 /* metaserver window defs */
 #define LINE 80
 #define METASERVERADDRESS "metaserver.netrek.org"	/* new metaserver */
 #define METAPORT 3521		/* HAVE to use nicely formated version */
-#endif				/* METASERVER */
 
 #define MAX_PLANETS 257
 
@@ -193,11 +174,12 @@
 #define DEFAULT_SERVER	"tanya.ucsd.edu"
 #define DEFAULT_PORT	2592
 
-#define hypot(x,y)	sqrt((x)*(x)+(y)*(y))
-
 #define ABS(a)			/* abs(a) */ (((a) < 0) ? -(a) : (a))
 #ifndef MAX
 #define MAX(a,b)		((a) > (b) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b)		((a) < (b) ? (a) : (b))
 #endif
 
 /* translates a server coord. system point into a local window coord. system
@@ -213,25 +195,12 @@
 
 #define myPlasmaTorp(t)		(me->p_no == (t)->pt_owner)
 #define myTorp(t)		(me->p_no == (t)->t_owner)
-#if 0
-#define friendly_to(warmask, team, pl) \
-  !(((warmask) & idx_to_mask((pl)->p_teami)) || \
-  ((team) & ((pl)->p_swar | (pl)->p_hostile)))
-#define friendly_to(warmask, team, pl) \
-  ((team) & (idx_to_mask((pl)->p_teami)))
-#endif /*0*/
 #define friendly_to(warmask, team, pl) \
   (!((team) & ((pl)->p_swar | (pl)->p_hostile)))
 #define friendlyPlasmaTorp(t)	friendly_to((t)->pt_war, (t)->pt_team, me)
 #define friendlyTorp(t)		friendly_to((t)->t_war, (t)->t_team, me)
 #define friendlyThingy(t) \
   friendly_to((t)->t_war, idx_to_mask(players[(t)->t_owner].p_teami), me)
-
-#if 0
-#define friendlyTorp(t)		(((!(idx_to_mask(me->p_teami) & (t)->t_war)) &&\
-				(!(idx_to_mask(players[(t)->t_owner].p_teami) &\
-				(me->p_swar | me->p_hostile)))) || (myTorp(t)))
-#endif /*0*/
 
 #define myPhaser(p)		(&phasers[me->p_no] == (p))
 #define friendlyPhaser(p)	(me->p_teami == players[(p) - phasers].p_teami)
@@ -290,17 +259,10 @@
 	  ((float) (p)->p_stats.st_tlosses * status->timeprod) : \
 	  (status->timeprod)))
 
-#ifdef ROTATERACE
 #define sendTorpReq(dir) sendShortPacket(CP_TORP, RotateDirSend(dir))
 #define sendPhaserReq(dir) sendShortPacket(CP_PHASER, RotateDirSend(dir))
 #define sendDirReq(dir) sendShortPacket(CP_DIRECTION, RotateDirSend(dir))
 #define sendPlasmaReq(dir) sendShortPacket(CP_PLASMA, RotateDirSend(dir))
-#else
-#define sendTorpReq(dir) sendShortPacket(CP_TORP, dir)
-#define sendPhaserReq(dir) sendShortPacket(CP_PHASER, dir)
-#define sendDirReq(dir) sendShortPacket(CP_DIRECTION, dir)
-#define sendPlasmaReq(dir) sendShortPacket(CP_PLASMA, dir)
-#endif				/* ROTATERACE */
 
 #define sendSpeedReq(speed) sendShortPacket(CP_SPEED, speed)
 #define sendShieldReq(state) sendShortPacket(CP_SHIELD, state)
@@ -330,12 +292,7 @@
 /*
  * UDP control stuff
  */
-#ifdef GATEWAY
-#define UDP_NUMOPTS    11
-#define UDP_GW         UDP_NUMOPTS-1
-#else
 #define UDP_NUMOPTS    10
-#endif
 #define UDP_CURRENT     0
 #define UDP_STATUS      1
 #define UDP_DROPPED     2
@@ -381,11 +338,8 @@
 #define NAME_LEN 16
 #define KEYMAP_LEN 96
 
-#ifdef ROTATERACE
 #define RotateDirSend(d)        (rotate?d-rotate_deg:d)
-#endif
 
-#ifdef SHORT_PACKETS
 #define         SPK_VOFF        0	/* variable packets off */
 #define         SPK_VON         1	/* variable packets on */
 #define         SPK_MOFF        2	/* message packets off */
@@ -407,33 +361,24 @@
 #define         SPK_TFIELD      4
 #define         SPK_WHYFIELD    5
 #define         SPK_DONE        6
-#endif
 
-#ifdef TOOLS
 #define TOOLSWINLEN 25
-#endif
 
-#ifdef BEEPLITE
 #define LITE_PLAYERS_MAP	0x01
 #define LITE_PLAYERS_LOCAL	0x02
 #define LITE_SELF		0x04
 #define LITE_PLANETS		0x08
 #define LITE_SOUNDS		0x10
 #define LITE_COLOR              0x20
-#endif
 
-#ifdef AMIGA
-#include "amigadefs.h"
-#else
 #define sock_write		write
 #define sock_close		close
 #define sock_ioctl		ioctl
-#endif				/* AMIGA */
 
-#ifdef RECORDER
 #define PB_REDALERT -1
 #define PB_YELLOWALERT -2
 #define PB_DEATH -3
-#endif
+
+#define MAX_CLIENT_VERSION_STRING 100
 
 #endif

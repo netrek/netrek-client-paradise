@@ -4,22 +4,17 @@
  * Kevin P. Smith   7/3/89
  */
 #include "copyright2.h"
-#include "defines.h"
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
 #include "config.h"
+#include <stdlib.h>
+#include "str.h"
+
 #include "defs.h"
-#include "packets.h"
+#include "struct.h"
+#include "data.h"
+#include "proto.h"
 
 static void
-makeReservedPacket(packet)
-    struct reserved_spacket *packet;
+makeReservedPacket(struct reserved_spacket *packet)
 {
     int     i;
 
@@ -29,11 +24,9 @@ makeReservedPacket(packet)
 }
 
 static void
-encryptReservedPacket(spacket, cpacket, server, pno)
-    struct reserved_spacket *spacket;
-    struct reserved_cpacket *cpacket;
-    char   *server;
-    int     pno;
+encryptReservedPacket(struct reserved_spacket *spacket, 
+                      struct reserved_cpacket *cpacket, 
+		      char *server, int pno)
 {
 
     memcpy(cpacket->data, spacket->data, 16);

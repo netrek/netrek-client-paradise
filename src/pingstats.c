@@ -3,16 +3,15 @@
  */
 #include "copyright.h"
 
-#include <stdio.h>
-#include <math.h>
 #include "config.h"
+#include <stdio.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-
-#define	MIN(a,b)	(((a) < (b)) ? (a) : (b))
 
 #define	BX_OFF()	((textWidth + 1) * W_Textwidth + S_IBORDER)
 #define	BY_OFF(line)	((line) * (W_Textheight + S_IBORDER) + S_IBORDER)
@@ -77,19 +76,19 @@ extern int ping_av;		/* average rt */
 extern int ping_sd;		/* standard deviation */
 
 int
-pStatsHeight()
+pStatsHeight(void)
 {
     return STAT_HEIGHT;
 }
 
 int
-pStatsWidth()
+pStatsWidth(void)
 {
     return STAT_WIDTH;
 }
 
 void
-initPStats()
+initPStats(void)
 {
     int     i;
 
@@ -118,7 +117,7 @@ initPStats()
 }
 
 void
-redrawPStats()
+redrawPStats(void)
 {
     int     i;
 
@@ -137,7 +136,7 @@ redrawPStats()
 }
 
 void
-updatePStats()
+updatePStats(void)
 {
     int     i, value, diff, old_x, new_x;
     W_Color color;
@@ -190,11 +189,8 @@ updatePStats()
     }
 }
 
-static
-void
-box(filled, x, y, wid, hei, color)
-    int     filled, x, y, wid, hei;
-    W_Color color;
+static void
+box(int filled, int x, int y, int wid, int hei, W_Color color)
 {
     if (wid == 0)
 	return;
@@ -210,10 +206,8 @@ box(filled, x, y, wid, hei, color)
     W_MakeLine(pStats, x, y + hei, x, y, color);
 }
 
-static
-void
-text(value, y)
-    int     value, y;
+static void
+text(int value, int y)
 {
     char    buf[6];
     sprintf(buf, "(%3d)", value);	/* fix */

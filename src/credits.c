@@ -4,43 +4,15 @@
  * Bill Dyess
  *
  */
-#include "copyright2.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#include <errno.h>
-#include <pwd.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <ctype.h>
+#include "copyright.h"
+
 #include "config.h"
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-
-/* This is never used in this file.  Why is it here?  Someone tell me if
-   this breaks the OSF/1 port */
-#if 0
-#ifndef __osf__
-long    time();
-#endif
-#endif
 
 static char *credits = "\
 NetrekII (Paradise) is Copyright 1994-1999 by the Paradise Working Group\n\
@@ -79,15 +51,14 @@ Artists (alphabetical order):\n\
 ";
 
 void 
-showCredits(win)
-  W_Window win;
+showCredits(W_Window win)
 {
   char *start = credits;
   char *end = credits;
   int  y = 30;
   
   if(!W_IsMapped(win)) {
-    fprintf(stderr,"Why am I trying to write the credits into a window that doesn't exist?\n");
+    /*fprintf(stderr,"Why am I trying to write the credits into a window that doesn't exist?\n");*/
     return;
   }
   while(*start) {
@@ -97,8 +68,7 @@ showCredits(win)
     y += W_Textheight;
   }
 
-#ifdef BUFFERING
   /* flush buffer if one exists [BDyess] */
-  if(W_IsBuffered(win)) W_DisplayBuffer(win);	
-#endif /*BUFFERING [BDyess]*/
+  if(W_IsBuffered(win)) 
+    W_DisplayBuffer(win);
 }

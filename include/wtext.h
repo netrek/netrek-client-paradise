@@ -2,6 +2,9 @@
 /*		HW 93		*/
 /* ab handleTractorReq  socket.c */
 
+#ifndef WTEXT_H
+#define WTEXT_H
+
 #define TEXTE 0
 #define PHASER_HIT_TEXT 1
 #define BOMB_INEFFECTIVE 2
@@ -44,3 +47,5 @@
 #define KILLARGS2  35
 
 #define DINVALID 255
+
+#endif

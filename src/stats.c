@@ -3,26 +3,21 @@
  */
 #include "copyright.h"
 
-#include <stdio.h>
 #include "config.h"
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
 
-#define	MIN(a,b)	(((a) < (b)) ? (a) : (b))
-
 #define	BX_OFF()	((textWidth + 1) * W_Textwidth + S_IBORDER)
 #define	BY_OFF(line)	((line) * (W_Textheight + S_IBORDER) + S_IBORDER)
 #define	TX_OFF(len)	((textWidth - len) * W_Textwidth + S_IBORDER)
 #define	TY_OFF(line)	BY_OFF(line)
 
-#if 0
-#define STAT_WIDTH		160
-#else
 #define	STAT_WIDTH		st_width
-#endif
 #define STAT_HEIGHT		BY_OFF(NUM_SLIDERS)
 #define STAT_BORDER		2
 #define S_IBORDER		5
@@ -64,14 +59,13 @@ static int textWidth = 0;
 static int initialized = 0;
 
 /* Prototypes */
-static void box
-P((int filled, int x, int y, int wid, int hei,
-   W_Color color));
-    static void initStats P((void));
+static void box P((int filled, int x, int y, int wid, int hei, W_Color color));
+static void initStats P((void));
 
-    static int st_width = -1;
+static int st_width = -1;
 
-    static void initStats()
+static void
+initStats(void)
 {
     int     i;
 
@@ -93,7 +87,7 @@ P((int filled, int x, int y, int wid, int hei,
 }
 
 void
-redrawStats()
+redrawStats(void)
 {
     int     i;
 
@@ -112,7 +106,7 @@ redrawStats()
 }
 
 void
-updateStats()
+updateStats(void)
 {
     int     i, value, new_x;
     int     r, y, t;
@@ -128,10 +122,6 @@ updateStats()
 	    value = s->min;
 	else if (value > s->max)
 	    value = s->max;
-#if 0
-	if (value == s->lastVal)
-	    continue;
-#endif
 	new_x = value * SL_WID / s->diff;
 	y = s->yellow * SL_WID / s->diff;
 	r = s->red * SL_WID / s->diff;
@@ -151,9 +141,7 @@ updateStats()
 }
 
 static void
-box(filled, x, y, wid, hei, color)
-    int     filled, x, y, wid, hei;
-    W_Color color;
+box(int filled, int x, int y, int wid, int hei, W_Color color)
 {
     if (wid == 0)
 	return;
@@ -171,7 +159,7 @@ box(filled, x, y, wid, hei, color)
 
 
 void
-calibrate_stats()
+calibrate_stats(void)
 {
     register int i;
     sliders[0].min = 0;

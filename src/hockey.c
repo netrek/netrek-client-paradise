@@ -1,25 +1,21 @@
-#include "config.h"
-#ifdef HOCKEY
 /* code for hockey lines [BDyess] 9/14/94 */
 
-#include "defines.h"
+#include "config.h"
 #include <stdio.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
-#include "packets.h"
-
-#if 0
-void dump_hockey_points();
-#endif /*0*/
 
 struct player *puck;
 
 /* check to see if on a hockey server and do initialization [BDyess] */
-void hockeyInit() {
+void
+hockeyInit(void)
+{
   int i;
   struct planet *l, *last;
   int rightmost = 0;
@@ -217,7 +213,9 @@ void hockeyInit() {
 }
 
 /* draw the tactical hockey lines [BDyess] */
-void tactical_hockey() {
+void
+tactical_hockey(void)
+{
   int i;
   struct hockeyLine *l = &hlines[0];
   int dx,dx1,dx2,dy,dy1,dy2;
@@ -298,7 +296,9 @@ void tactical_hockey() {
 }
 
 /* draw the tactical hockey lines [BDyess] */
-void galactic_hockey() {
+void
+galactic_hockey(void)
+{
   int i;
   struct hockeyLine *l;
   int dx,dx1,dx2,dy,dy1,dy2;
@@ -329,24 +329,10 @@ void galactic_hockey() {
   }
 }
 
-#if 0
-void dump_hockey_points() {
-  int i;
-  struct hockeyLine *l;
-
-  printf("Hockey points dump:\n");
-  for (i = 0, l = &hlines[0]; i < NUM_HOCKEY_LINES; i++, l++) {
-    if(l->vertical) {
-      printf("%d: %d,%d  %d,%d\n",i,l->pos,l->end1,l->pos,l->end2);
-    } else {
-      printf("%d: %d,%d  %d,%d\n",i,l->end1,l->pos,l->end2,l->pos);
-    }
-  }
-}      
-#endif /*0*/
-
 /* draws a direction triangle on top of puck [BDyess] */
-void drawPuckArrow() {
+void
+drawPuckArrow(void)
+{
   int dir = puck->p_dir, x = puck->p_x, y = puck->p_y;
   int x1,x2,x3,y1,y2,y3;	/* triangle verticies */
   int dir1, dir2, dir3;
@@ -375,5 +361,3 @@ void drawPuckArrow() {
   y3 = y + Sin[dir3] * puckArrowSize;
   W_WriteAnyTriangle(w, x1, y1, x2, y2, x3, y3, W_Red);
 }
-
-#endif /*HOCKEY*/

@@ -27,8 +27,8 @@ express or implied warranty.
  * Kevin P. Smith 1/29/89
  */
 
-#ifndef packets_h_
-#define packets_h_
+#ifndef PACKETS_H
+#define PACKETS_H
 
 #define STATUS_TOKEN	"\t@@@"	/* ATM */
 
@@ -49,15 +49,6 @@ typedef short INT16;
 typedef signed char INT8;
 #else
 typedef char INT8;
-#endif
-
-#if 0
-#if __STDC__ || defined(sgi) || defined(AIXV3)
-typedef signed char INT8;
-#else
-/* stupid compilers */
-typedef char INT8;
-#endif
 #endif
 
 /*
@@ -120,18 +111,15 @@ typedef char INT8;
 #define SP_THINGY_INFO	38	/* thingy status */
 #define SP_SHIP_CAP	39	/* ship capabilities */
 
-#ifdef SHORT_PACKETS
 #define SP_S_REPLY      40	/* reply to send-short request */
 #define SP_S_MESSAGE    41	/* var. Message Packet */
 #define SP_S_WARNING    42	/* Warnings with 4  Bytes */
 #define SP_S_YOU        43	/* hostile,armies,whydead,etc .. */
 #define SP_S_YOU_SS     44	/* your ship status */
 #define SP_S_PLAYER     45	/* variable length player packet */
-#endif
 
 #define SP_PING         46	/* ping packet */
 
-#ifdef SHORT_PACKETS
 #define SP_S_TORP       47	/* variable length torp packet */
 #define SP_S_TORP_INFO  48	/* SP_S_TORP with TorpInfo */
 #define SP_S_8_TORP     49	/* optimized SP_S_TORP */
@@ -140,7 +128,6 @@ typedef char INT8;
 /* variable length packets */
 #define VPLAYER_SIZE    4
 #define SHORTVERSION    10	/* other number blocks, like UDP Version */
-#endif
 
 #define SP_GPARAM	51	/* game params packet */
 
@@ -150,21 +137,15 @@ typedef char INT8;
 #define SP_PE1_MISSING_BITMAP	0
 #define SP_PE1_NUM_MISSILES	1
 /* end of packet 52 subtypes */
-#ifdef ASTEROIDS
 #define SP_TERRAIN2	53	/* Terrain packets */
 #define SP_TERRAIN_INFO2 54	/* Terrain info */
-#endif /* ASTEROIDS */
 
-#ifdef FEATURE
 /* feature_spacket, response to feature_cpacket requests. identical structures */
 #define SP_FEATURE              60
-#endif
 
-#ifdef RECORDER
 /* special type tells us when to update the display on playback.
    Not sent or received, only placed in the recorder file */
 #define REC_UPDATE 127
-#endif
 
 /* packets sent from remote client to xtrek server */
 #define CP_MESSAGE      1	/* send a message */
@@ -210,17 +191,13 @@ typedef char INT8;
 
 #define CP_PING_RESPONSE 42	/* client response */
 
-#ifdef SHORT_PACKETS
 #define CP_S_REQ                43
 #define CP_S_THRS               44
 #define CP_S_MESSAGE    45	/* vari. Message Packet */
 #define CP_S_RESERVED       46
 #define CP_S_DUMMY      47
-#endif
 
-#ifdef FEATURE
 #define CP_FEATURE   60
-#endif
 
 #define SOCKVERSION 	4
 #define UDPVERSION	10	/* changing this blocks other */
@@ -391,7 +368,6 @@ struct planet_spacket {
     INT16   flags;
     INT16   pad2;
     INT32   armies;
-#ifdef ASTEROIDS
 };
 
 /* terrain info for Paradise terrain */
@@ -413,7 +389,6 @@ struct terrain_packet2 {
     CARD8   terrain_type[128];	/* Ugh... this needs to be fixed 5/16/95 rpg */
  /* CARD16  terrain_alt1[128]; */
  /* CARD16  terrain_alt2[128]; */
-#endif /* ASTEROIDS */
 };
 
 struct pickok_spacket {
@@ -991,7 +966,6 @@ struct ping_cpacket {
 };
 
 
-#ifdef FEATURE
 /* feature_cpacket and _spacket are identical! */
 struct feature_cpacket {	/* CP_FEATURE */
     INT8    type;
@@ -1010,13 +984,11 @@ struct feature_spacket {	/* SP_FEATURE */
     INT32    value;
     char    name[80];
 };
-#endif				/* FEATURE */
 
 /*
  * short stuff
  */
 
-#ifdef SHORT_PACKETS
 struct shortreq_cpacket {	/* CP_S_REQ */
     INT8    type;
     INT8    req;
@@ -1123,7 +1095,5 @@ struct mesg_s_cpacket {
     INT8    length;		/* Size of whole packet   */
     INT8    mesg[80];
 };
-
-#endif
 
 #endif

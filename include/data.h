@@ -2,21 +2,18 @@
  * data.h
  */
 
-#ifndef data_h_
-#define data_h_
+#ifndef DATA_H
+#define DATA_H
 
 #include "copyright.h"
+
+#include "config.h"
+#include <stdio.h>
+#include "conftime.h"
+
+#include "defs.h"
 #include "struct.h"
-#include "defines.h"
-#include <stdio.h>		/* for def of file */
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
+#include "gameconf.h"
 
 extern int useExternalImages;	/* uses external images in preference to
                                    compiled in images [BDyess] */
@@ -49,9 +46,7 @@ extern int  hwarntimer;		/* timer for clearing of hwarning [BDyess] */
 extern int  hudwarning;		/* HUD warning on or off [BDyess] */
 
 extern int paradise;		/* is the server a paradise server? */
-#ifdef HOCKEY
 extern int hockey;		/* is the server a hockey server [BDyess] */
-#endif /*HOCKEY*/
 
 extern int gwidth;		/* galaxy width, adjusted for zoom [BDyess] */
 extern int offsetx, offsety;	/* offsets when zooming [BDyess] */
@@ -64,14 +59,12 @@ extern int planetChill;		/* udcounter is divided by this to find out
 				   slower planet rotation [BDyess] */
 extern int dump_defaults;	/* if on, all .paradiserc defaults are dumped
 				   [BDyess] */
-#ifdef XPM
 extern int xpm;			/* use xpm's or not [BDyess] */
 extern char *xpmPath;		/* path prefix used to find pixmaps [BDyess] */
 extern int cookie;		/* cookie mode [BDyess] */
 extern int verbose_image_loading; /* image loading logging [BDyess] */
 extern int useOR;		/* turn Rob's color allocator on so GXor can
                                    be used to draw images [BDyess] */
-#endif /*XPM [BDyess]*/
 
 extern char *imagedir;		/* dir containing image files [BDyess] */
 extern char *imagedirend;	/* end of original imagedir [BDyess] */
@@ -85,7 +78,6 @@ extern int nplasmas;
 extern int nphasers;
 extern int nplanets;
 
-#ifdef HOCKEY
 /* hockey stuff [BDyess] */
 extern int galacticHockeyLines;  /* draw lines on the galactic? [BDyess] */
 extern int tacticalHockeyLines;  /* draw lines on the tactical? [BDyess] */
@@ -98,7 +90,6 @@ extern int puckArrowSize;	 /* size of puckArrow [BDyess] */
 extern struct	hockeyLine hlines[NUM_HOCKEY_LINES];
 
 extern struct player *puck;	 /* pointer to puck [BDyess] */
-#endif /*HOCKEY*/
 
 extern int metaFork;		/* allow spawning off of clients from meta-
 				   server window [BDyess] */
@@ -115,15 +106,11 @@ extern int lockLine;		/* flag for line from me to lock in galac -TH */
 extern int mapSort;		/* use new sorting in galactic -TH */
 extern int autoSetWar;          /* automatically set war dec's -TH */
 
-#ifdef WIDE_PLIST
 extern char *playerList;	/* string of fields for wide playerlist */
 extern char *playerListStart;	/* comma seperated set of strings for plist */
 extern int resizePlayerList;
-#endif				/* WIDE_PLIST */
 
-#ifdef PACKET_LIGHTS
 extern int packetLights;	/* flag for packetLights [BDyess] */
-#endif				/* PACKET_LIGHTS */
 
 /* for showgalactic and showlocal rotation sequence [BDyess] */
 extern char *showGalacticSequence, *showLocalSequence;
@@ -148,7 +135,6 @@ extern struct dmacro_list dist_defaults[];
 extern struct dmacro_list dist_prefered[];
 extern int sizedist;
 
-#ifdef BEEPLITE
 extern int F_allow_beeplite;
 extern unsigned char F_beeplite_flags;
 
@@ -170,22 +156,17 @@ extern W_Color emph_player_color[MAX_PLAYER];
 #define emph_player_seql_height 30
 extern int beep_lite_cycle_time_player;
 extern int beep_lite_cycle_time_planet;
-#endif				/* BEEPLITE */
 
 /* time client connected to server [BDyess] */
 extern time_t timeStart;
 
-#ifdef TIMER
 /* timer data */
 extern int timerType;
 extern time_t timeBank[];
-#endif				/* TIMER */
 
-#ifdef MACROS
 extern struct macro *macrotable[256];
 extern int macroState;
 extern char lastMessage[100];
-#endif				/* MACROS */
 
 /* ghoststart data */
 extern int ghoststart;
@@ -204,11 +185,7 @@ extern int exitInputLoop;
 extern int czsize;
 extern struct _clearzone *clearzone;
 extern int clearcount;
-#ifdef HOCKEY
 extern int clearline[4][32 + 2 * 32 + NUM_HOCKEY_LINES];
-#else
-extern int clearline[4][32 + 2 * 32];
-#endif /*HOCKEY*/
 extern int clearlmark[2];
 extern int clearlmcount;
 extern int clearlcount;
@@ -225,12 +202,10 @@ extern struct ship *myship;
 extern struct shiplist *shiptypes;
 extern struct stats *mystats;
 extern struct planet *planets;
-#ifdef ASTEROIDS
 extern struct t_unit *terrainInfo;
 extern int received_terrain_info;
 extern int terrain_x;
 extern int terrain_y;
-#endif /* ASTEROIDS */
 extern struct phaser *phasers;
 extern struct team *teams;
 extern struct planet pdata[];
@@ -303,22 +278,15 @@ extern int vary_hull;
 extern int warpStreaks;
 extern int fastQuit;
 extern int pigSelf;
-#ifdef CONTINUOUS_MOUSE
 extern int continuousMouse;
+extern int extendedMouse;
 extern int allowContinuousMouse;
 extern int clickDelay;
  /* turns on and off continuousMouse for each button [BDyess] */
 extern int buttonRepeatMask;
-#endif				/* CONTINUOUS_MOUSE */
 extern int autoQuit;
 
-#ifdef GATEWAY
-extern unsigned long netaddr;	/* for blessing */
-#endif
-
-#ifdef NOWARP
 extern int messageon;
-#endif
 
 extern char blk_refitstring[80];
 extern int blk_gwidth;
@@ -373,20 +341,13 @@ extern int udpClientRecv;	/* UDP */
 extern int udpSequenceChk;	/* UDP */
 extern int updateSpeed;
 
-#ifdef METASERVER
 /* metaserver window stuff */
 extern int usemeta;
 extern char *metaserverAddress;
-#endif				/* METASERVER */
 
 /* MOTD data */
 extern struct page *currpage;
 extern struct page *motddata;
-
-#ifdef GATEWAY
-extern int gw_serv_port, gw_port, gw_local_port;	/* UDP */
-extern char *gw_mach;		/* UDP */
-#endif
 
 extern int showMySpeed;
 extern int showTractorPressor;
@@ -399,7 +360,7 @@ extern int extraBorder;
 extern int tryUdp;
 
 
-extern double Sin[], *Cos;
+extern double *Sin, *Cos;
 
 #define NEW_SHIP_BM
 
@@ -435,29 +396,16 @@ extern W_Window messagew, w, mapw, statwin, baseWin, infow, iconWin, tstatw,
 	/* reviewWin, phaserwin, */ 
 extern W_Window scanw, scanwin, udpWin;
 
-#ifdef SHORT_PACKETS
 extern W_Window spWin;
-#endif
 
-#ifdef TOOLS
 extern W_Window toolsWin;
 extern int shelltools;
 
-#endif
-
-#ifdef SOUND
-extern W_Window soundWin;
-#endif
-
-#ifdef ROTATERACE
 extern int rotate;
 extern int rotate_deg;
-#endif
 
-#ifdef NOWARP
 extern int messageon;
 extern int warp;
-#endif
 
 extern int RSA_Client;
 extern int blk_zoom;
@@ -467,10 +415,7 @@ extern int autoZoom, autoUnZoom, auto_zoom_timer, autoZoomOverride;
 extern int use_msgw;
 
 extern int show_shield_dam;
-extern int bd;			/* BORG TEST */
 
-
-#ifdef SHORT_PACKETS
 extern int tryShort;
 extern int recv_short;
 extern int recv_mesg;
@@ -479,7 +424,6 @@ extern int recv_threshold;
 extern char recv_threshold_s[];
 extern int recv_warn;
 extern int godToAllOnKills;
-#endif
 
 /* ping client stuff, ick */
 extern int ping;		/* to ping or not to ping */
@@ -491,38 +435,18 @@ extern int lowercaset;
 
 extern char *agriWord;
 
-#ifdef DNET
-extern unsigned long sigsPending, sockMask, udpSockMask;
-#endif
-
-#ifdef FEATURE
 extern int F_feature_packets;
 extern int why_dead;
 extern int cloakerMaxWarp;
 extern int F_dead_warp;
 extern int F_multiline_enabled;
 extern int F_UseNewMacro;
-#ifdef ASTEROIDS
 extern int F_terrain;
 extern unsigned char F_terrain_major;
 extern unsigned char F_terrain_minor;
 extern int F_gz_motd;
 extern unsigned char F_gz_motd_major;
 extern unsigned char F_gz_motd_minor;
-#endif /* ASTEROIDS */
-#endif
-
-#ifdef CHECK_DROPPED
-extern int reportDroppedPackets;/* report on various dropped packet kludges */
-extern int longest_ph_fuse;
-#endif
-
-#ifdef UPDATE_SIZES
-extern int totalbytes;
-extern int updatebytes, alivebytes;
-extern int peakbytes;
-extern int packetbytes[100];
-#endif
 
 extern int askforUpdate;
 
@@ -531,7 +455,6 @@ extern int enemyPhasers;
 
 extern int scrollBeep;
 
-#ifdef RECORDER
 extern int recordGame;
 extern char *recordFile;
 extern int maxRecord;
@@ -539,22 +462,18 @@ extern int maxRecord;
 extern int playback;
 extern char *playFile;
 extern int pb_update, paused, pb_advance, pb_scan, pb_slow;
-#endif
-
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
-extern int showMapAtMotd;
-#endif
 
 extern int redrawDelay;
 
-#ifdef LOCAL_SHIPSTATS
 extern int localShipStats;
 extern char *statString;
 extern int statHeight, localStatsX, localStatsY;
-#endif
 
-#ifdef SHOW_IND
 extern int showIND;
-#endif
+
+extern struct teaminfo_s *teaminfo;
+extern int number_of_teams;
+
+extern char *CLIENTVERS;
 
 #endif

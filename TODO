@@ -1,4 +1,4 @@
-$Id: TODO,v 1.1 2000/01/06 21:26:44 ahn Exp $
+$Id: TODO,v 1.2 2000/02/03 00:33:11 glamm Exp $
 
 Things to do for the TedTurner client:
 
@@ -139,3 +139,6 @@ local map surface overlay images
 local resource overlay images
 local age images (scout time)
 local age overlay images
+
+document -DBROKEN_STIPPLE (if scrollbars are blank enable this)
+document -DUNIX_SOUND

@@ -1,5 +1,5 @@
-#ifndef gppackets_h_
-#define gppackets_h_
+#ifndef GPPACKETS_H
+#define GPPACKETS_H
 
 /* the definitions of {INT,CARD}{8,16,32} are in packets.h */
 #include "packets.h"

@@ -4,25 +4,21 @@
  */
 
 #include "copyright2.h"
-#include "defines.h"
-#include <stdio.h>
-#include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
-#endif
-#include <netinet/in.h>
-#include <errno.h>
-#include <math.h>
+
 #include "config.h"
+#include <stdio.h>
+#include <math.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
 
 /* These are used only in pingstats.c */
@@ -42,10 +38,8 @@ static double s2;
 void sendServerPingResponse P((int number));
 void calc_lag P((void));
 
-#ifndef __CEXTRACT__
 void
-handlePing(packet)		/* SP_PING */
-    struct ping_spacket *packet;
+handlePing(struct ping_spacket *packet)		/* SP_PING */
 {
     ping = 1;			/* we got a ping */
 
@@ -64,10 +58,9 @@ printf("ping received at %d (lag: %d)\n", msetime(), (int)packet->lag);
     if (W_IsMapped(pStats))	/* pstat window */
 	updatePStats();
 }
-#endif /*__CEXTRACT__*/
 
 void
-startPing()
+startPing(void)
 {
     static
     struct ping_cpacket packet;
@@ -84,7 +77,7 @@ startPing()
 }
 
 void
-stopPing()
+stopPing(void)
 {
     static
     struct ping_cpacket packet;
@@ -102,8 +95,7 @@ stopPing()
 }
 
 void
-sendServerPingResponse(number)	/* CP_PING_RESPONSE */
-    int     number;
+sendServerPingResponse(int number)	/* CP_PING_RESPONSE */
 {
     struct ping_cpacket packet;
     int     s;
@@ -119,8 +111,8 @@ sendServerPingResponse(number)	/* CP_PING_RESPONSE */
     packet.pingme = (char) ping;
     packet.number = (unsigned char) number;
     /* count this one */
-    packet.cp_sent = htonl((unsigned)packets_sent);
-    packet.cp_recv = htonl((unsigned)packets_received);
+    packet.cp_sent = htonl(packets_sent);
+    packet.cp_recv = htonl(packets_received);
 
 /*
 printf("ping response sent at %d\n", msetime());
@@ -134,7 +126,7 @@ printf("ping response sent at %d\n", msetime());
 }
 
 void
-calc_lag()
+calc_lag(void)
 {
     /* probably ghostbusted */
     /* without this things can get really bad */

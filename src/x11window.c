@@ -9,39 +9,18 @@
 /* define ABORT_ON_ERROR to get a core when X errors occur.  X Buffering is
    also turned off (making display very slow) so the program will stop when
    an error occurs and not later. [BDyess] */
-#if 1
-#define ABORT_ON_ERROR
-#endif /*0*/
+/* #define ABORT_ON_ERROR */
 
 #include "config.h"
-#include "defines.h"
-#include <errno.h>
 #include <stdio.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#ifdef RFCURSORS
 #include <X11/Xmu/CurUtil.h>
 #include <X11/cursorfont.h>
-#endif
-#ifdef HAVE_ASSERT_H
-#include <assert.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
+#include "str.h"
 
-#ifdef XPM
-#ifdef HACKED_XPMLIB
-#include "xpmlib-3.4b/xpm.h"
-#else 
 #include <xpm.h>
-#endif /*HACKED_XPMLIB*/
-#endif /*XPM [BDyess]*/
 
 #include "Wlib.h"
 #include "defs.h"
@@ -49,15 +28,10 @@
 #include "data.h"
 #include "proto.h"
 #include "images.h"
-#include "defines.h"
 
 #define INVALID_POSITION	-10000	/* gotta be a big negative */
 /* XFIX speedup */
 #define MAXCACHE	128
-
-/* changes too good to risk leaving out, by Richard Caley (rjc@cstr.ed.ac.uk)*/
-#define RJC
-#define FOURPLANEFIX
 
 #define MAXPLANES	8
 int	nplanes=3;
@@ -139,26 +113,20 @@ int     controlkey = 0;
 #define	BillsScrewyAltMask	(Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask)
 int     altkey = 0;
 int     W_FastClear = 0;
-#ifdef CONTINUOUS_MOUSE
 int     buttonDown = 0;
-#endif				/* CONTINUOUS_MOUSE */
 Display *W_Display;
 Window  W_Root;
 Colormap W_Colormap;
 int     W_Screen;
-#ifdef FOURPLANEFIX
 Visual *W_Visual;
-#endif
 W_Font  W_BigFont = (W_Font) & zero, W_RegularFont = (W_Font) & one;
 W_Font  W_HighlightFont = (W_Font) & two, W_UnderlineFont = (W_Font) & three;
 W_Color W_White = WHITE, W_Black = BLACK, W_Red = RED, W_Green = GREEN;
 W_Color W_Yellow = YELLOW, W_Cyan = CYAN, W_Grey = LIGHT_GREY;
 int     W_Textwidth, W_Textheight;
-/* char   *strdup(); */
 
 int     W_in_message = 0;	/* jfy -- for Jerry's warp message hack */
 
-#ifdef RJC
 extern W_Window baseWin;
 static XClassHint class_hint = {
     "netrek", "Netrek",
@@ -176,7 +144,6 @@ static XWMHints wm_hint = {
 };
 
 static XSizeHints wm_size_hint;
-#endif				/* RJC */
 
 static W_Event W_myevent;
 static int W_isEvent = 0;
@@ -201,35 +168,21 @@ struct colors {
 #define WIN_BORDER	5		/* border windows [BDyess] */
 #define WIN_SCROLLBAR   6		/* scrollbar window [BDyess] */
 
-#ifndef BUFFERING
-#define drawable window
-#endif /*BUFFERING [BDyess]*/
-
 struct window {
     Window  window;
     W_Window borderwin;
     int     border;		/* true if this is a border [BDyess] */
     W_Color border_color;
-#ifdef BUFFERING
     Drawable drawable;
     Pixmap  buffer;
     int     isbuffered;
-#endif /*BUFFERING [BDyess]*/
     int     type;
     char   *data;
     int     mapped;
     unsigned int width, height;
     char   *name;
     Cursor  cursor;
-#ifdef SHORT_PACKETS
     int     insensitive;
-#endif
-#if 0
-    W_Callback handle_keydown;
-    W_Callback handle_keyup;
-    W_Callback handle_button;
-    W_Callback handle_expose;
-#endif				/* 0 */
     /* for scrollbars [BDyess] */
     W_Window scrollbarwin;
     int    isscrollbar;		/* true if this is a scrollbar window.
@@ -265,10 +218,6 @@ struct colors colortable[] = {
     {"green"},
     {"yellow"},
     {"cyan"},
-#if 0
-    {"#969696"},	/* dark grey */
-    {"#c8c8c8"}		/* light grey */
-#endif /*0*/
     {"#767676"},	/* dark grey */
     {"#d8d8d8"}		/* light grey */
 };
@@ -283,18 +232,6 @@ struct windowlist {
 
 struct windowlist *hashtable[HASHSIZE];
 struct fontInfo fonts[FONTS];
-
-struct window *newWindow();
-/* These lame system prototypes spastically placed through the code are going
-   to be the death of me */
-#if 0
-#ifndef NeXT
-#ifndef __STDC__
-char   *malloc();
-#endif
-#endif				/* NeXT */
-#endif
-short  *x11tox10bits();
 
 struct window myroot;
 
@@ -359,9 +296,7 @@ static void redrawReversedBorder P((struct window *win));
 /* X debugging */
 #ifdef ABORT_ON_ERROR
 static int
-_myerror(d, e)
-    Display *d;
-    XErrorEvent *e;
+_myerror(Display *d, XErrorEvent *e)
 {
     abort();
     return 1;
@@ -369,8 +304,7 @@ _myerror(d, e)
 #endif		/* ABORT_ON_ERROR */
 
 void
-W_Initialize(str)
-    char   *str;
+W_Initialize(char *str)
 {
     int     i;
     char    *s;
@@ -392,9 +326,7 @@ W_Initialize(str)
 #endif
 
     W_Root = DefaultRootWindow(W_Display);
-#ifdef FOURPLANEFIX
     W_Visual = DefaultVisual(W_Display, DefaultScreen(W_Display));
-#endif
     W_Screen = DefaultScreen(W_Display);
     W_Colormap = DefaultColormap(W_Display, W_Screen);
     myroot.window = W_Root;
@@ -412,7 +344,7 @@ W_Initialize(str)
 }
 
 static void
-GetFonts()
+GetFonts(void)
 {
     Font    regular, italic, bold, big;
     int     i;
@@ -552,8 +484,7 @@ GetFonts()
 }
 
 static XFontStruct *
-find_font(oldf, fnts)
-    char   *oldf, **fnts;
+find_font(char *oldf, char **fnts)
 {
     XFontStruct *fi;
     char  **f;
@@ -569,20 +500,18 @@ find_font(oldf, fnts)
     return NULL;
 }
 
-#ifdef FOURPLANEFIX
 static unsigned short extrared[8] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xa0, 0xb0, 0xc0};
 static unsigned short extragreen[8] = {0x40, 0x60, 0x80, 0xa0, 0xb0, 0xc0, 0x00, 0x20};
 static unsigned short extrablue[8] = {0x80, 0xa0, 0xb0, 0xc0, 0x00, 0x20, 0x40, 0x60};
-#endif
 
 int
-W_Mono()
+W_Mono(void)
 {
     return forceMono;
 }
 
 static void
-GetColors()
+GetColors(void)
 {
     int     i, j;
     XColor  foo;
@@ -591,10 +520,8 @@ GetColors()
     unsigned long planes[3];*/
     char    defaultstring[100];
     char   *defs;
-#ifdef FOURPLANEFIX
     unsigned long extracolors[8];
     XColor  colordef;
-#endif
     extern int forceMono;
     forceMono = booleanDefault("forcemono", forceMono);
 
@@ -656,10 +583,7 @@ GetColors()
 	    (unsigned)foo.pixel, (unsigned)DefaultDepth(W_Display, W_Screen));
 	}
     } else {
-#ifdef FOURPLANEFIX
-#ifndef HACKED_XPMLIB
 	xpmORplanes = DefaultDepth(W_Display,W_Screen);
-#endif /*HACKED_XPMLIB*/
         nplanes = (xpm && useOR) ? xpmORplanes : 3;
 	if (!XAllocColorCells(W_Display, W_Colormap, False, planes, nplanes,
 			      &base, 1)) {
@@ -688,9 +612,6 @@ GetColors()
 		}
 	    }
 	}
-#else
-	XAllocColorCells(W_Display, W_Colormap, False, planes, nplanes, &base, 1);
-#endif
 	nallocated_colors = NCOLORS + 1;
 	for (i = 0; i < NCOLORS; i++) {
 	    /*
@@ -761,32 +682,10 @@ GetColors()
     XSetBackground(W_Display, maskGC, 0xff); /* necessary? */
     XSetForeground(W_Display, maskGC, 0);
 }
-
-#if 0
-/* sets the background of the given window to the given image.  [BDyess] */
-void
-W_SetWindowBackgroundImage(window, image)
-  W_Window window;
-  W_Image *image;
-{
-  struct window *win = W_Void2Window(window);
-  GC tmp;
-
-  XSetWindowBackgroundPixmap(W_Display, win->window, 
-                             image->pixmap);
-  tmp = XCreateGC(W_Display, W_Root, 0, NULL);
-  XCopyGC(W_Display, win->fillGC, ~0, tmp);
-  win->fillGC = tmp;
-  XSetTile(W_Display, win->fillGC, image->pixmap);
-  XSetFillStyle(W_Display, win->fillGC, FillTiled);
-}
-#endif /*0*/
   
-#ifdef BUFFERING
 /* clears the buffer [BDyess] */
 void
-W_ClearBuffer(window)
-    W_Window window;
+W_ClearBuffer(W_Window window)
 {
   struct window * win = W_Void2Window(window);
 
@@ -796,8 +695,7 @@ W_ClearBuffer(window)
 }
 
 int
-W_IsBuffered(window)
-    W_Window window;
+W_IsBuffered(W_Window window)
 {
   return W_Void2Window(window)->isbuffered;
 }
@@ -805,9 +703,7 @@ W_IsBuffered(window)
 /* turns on buffering, reduces flicker [BDyess] */
 /* on is a flag: 1 turns on buffering, 0 turns it off */
 void
-W_Buffer(window, on)
-    W_Window window;
-    int on;
+W_Buffer(W_Window window, int on)
 {
   struct window * win = W_Void2Window(window);
 
@@ -829,8 +725,7 @@ W_Buffer(window, on)
 
 /* draws the buffer onto the screen [BDyess] */
 void
-W_DisplayBuffer(window)
-    W_Window window;
+W_DisplayBuffer(W_Window window)
 {
   struct window * win = W_Void2Window(window);
 
@@ -839,26 +734,17 @@ W_DisplayBuffer(window)
             colortable[W_Black].contexts[0], 0, 0, win->width, 
 	    win->height, 0, 0);
 }
-#endif /*BUFFERING [BDyess]*/
 
 void
-W_RenameWindow(window, str)
-    W_Window window;
-    char   *str;
+W_RenameWindow(W_Window window, char *str)
 {
     XStoreName(W_Display, ((struct window *) window)->window, str);
 }
 
 static  W_Window
-w_MakeWindow(name, x, y, width, height, parent,
-	     cursname, border, color, wsort)
-    char   *name;
-    int     x, y, width, height;
-    W_Window parent;
-    char   *cursname;
-    int     border;
-    W_Color color;		/* unused */
-    int     wsort;		/* WIN_? */
+w_MakeWindow(char *name, int x, int y, int width, int height, 
+             W_Window parent, char *cursname, int border, W_Color color, 
+             int wsort)
 {
     int     gx, gy;
     struct window *neww;
@@ -940,11 +826,6 @@ w_MakeWindow(name, x, y, width, height, parent,
     default:
 	fprintf(stderr, "x11window.c: w_MakeWindow: unknown wsort %d\n", wsort);
     }
-
-#ifdef AUTOKEY
-    if (attrs.event_mask & KeyPressMask)
-	attrs.event_mask |= KeyReleaseMask;
-#endif				/* AUTOKEY */
 
     if (strcmp(name, "netrek_icon") == 0)	/* icon should not select for
 						   input */
@@ -1081,57 +962,36 @@ w_MakeWindow(name, x, y, width, height, parent,
 	if (checkMapped(name))
 	    W_MapWindow(W_Window2Void(neww));
 
-#ifdef BUFFERING
     /* turn on buffering if name.buffered: on [BDyess] */
     if(wsort != WIN_BORDER && wsort != WIN_SCROLLBAR) {
       if(checkBuffered(name)) {
 	W_Buffer(W_Window2Void(neww), 1);
       }
     }
-#endif /*BUFFERING [BDyess]*/
 
 #ifdef DEBUG
     printf("New graphics window %d, child of %d\n", neww, parent);
 #endif
 
-#ifdef FOURPLANEFIX
     XSetWindowColormap(W_Display, neww->window, W_Colormap);
-#endif
 
     return (W_Window2Void(neww));
 }
 
 W_Window
-W_MakeWindow(name, x, y, width, height, parent, cursname, border, color)
-    char   *name;
-    int     x, y, width, height;
-    W_Window parent;
-    char   *cursname;
-    int     border;
-    W_Color color;
+W_MakeWindow(char *name, int x, int y, int width, int height, 
+             W_Window parent, char *cursname, int border, W_Color color)
 {
     return w_MakeWindow(name, x, y, width, height, parent,
 			cursname, border, color, WIN_GRAPH);
 }
 
 void
-W_ChangeBorder(window, color)
-    W_Window window;
-    int     color;
+W_ChangeBorder(W_Window window, int color)
 {
 #ifdef DEBUG
     printf("Changing border of %d\n", window);
 #endif
-
-#if 0
-    /* fix inexplicable color bug */
-    if (DisplayCells(W_Display, W_Screen) <= 2)
-	XSetWindowBorderPixmap(W_Display, W_Void2Window(window)->window,
-			       colortable[color].pixmap);
-    else
-	XSetWindowBorder(W_Display, W_Void2Window(window)->window,
-			 colortable[color].pixelValue);
-#endif /*0*/
 
     struct window *border = W_Void2Window(W_Void2Window(window)->borderwin);
 
@@ -1140,8 +1000,7 @@ W_ChangeBorder(window, color)
 }
 
 void
-W_MapWindow(window)
-    W_Window window;
+W_MapWindow(W_Window window)
 {
     struct window *win;
 
@@ -1162,8 +1021,7 @@ W_MapWindow(window)
 }
 
 void
-W_UnmapWindow(window)
-    W_Window window;
+W_UnmapWindow(W_Window window)
 {
     struct window *win;
 
@@ -1181,8 +1039,7 @@ W_UnmapWindow(window)
 }
 
 int
-W_IsMapped(window)
-    W_Window window;
+W_IsMapped(W_Window window)
 {
     struct window *win;
 
@@ -1193,11 +1050,8 @@ W_IsMapped(window)
 }
 
 void
-W_FillArea(window, x, y, width, height, color)
-    W_Window window;
-    int     x, y;
-    unsigned int width, height;
-    W_Color color;
+W_FillArea(W_Window window, int x, int y, 
+           unsigned int width, unsigned int height, W_Color color)
 {
     struct window *win;
 
@@ -1224,8 +1078,7 @@ static XRectangle _rcache[MAXCACHE];
 static int _rcache_index;
 
 static void
-FlushClearAreaCache(window)
-    W_Window  window;
+FlushClearAreaCache(W_Window window)
 {
     struct window *win = W_Void2Window(window);
     XFillRectangles(W_Display, win->drawable, colortable[backColor].contexts[0],
@@ -1235,9 +1088,7 @@ FlushClearAreaCache(window)
 
 /* local window only */
 void
-W_CacheClearArea(window, x, y, width, height)
-    W_Window window;
-    int     x, y, width, height;
+W_CacheClearArea(W_Window window, int x, int y, int width, int height)
 {
     register XRectangle *r;
 
@@ -1252,8 +1103,7 @@ W_CacheClearArea(window, x, y, width, height)
 }
 
 void
-W_FlushClearAreaCache(window)
-    W_Window window;
+W_FlushClearAreaCache(W_Window window)
 {
     if (_rcache_index)
 	FlushClearAreaCache(window);
@@ -1262,10 +1112,8 @@ W_FlushClearAreaCache(window)
 /* XFIX: clears now instead of filling. */
 /* not any more.  Can't clear a drawable. [BDyess] */
 void
-W_ClearArea(window, x, y, width, height)
-    W_Window window;
-    int     x, y;
-    unsigned int width, height;
+W_ClearArea(W_Window window, int x, int y,
+            unsigned int width, unsigned int height)
 {
     struct window *win;
 
@@ -1291,28 +1139,22 @@ W_ClearArea(window, x, y, width, height)
 }
 
 void
-W_ClearWindow(window)
-    W_Window window;
+W_ClearWindow(W_Window window)
 {
     struct window * win = W_Void2Window(window);
 
 #ifdef DEBUG
     printf("Clearing %d\n", window);
 #endif
-#ifdef BUFFERING
     if(win->isbuffered) {
       W_ClearBuffer(window);
     } else {
       XClearWindow(W_Display, win->window);
     }
-#else 
-    XClearWindow(W_Display, win->window);
-#endif /*BUFFERING [BDyess]*/
 }
 
 void
-W_GetEvent(wevent)
-    W_Event *wevent;
+W_GetEvent(W_Event *wevent)
 {
 /* blocks until an event is received [BDyess] */
     XEvent  event;
@@ -1328,7 +1170,7 @@ W_GetEvent(wevent)
 }
 
 int
-W_EventsPending()
+W_EventsPending(void)
 {
     if (W_isEvent)
 	return (1);
@@ -1342,8 +1184,7 @@ W_EventsPending()
 }
 
 void
-W_NextEvent(wevent)
-    W_Event *wevent;
+W_NextEvent(W_Event *wevent)
 {
     if (W_isEvent) {
 	*wevent = W_myevent;
@@ -1354,7 +1195,7 @@ W_NextEvent(wevent)
 }
 
 static int
-W_SpNextEvent(wevent)
+W_SpNextEvent(W_Event *wevent)
     W_Event *wevent;
 {
     XEvent  event;
@@ -1364,10 +1205,8 @@ W_SpNextEvent(wevent)
     XResizeRequestEvent *resize;
     char    ch;
     struct window *win;
-#ifdef CONTINUOUS_MOUSE
     static W_Event buttonEvent;
     static int delaytime, cupd = -1;
-#endif				/* CONTINUOUS_MOUSE */
 
 #ifdef DEBUG
     printf("Getting an event...\n");
@@ -1379,7 +1218,6 @@ W_SpNextEvent(wevent)
     for (;;) {
 	if (XPending(W_Display))
 	    XNextEvent(W_Display, &event);
-#ifdef CONTINUOUS_MOUSE
 	else if (buttonDown) {
 	    if (continuousMouse && allowContinuousMouse) {
 		if (cupd != udcounter) {
@@ -1400,7 +1238,6 @@ W_SpNextEvent(wevent)
 	    }
 	    return (1);
 	}
-#endif
 	else
 	    return (0);
 	/*
@@ -1447,18 +1284,6 @@ W_SpNextEvent(wevent)
 		return (1);
 	    }
 	    return (0);
-#ifdef AUTOKEY
-	case KeyRelease:
-	    if (XLookupString(key, &ch, 1, NULL, NULL) > 0) {
-		wevent->type = W_EV_KEY_OFF;
-		wevent->Window = W_Window2Void(win);
-		wevent->x = key->x;
-		wevent->y = key->y;
-		wevent->key = ch;
-		return (1);
-	    }
-	    return (0);
-#endif				/* AUTOKEY */
 	case ButtonPress:
 	    /* do the actual scrolling here [BDyess] */
 	    if(win->type == WIN_SCROLL) {	/* scroll window [BDyess] */
@@ -1505,7 +1330,6 @@ W_SpNextEvent(wevent)
 		wevent->key += 3;
 	    if (key->state & BillsScrewyAltMask)
 		wevent->key += 12;	/* alt */
-#ifdef CONTINUOUS_MOUSE
 	    if (continuousMouse && allowContinuousMouse &&
 		(wevent->Window == w || wevent->Window == mapw) &&
 	    /*
@@ -1546,9 +1370,6 @@ W_SpNextEvent(wevent)
 		cupd = udcounter;
 
 	    return (1);
-#else
-	    return (1);
-#endif				/* CONTINUOUS_MOUSE */
 	case Expose:
 	    if (expose->count != 0)
 		return (0);
@@ -1590,10 +1411,7 @@ W_SpNextEvent(wevent)
 }
 
 void
-W_MakeLine(window, X0, Y0, X1, Y1, color)
-    W_Window window;
-    int     X0, Y0, X1, Y1;
-    W_Color color;
+W_MakeLine(W_Window window, int X0, int Y0, int X1, int Y1, W_Color color)
 {
     Window  win;
 
@@ -1605,10 +1423,7 @@ W_MakeLine(window, X0, Y0, X1, Y1, color)
 }
 
 void
-W_DrawPoint(window, x, y, color)
-    W_Window window;
-    int     x, y;
-    W_Color color;
+W_DrawPoint(W_Window window, int x, int y, W_Color color)
 {
     Window  win;
 
@@ -1625,9 +1440,7 @@ static XSegment _lcache[NCOLORS][MAXCACHE];
 static int _lcache_index[NCOLORS];
 
 static void
-FlushLineCache(win, color)
-    Window  win;
-    int     color;
+FlushLineCache(Window win, int color)
 {
     XDrawSegments(W_Display, win, colortable[color].contexts[0],
 		  _lcache[color], _lcache_index[color]);
@@ -1636,9 +1449,7 @@ FlushLineCache(win, color)
 
 /* for local window only */
 void
-W_CacheLine(window, X0, Y0, X1, Y1, color)
-    W_Window window;
-    int     X0, Y0, X1, Y1, color;
+W_CacheLine(W_Window window, int X0, int Y0, int X1, int Y1, int color)
 {
     Window  win = W_Void2Window(window)->drawable;
     register XSegment *s;
@@ -1654,8 +1465,7 @@ W_CacheLine(window, X0, Y0, X1, Y1, color)
 }
 
 void
-W_FlushLineCaches(window)
-    W_Window window;
+W_FlushLineCaches(W_Window window)
 {
     Window  win = W_Void2Window(window)->drawable;
     register int i;
@@ -1669,9 +1479,7 @@ static XPoint _pcache[NCOLORS][MAXCACHE];
 static int _pcache_index[NCOLORS];
 
 static void
-FlushPointCache(win, color)
-    Window  win;
-    int     color;
+FlushPointCache(Window win, int color)
 {
     XDrawPoints(W_Display, win, colortable[color].contexts[0],
 		_pcache[color], _pcache_index[color], CoordModeOrigin);
@@ -1679,9 +1487,7 @@ FlushPointCache(win, color)
 }
 
 void
-W_CachePoint(window, x, y, color)
-    W_Window window;
-    int     x, y, color;
+W_CachePoint(W_Window window, int x, int y, int color)
 {
     Window  win = W_Void2Window(window)->drawable;
     register XPoint *p;
@@ -1695,8 +1501,7 @@ W_CachePoint(window, x, y, color)
 }
 
 void
-W_FlushPointCaches(window)
-    W_Window window;
+W_FlushPointCaches(W_Window window)
 {
     Window  win = W_Void2Window(window)->drawable;
     register int i;
@@ -1707,10 +1512,7 @@ W_FlushPointCaches(window)
 }
 
 void
-W_MakeTractLine(window, X0, Y0, X1, Y1, color)
-    W_Window window;
-    int     X0, Y0, X1, Y1;
-    W_Color color;
+W_MakeTractLine(W_Window window, int X0, int Y0, int X1, int Y1, W_Color color)
 {
     Window  win;
 
@@ -1722,28 +1524,10 @@ W_MakeTractLine(window, X0, Y0, X1, Y1, color)
 }
 
 void
-W_DrawSectorHighlight(window, x, y, width, h, color)
-    W_Window window;
-    int     x, y, width, h;
-    W_Color color;
+W_DrawSectorHighlight(W_Window window, int x, int y, int width, int h, 
+                      W_Color color)
 {
     Window  win;
-#ifdef YUCK
-    XRectangle r[2];
-
-    r[0].x = (short) x;
-    r[0].y = (short) y;
-    r[0].width = (unsigned short) width;
-    r[0].height = (unsigned short) h;
-    r[1].x = (short) x + 2;
-    r[1].y = (short) y + 2;
-    r[1].width = (unsigned short) width - 4;
-    r[1].height = (unsigned short) h - 4;
-
-    win = W_Void2Window(window)->drawable;
-    XDrawRectangles(W_Display, win, colortable[color].contexts[3],
-		    r, 2);
-#else
     XRectangle r[1];
 
     r[0].x = (short) x + 2;
@@ -1754,14 +1538,11 @@ W_DrawSectorHighlight(window, x, y, width, h, color)
     win = W_Void2Window(window)->drawable;
     XDrawRectangles(W_Display, win, colortable[color].contexts[3],
 		    r, 1);
-#endif
 }
 
 void
-W_WriteAnyTriangle(window, X1, Y1, X2, Y2, X3, Y3, color)
-    W_Window window;
-    int     X1, Y1, X2, Y2, X3, Y3;
-    W_Color color;
+W_WriteAnyTriangle(W_Window window, int X1, int Y1, int X2, int Y2, 
+                   int X3, int Y3, W_Color color)
 {
     struct window *win = W_Void2Window(window);
     XPoint  points[3];
@@ -1778,11 +1559,7 @@ W_WriteAnyTriangle(window, X1, Y1, X2, Y2, X3, Y3, color)
 }
 
 void
-W_WriteTriangle(window, x, y, s, t, color)
-    W_Window window;
-    int     x, y, s;
-    int     t;
-    W_Color color;
+W_WriteTriangle(W_Window window, int x, int y, int s, int t, W_Color color)
 {
     struct window *win = W_Void2Window(window);
     XPoint  points[3];
@@ -1809,12 +1586,8 @@ W_WriteTriangle(window, x, y, s, t, color)
 }
 
 void
-W_WriteText(window, x, y, color, str, len, font)
-    W_Window window;
-    int     x, y, len;
-    W_Color color;
-    W_Font  font;
-    char   *str;
+W_WriteText(W_Window window, int x, int y, W_Color color, char *str, 
+            int len, W_Font font)
 {
     struct window *win;
     int     addr;
@@ -1877,12 +1650,8 @@ W_WriteText(window, x, y, color, str, len, font)
 }
 
 void
-W_MaskText(window, x, y, color, str, len, font)
-    W_Window window;
-    int     x, y, len;
-    W_Color color;
-    W_Font  font;
-    char   *str;
+W_MaskText(W_Window window, int x, int y, W_Color color, char *str,
+           int len, W_Font font)
 {
     struct window *win;
     int     addr;
@@ -1899,12 +1668,8 @@ W_MaskText(window, x, y, color, str, len, font)
 /* same as W_MaskText above, except draws directly to the destination window
    and not its drawable.  This bypasses buffering, if any. [BDyess] */
 void
-W_DirectMaskText(window, x, y, color, str, len, font)
-    W_Window window;
-    int     x, y, len;
-    W_Color color;
-    W_Font  font;
-    char   *str;
+W_DirectMaskText(W_Window window, int x, int y, W_Color color, char *str,
+                 int len, W_Font font)
 {
     struct window *win;
     int     addr;
@@ -1919,8 +1684,7 @@ W_DirectMaskText(window, x, y, color, str, len, font)
 }
 
 void
-W_FreeImage(image)
-  W_Image *image;
+W_FreeImage(W_Image *image)
 {
   if(image->loaded) {
     XFreePixmap(W_Display, image->pixmap);
@@ -1937,9 +1701,7 @@ W_FreeImage(image)
 }
 
 W_Image *
-W_BitmapToImage(width, height, bits)
-  unsigned int width, height;
-  char *bits;
+W_BitmapToImage(unsigned int width, unsigned int height, char *bits)
 {
   W_Image *image = (W_Image*)malloc(sizeof(W_Image));
 
@@ -1961,8 +1723,7 @@ W_BitmapToImage(width, height, bits)
 }
 
 int
-checkloaded(image)
-  W_Image *image;
+checkloaded(W_Image *image)
 {
   if(!(image)->loaded) {
     /* not loaded, autoload [BDyess] */
@@ -1986,9 +1747,7 @@ checkloaded(image)
    images are replicated over the entire sequence. [BDyess] 
 */
 W_Image *
-W_CreateCombinedImage(imagelist,color)
-  W_Image **imagelist;
-  W_Color color;
+W_CreateCombinedImage(W_Image **imagelist, W_Color color)
 {
   int width = 1, height = 1, frames = 1, i, centerx, centery;
   W_Image **list;
@@ -2039,86 +1798,8 @@ W_CreateCombinedImage(imagelist,color)
   return image;
 }
 
-#ifdef HACKED_XPMLIB
-/* replacement color allocator.  By Robert Forsman. */
-static int
-SetColor(display, colormap, visual, colorname, color_index,
-	 image_pixel, mask_pixel, mask_pixel_index,
-	 pixels, npixels, attributes, cols, ncols)
-    Display *display;
-    Colormap colormap;
-    Visual *visual;
-    char *colorname;
-    unsigned int color_index;
-    Pixel *image_pixel, *mask_pixel;
-    unsigned int *mask_pixel_index;
-    Pixel **pixels;
-    unsigned int *npixels;
-    XpmAttributes *attributes;
-    XColor *cols;
-    int ncols;
-{
-    XColor xcolor;
-    int	i,j;
-    int	store=0;
-
-    /* XParseColor necessarily can't handle "None" [BDyess] */
-    if (strcasecmp(colorname, "None")) {
-      if (!XParseColor(display, colormap, colorname, &xcolor)) {
-	  fprintf(stderr,"Can't parse color: %s.\n",colorname);
-	  return (1);
-      }
-    } else {
-      /* transparent color [BDyess] */
-      *image_pixel = 0;
-      *mask_pixel = 0;
-      *mask_pixel_index = color_index; /* store the color table index */
-      return 0;
-    }
-
-    for (i=0; i<nallocated_colors; i++) {
-	XColor	*xc = &allocated_colors[i];
-	if (xc->red==xcolor.red
-	    && xc->green==xcolor.green
-	    && xc->blue == xcolor.blue) {
-	    break;		/* match */
-	}
-    }
-
-    if (i>=nallocated_colors) {	/* we need a new cell */
-	XColor	*xc = &allocated_colors[i];
-
-	if (nallocated_colors >= 1<<nplanes) {
-	    fprintf(stderr, "Too many colors in XPMs.  Allocated colors: %d, available planes: %d.\n",nallocated_colors, nplanes);
-	    return 1;	/* out of cells! */
-	}
-
-	nallocated_colors++;
-	if(verbose_image_loading) 
-	  printf("nallocated_colors = %d\n",nallocated_colors);
-	store=1;
-	memcpy(xc, &xcolor, sizeof(xcolor));
-    }
-
-    *image_pixel = base;
-    for (j=0; i; j++,i>>=1)
-	if (i&1)
-	    *image_pixel |= planes[j];
-    if (store) {
-	xcolor.pixel = *image_pixel;
-	XStoreColor(display, colormap, &xcolor);
-    }
-    *mask_pixel = 1;
-    (*pixels)[*npixels] = xcolor.pixel;
-    (*npixels)++;
-
-    return 0;
-}
-#endif /*HACKED_XPMLIB*/
-
 int
-W_LoadExternalImage(image)
-  W_Image *image;
+W_LoadExternalImage(W_Image *image)
 {
   XpmAttributes attributes;
   int ErrorStatus;
@@ -2127,14 +1808,6 @@ W_LoadExternalImage(image)
 
   if(xpm) {
     attributes.valuemask = XpmCloseness|XpmReturnExtensions|XpmColormap;
-#ifdef HACKED_XPMLIB
-    if(useOR) {
-      if (nallocated_colors>=0) {
-	  attributes.valuemask |= XpmColorFunction;
-	  attributes.color_allocator = SetColor;
-      }
-    }
-#endif /*HACKED_XPMLIB*/
     attributes.extensions = NULL;
     attributes.colormap = W_Colormap;
     /* take colors that are close [BDyess] */
@@ -2260,8 +1933,7 @@ W_LoadExternalImage(image)
 
 /* loads a compiled_in image [BDyess] */
 int
-W_LoadInternalImage(image)
-  W_Image *image;
+W_LoadInternalImage(W_Image *image)
 {
   XpmAttributes attributes;
   int ErrorStatus;
@@ -2269,14 +1941,6 @@ W_LoadInternalImage(image)
 
   if(xpm && image->xpmdata) {
     attributes.valuemask = XpmCloseness|XpmReturnExtensions|XpmColormap;
-#ifdef HACKED_XPMLIB
-    if(useOR) {
-      if (nallocated_colors>=0) {
-	  attributes.valuemask |= XpmColorFunction;
-	  attributes.color_allocator = SetColor;
-      }
-    }
-#endif /*HACKED_XPMLIB*/
     attributes.extensions = NULL;
     attributes.colormap = W_Colormap;
     /* take colors that are close [BDyess] */
@@ -2348,8 +2012,7 @@ W_LoadInternalImage(image)
 }
 
 int
-W_LoadImage(image)
-  W_Image *image;
+W_LoadImage(W_Image *image)
 {
   int ret;
   char buf[BUFSIZ];
@@ -2387,13 +2050,8 @@ W_LoadImage(image)
    clipmasks for image and clipimage.  Currently this is only used for cloaking.
    [BDyess] */
 void
-W_OverlayImage(window, x, y, frame, image, overframe, overimage,color)
-  W_Window window;
-  int x,y,frame;
-  W_Image *image;
-  int overframe;
-  W_Image *overimage;
-  W_Color color;
+W_OverlayImage(W_Window window, int x, int y, int frame, W_Image *image,
+               int overframe, W_Image *overimage, W_Color color)
 {
   int width, height;
   Pixmap workarea;
@@ -2448,11 +2106,8 @@ W_OverlayImage(window, x, y, frame, image, overframe, overimage,color)
 }
   
 void
-W_DrawImage(window, x, y, frame, image, color)
-  W_Window window;
-  int x,y,frame;
-  W_Image *image;
-  W_Color color;
+W_DrawImage(W_Window window, int x, int y, int frame, W_Image *image,
+            W_Color color)
 {
   int height, width;
 
@@ -2530,11 +2185,8 @@ W_DrawImage(window, x, y, frame, image, color)
 
 /* same as W_DrawImage except that clipmask is not used [BDyess] */
 void
-W_DrawImageNoClip(window, x, y, frame, image, color)
-  W_Window window;
-  int x,y,frame;
-  W_Image *image;
-  W_Color color;
+W_DrawImageNoClip(W_Window window, int x, int y, int frame, W_Image *image,
+                  W_Color color)
 {
   if(checkloaded(image)) return;
   frame = frame % image->frames;
@@ -2569,11 +2221,8 @@ W_DrawImageNoClip(window, x, y, frame, image, color)
 /* same as W_DrawImage except image is drawn using GXor instead of GXcopy 
    [BDyess] */
 void
-W_DrawImageOr(window, x, y, frame, image, color)
-  W_Window window;
-  int x,y,frame;
-  W_Image *image;
-  W_Color color;
+W_DrawImageOr(W_Window window, int x, int y, int frame, W_Image *image,
+              W_Color color)
 {
   if(checkloaded(image)) return;
   frame = frame % image->frames;
@@ -2591,10 +2240,7 @@ W_DrawImageOr(window, x, y, frame, image, color)
 
 
 void
-W_DrawImageBar(win, x, y, len, image)
-  W_Window win;
-  int x,y,len;
-  W_Image *image;
+W_DrawImageBar(W_Window win, int x, int y, int len, W_Image *image)
 {
    if(len == 0) return;
    XSetClipMask(W_Display,colortable[W_Black].contexts[BITMASKGC],None);
@@ -2604,9 +2250,7 @@ W_DrawImageBar(win, x, y, len, image)
 }
 
 void
-W_TileWindow(window, image)
-    W_Window window;
-    W_Image  *image;
+W_TileWindow(W_Window window, W_Image *image)
 {
     Window  win;
 
@@ -2632,8 +2276,7 @@ W_TileWindow(window, image)
 }
 
 void
-W_UnTileWindow(window)
-    W_Window window;
+W_UnTileWindow(W_Window window)
 {
     Window  win;
 
@@ -2647,31 +2290,23 @@ W_UnTileWindow(window)
 }
 
 W_Window
-W_MakeTextWindow(name, x, y, width, height, parent, cursname, border)
-    char   *name;
-    int     x, y, width, height;
-    W_Window parent;
-    char   *cursname;
-    int     border;
+W_MakeTextWindow(char *name, int x, int y, int width, int height,
+                 W_Window parent, char *cursname, int border)
 {
     return w_MakeWindow(name, x, y, width, height,
 			parent, cursname, border, W_White, WIN_TEXT);
 }
 
 struct window *
-newWindow(window, type)
-    Window  window;
-    int     type;
+newWindow(Window window, int type)
 {
     struct window *neww;
 
     neww = (struct window *) malloc(sizeof(struct window));
     neww->window = window;
     neww->drawable = window;
-#ifdef BUFFERING
     neww->isbuffered = 0;
     neww->buffer = 0;
-#endif /*BUFFERING [BDyess]*/
     neww->type = type;
     neww->mapped = 0;
     neww->insensitive = 0;
@@ -2681,8 +2316,7 @@ newWindow(window, type)
 
 
 static struct window *
-findWindow(window)
-    Window  window;
+findWindow(Window window)
 {
     struct windowlist *entry;
 
@@ -2696,8 +2330,7 @@ findWindow(window)
 }
 
 static void
-addToHash(win)
-    struct window *win;
+addToHash(struct window *win)
 {
     struct windowlist **new;
 
@@ -2714,12 +2347,8 @@ addToHash(win)
 }
 
 W_Window
-W_MakeScrollingWindow(name, x, y, width, height, parent, cursname, border)
-    char   *name;
-    int     x, y, width, height;
-    W_Window parent;
-    char   *cursname;
-    int     border;
+W_MakeScrollingWindow(char *name, int x, int y, int width, int height,
+                      W_Window parent, char *cursname, int border)
 {
     return w_MakeWindow(name, x, y, width, height, parent, cursname,
 			border, W_White, WIN_SCROLL);
@@ -2728,40 +2357,8 @@ W_MakeScrollingWindow(name, x, y, width, height, parent, cursname, border)
 /* Add a string to the string list of the scrolling window.
  */
 static void
-AddToScrolling(win, color, str, len)
-    struct window *win;
-    W_Color color;
-    char   *str;
-    int     len;
+AddToScrolling(struct window *win, W_Color color, char *str, int len)
 {
-#if 0
-    struct stringList **strings;
-    char   *newstring;
-    int     count;
-
-    strings = (struct stringList **) & (win->data);
-    count = 0;
-    while ((*strings) != NULL) {
-	count++;
-	strings = &((*strings)->next);
-    }
-    (*strings) = (struct stringList *) malloc(sizeof(struct stringList));
-    (*strings)->next = NULL;
-    (*strings)->color = color;
-    newstring = (char *) malloc((unsigned)(len + 1));
-    strncpy(newstring, str, (unsigned)len);
-    newstring[len] = 0;
-    (*strings)->string = newstring;
-    if (count >= 100) {		/* Arbitrary large size. */
-	struct stringList *temp;
-
-	temp = (struct stringList *) win->data;
-	free(temp->string);
-	temp = temp->next;
-	free((char *) win->data);
-	win->data = (char *) temp;
-    }
-#endif /*0*/
     int cur = win->top % win->maxlines;
     char *newstring;
   
@@ -2781,8 +2378,7 @@ AddToScrolling(win, color, str, len)
 }
 
 void
-W_UpdateScrollBar(window)
-  W_Window window;
+W_UpdateScrollBar(W_Window window)
 {
   struct window *win = W_Void2Window(window);
   int height,bottom;
@@ -2810,11 +2406,8 @@ W_UpdateScrollBar(window)
                  1, bottom - height, scrollbarwin->width - 1, height);
 }
 
-#ifdef SHORT_PACKETS
 void
-W_SetSensitive(window, v)
-    W_Window window;
-    int     v;
+W_SetSensitive(W_Window window, int v)
 {
     struct window *win = W_Void2Window(window);
 
@@ -2823,12 +2416,10 @@ W_SetSensitive(window, v)
     if (win->type == WIN_SCROLL)
 	redrawScrolling(win);
 }
-#endif
 
 /* this function will redraw a border window [BDyess] */
 static void
-redrawBorder(win)
-    struct window *win;
+redrawBorder(struct window *win)
 {
     XPoint points[3];
     XGCValues val;
@@ -2863,8 +2454,7 @@ redrawBorder(win)
 /* this function will redraw the main (background) window, which contains a 
    reverse-border.  [BDyess] */
 static void
-redrawReversedBorder(win)
-    struct window *win;
+redrawReversedBorder(struct window *win)
 {
     XPoint points[3];
     XGCValues val;
@@ -2885,52 +2475,14 @@ redrawReversedBorder(win)
 }
 
 static void
-redrawScrolling(win)
-    struct window *win;
+redrawScrolling(struct window *win)
 {
-#if 0
-    int     count;
-    struct stringList *list;
-    int     y;
-
-#ifdef BUFFERING
-    if(win->isbuffered) {
-      W_DisplayBuffer(W_Window2Void(win));
-      return;
-    }
-#endif /*BUFFERING [BDyess]*/
-
-    XClearWindow(W_Display, win->window);
-    count = 0;
-    list = (struct stringList *) win->data;
-    while (list != NULL) {
-	list = list->next;
-	count++;
-    }
-    list = (struct stringList *) win->data;
-    while (count > win->height) {
-	list = list->next;
-	count--;
-    }
-    y = (win->height - count) * W_Textheight + fonts[1].baseline;
-    if (count == 0)
-	return;
-    while (list != NULL) {
-	XDrawImageString(W_Display, win->drawable,
-			 colortable[list->color].contexts[1],
-		WIN_EDGE, MENU_PAD + y, list->string,(int)strlen(list->string));
-	list = list->next;
-	y = y + W_Textheight;
-    }
-#endif /*0*/
-
     int i,y,loc;
 
     if(win->top == win->bottom) return; /*initial condition - no data [BDyess]*/
-#ifdef BUFFERING
-    if(win->isbuffered) W_ClearBuffer(W_Window2Void(win));
+    if(win->isbuffered) 
+      W_ClearBuffer(W_Window2Void(win));
     else
-#endif
       XClearWindow(W_Display, win->window);
 
     for(i=win->currenttop-win->height, y = 0; i < win->currenttop; i++,y++) {
@@ -2947,9 +2499,7 @@ redrawScrolling(win)
 }
 
 static void
-resizeScrolling(win, width, height)
-    struct window *win;
-    int     width, height;
+resizeScrolling(struct window *win, int width, int height)
 {
     win->height = (height - MENU_PAD * 2) / W_Textheight;
     win->width = (width - WIN_EDGE * 2) / W_Textwidth;
@@ -2958,19 +2508,15 @@ resizeScrolling(win, width, height)
 }
 
 W_Window
-W_MakeMenu(name, x, y, width, height, parent, border)
-    char   *name;
-    int     x, y, width, height;
-    W_Window parent;
-    int     border;
+W_MakeMenu(char *name, int x, int y, int width, int height, 
+           W_Window parent, int border)
 {
     return w_MakeWindow(name, x, y, width, height, parent,
 			"left_ptr", border, W_White, WIN_MENU);
 }
 
 static void
-redrawMenu(win)
-    struct window *win;
+redrawMenu(struct window *win)
 {
     int     count;
 
@@ -2986,9 +2532,7 @@ redrawMenu(win)
 }
 
 static void
-redrawMenuItem(win, n)
-    struct window *win;
-    int     n;
+redrawMenuItem(struct window *win, int n)
 {
     struct menuItem *items;
     int     addr;
@@ -3010,13 +2554,8 @@ redrawMenuItem(win, n)
 }
 
 static void
-changeMenuItem(win, x, n, color, str, len, font)
-    struct window *win;
-    int     x, n;
-    W_Color color;
-    char   *str;
-    int     len;
-    W_Font  font;
+changeMenuItem(struct window *win, int x, int n, W_Color color, char *str,
+               int len, W_Font font)
 {
     struct menuItem *items;
     char   *news;
@@ -3037,9 +2576,8 @@ changeMenuItem(win, x, n, color, str, len, font)
 }
 
 static  Cursor
-make_cursor(bits, mask, width, height, xhot, yhot)
-    char   *bits, *mask;
-    unsigned int width, height, xhot, yhot;
+make_cursor(char *bits, char *mask, unsigned int width, unsigned int height,
+            unsigned int xhot, unsigned int yhot)
 {
     Pixmap  cursbits;
     Pixmap  cursmask;
@@ -3064,19 +2602,14 @@ make_cursor(bits, mask, width, height, xhot, yhot)
     return curs;
 }
 
-#ifdef TCURSORS
-#if 1
-
 void
-W_DefineTCrossCursor(window)
-    W_Window window;
+W_DefineTCrossCursor(W_Window window)
 {
     return;
 }
 
 void
-W_DefineTextCursor(window)
-    W_Window window;
+W_DefineTextCursor(W_Window window)
 {
     static Cursor new = 0;
     struct window *win = W_Void2Window(window);
@@ -3099,8 +2632,7 @@ W_DefineTextCursor(window)
 }
 
 void
-W_RevertCursor(window)
-    W_Window window;
+W_RevertCursor(W_Window window)
 {
     struct window *win = W_Void2Window(window);
 
@@ -3110,128 +2642,38 @@ W_RevertCursor(window)
 }
 
 void
-W_DefineCursor(window, width, height, bits, mask, xhot, yhot)
-    W_Window window;
-    int     width, height, xhot, yhot;
-    char   *bits, *mask;
+W_DefineCursor(W_Window window, int width, int height, char *bits, char *mask,
+               int xhot, int yhot)
 {
     return;
 }
 
-#else
-
-#ifdef YUCK
 void
-W_DefineTCrossCursor(window)
-    W_Window window;
-{
-    static
-    Cursor  new;
-    struct window *win = W_Void2Window(window);
-    static
-    XColor  f, b;
-
-    if (new) {
-	XDefineCursor(W_Display, win->window, new);
-	return;
-    }
-    f.pixel = colortable[W_White].pixelValue;
-    b.pixel = colortable[W_Black].pixelValue;
-
-    XQueryColor(W_Display, W_Colormap, &f);
-    XQueryColor(W_Display, W_Colormap, &b);
-
-    new = XCreateFontCursor(W_Display, XC_tcross);
-    XRecolorCursor(W_Display, new, &f, &b);
-    XDefineCursor(W_Display, win->window, new);
-}
-
-#else
-W_DefineTCrossCursor(window)
-    W_Window window;
-{
-    W_DefineCursor(window, cross_width, cross_height,
-		   cross_bits, crossmask_bits, cross_x_hot, cross_y_hot);
-}
-
-#endif
-
-void
-W_DefineTextCursor(window)
-    W_Window window;
-{
-    static
-    Cursor  new;
-    struct window *win = W_Void2Window(window);
-    XColor  f, b;
-
-    if (new) {
-	XDefineCursor(W_Display, win->window, new);
-	return;
-    }
-    f.pixel = colortable[W_Yellow].pixelValue;
-    b.pixel = colortable[W_Black].pixelValue;
-
-    XQueryColor(W_Display, W_Colormap, &f);
-    XQueryColor(W_Display, W_Colormap, &b);
-
-    new = XCreateFontCursor(W_Display, XC_xterm);
-    XRecolorCursor(W_Display, new, &f, &b);
-    XDefineCursor(W_Display, win->window, new);
-}
-
-void
-W_DefineCursor(window, width, height, bits, mask, xhot, yhot)
-    W_Window window;
-    int     width, height, xhot, yhot;
-    char   *bits, *mask;
-{
-    static char *oldbits = NULL;
-    static Cursor curs;
-    struct window *win;
-
-#ifdef DEBUG
-    printf("Defining cursor for %d\n", window);
-#endif
-    win = W_Void2Window(window);
-    if (!oldbits || oldbits != bits) {
-	oldbits = bits;
-	curs = make_cursor(bits, mask, width, height, xhot, yhot);
-    }
-    XDefineCursor(W_Display, win->window, curs);
-}
-#endif
-#endif
-
-void
-W_Beep()
+W_Beep(void)
 {
     XBell(W_Display, 0);
 }
 
 int
-W_WindowWidth(window)
-    W_Window window;
+W_WindowWidth(W_Window window)
 {
     return (W_Void2Window(window)->width);
 }
 
 int
-W_WindowHeight(window)
-    W_Window window;
+W_WindowHeight(W_Window window)
 {
     return (W_Void2Window(window)->height);
 }
 
 int
-W_Socket()
+W_Socket(void)
 {
     return (ConnectionNumber(W_Display));
 }
 
 void
-W_DestroyWindow(window)
-    W_Window window;
+W_DestroyWindow(W_Window window)
 {
     struct window *win;
 
@@ -3241,17 +2683,14 @@ W_DestroyWindow(window)
     win = W_Void2Window(window);
     deleteWindow(win);
     XDestroyWindow(W_Display, win->window);
-#ifdef BUFFERING
     if(win->buffer) XFreePixmap(W_Display, win->buffer);
-#endif
     if(win->type != WIN_BORDER && win->borderwin) 
       W_DestroyWindow(win->borderwin);
     free((char *) win);
 }
 
 static void
-deleteWindow(window)
-    struct window *window;
+deleteWindow(struct window *window)
 {
     struct windowlist **rm;
     struct windowlist *temp;
@@ -3270,9 +2709,7 @@ deleteWindow(window)
 }
 
 void
-W_SetIconWindow(win, icon)
-    W_Window win;
-    W_Window icon;
+W_SetIconWindow(W_Window win, W_Window icon)
 {
     XWMHints hints;
 
@@ -3283,21 +2720,17 @@ W_SetIconWindow(win, icon)
     XSetWMHints(W_Display, W_Void2Window(win)->window, &hints);
 }
 
-static void
-checkGeometry(name, x, y, width, height)
-    char   *name;
-    int    *x, *y, *width, *height;
 /* fixed so that it handles negative positions 12/21/93          */
 /* note that this is NOT standard X syntax, but it was requested */
 /* and it's how BRM-Hadley works.                       [BDyess] */
+static void
+checkGeometry(char *name, int *x, int *y, int *width, int *height)
 {
     char   *adefault;
     char    buf[100];
     char   *s;
 
-#ifdef RJC
     *x = *y = INVALID_POSITION;
-#endif				/* RJC */
 
     sprintf(buf, "%s.geometry", name);
     adefault = stringDefault(buf,NULL);
@@ -3338,9 +2771,7 @@ checkGeometry(name, x, y, width, height)
 }
 
 static void
-checkParent(name, parent)
-    char   *name;
-    W_Window *parent;
+checkParent(char *name, W_Window parent)
 {
     char   *adefault;
     char    buf[100];
@@ -3368,18 +2799,6 @@ checkParent(name, parent)
     }
 }
 
-#ifdef YUCK
-#define cross_width 15
-#define cross_height 15
-#define cross_x_hot 7
-#define cross_y_hot 7
-static unsigned char cross_bits[] = {
-    0x00, 0x00, 0xc0, 0x01, 0xa0, 0x02, 0x00, 0x00, 0x80, 0x00, 0x04, 0x10, 0x82, 0x20, 0x56,
-0x35, 0x82, 0x20, 0x04, 0x10, 0x80, 0x00, 0x00, 0x00, 0xa0, 0x02, 0xc0, 0x01, 0x00, 0x00};
-static unsigned char crossmask_bits[] = {
-    0xe0, 0x03, 0xf0, 0x07, 0xf0, 0x07, 0xf0, 0x07, 0xce, 0x39, 0xcf, 0x79, 0xff, 0x7f, 0xff,
-0x7f, 0xff, 0x7f, 0xcf, 0x79, 0xce, 0x39, 0xf0, 0x07, 0xf0, 0x07, 0xf0, 0x07, 0xe0, 0x03};
-#else
 #define cross_width 16
 #define cross_height 16
 #define cross_x_hot 7
@@ -3392,13 +2811,9 @@ static unsigned char crossmask_bits[] = {
     0xc0, 0x01, 0xc0, 0x01, 0xc0, 0x01, 0xc0, 0x01, 0xe0, 0x03, 0xd0, 0x05,
     0xbf, 0x7e, 0x7f, 0x7f, 0xbf, 0x7e, 0xd0, 0x05, 0xe0, 0x03, 0xc0, 0x01,
 0xc0, 0x01, 0xc0, 0x01, 0xc0, 0x01, 0x00, 0x00};
-#endif
 
 static void
-checkCursor(name, cursname, cursor)
-    char   *name;
-    char   *cursname;
-    Cursor *cursor;
+checkCursor(char *name, char *cursname, Cursor *cursor)
 {
     char    buf[100];
     unsigned cnum;
@@ -3411,7 +2826,6 @@ checkCursor(name, cursname, cursor)
     if (adefault == NULL)
 	return;
 
-#ifdef RFCURSORS
     cnum = XmuCursorNameToIndex(adefault);
     if (cnum != -1) {
 	XColor  f, b;
@@ -3435,7 +2849,6 @@ checkCursor(name, cursname, cursor)
 	    XRecolorCursor(W_Display, *cursor, &f, &b);
 	}
     } else
-#endif
     if (0 == strcmp("bomb here", adefault)) {
 	static Cursor bomb_here = 0;
 	if (bomb_here == 0) {
@@ -3448,8 +2861,7 @@ checkCursor(name, cursname, cursor)
 }
 
 int
-checkMapped(name)
-    char   *name;
+checkMapped(char *name)
 {
     char    buf[100];
 
@@ -3458,8 +2870,7 @@ checkMapped(name)
 }
 
 int
-checkScrollSaveLines(name)
-    char   *name;
+checkScrollSaveLines(char *name)
 {
     char    buf[100];
 
@@ -3467,10 +2878,8 @@ checkScrollSaveLines(name)
     return (intDefault(buf, scrollSaveLines));
 }
 
-#ifdef BUFFERING
 int
-checkBuffered(name)
-    char *name;
+checkBuffered(char *name)
 {
     char    buf[100];
 
@@ -3490,13 +2899,9 @@ checkBuffered(name)
       return (booleanDefault(buf, 0));
     }
 }
-#endif /*BUFFERING [BDyess]*/
-
 
 void
-W_WarpPointer(window, x, y)
-    W_Window window;
-    int     x, y;
+W_WarpPointer(W_Window window, int x, int y)
 {
     static int warped_from_x = 0, warped_from_y = 0;
 
@@ -3513,8 +2918,7 @@ W_WarpPointer(window, x, y)
 }
 
 static void
-findMouse(x, y)
-    int    *x, *y;
+findMouse(int *x, int *y)
 {
     Window  theRoot, theChild;
     int     wX, wY, rootX, rootY, ErrorVal;
@@ -3531,9 +2935,7 @@ findMouse(x, y)
 }
 
 int
-findMouseInWin(x, y, window)
-    int    *x, *y;
-    W_Window window;
+findMouseInWin(int *x, int *y, W_Window window)
 {
     Window  theRoot, theChild;
     int     wX, wY, rootX, rootY, ErrorVal;
@@ -3560,45 +2962,13 @@ findMouseInWin(x, y, window)
 }
 
 void
-W_Flush()
+W_Flush(void)
 {
     XFlush(W_Display);
 }
 
-#ifdef AUTOKEY
-W_AutoRepeatOff()
-{
-    XAutoRepeatOff(W_Display);
-    W_Flush();
-}
-
-W_AutoRepeatOn()
-{
-    XAutoRepeatOn(W_Display);
-    W_Flush();
-}
-#endif				/* AUTOKEY */
-
-/* find the width of a font */
-#if 0
-int
-W_StringWidth(string, font)
-    char    string[];
-    W_Font  font;
-{
-    int     x, y;
-
-    y = strlen(string);
-    x = XTextWidth(fonts[fontNum(font)].fontstruct, string, y);
-    return (x);			/* just a guess ?? old never returned! WHS
-				   4/6/93 */
-}
-#endif /*0*/
-
 void
-W_TranslatePoints(window, x, y)
-    int    *x, *y;
-    W_Window window;
+W_TranslatePoints(W_Window window, int *x, int *y)
 {
     struct window *win;
     win = W_Void2Window(window);
@@ -3610,39 +2980,8 @@ W_TranslatePoints(window, x, y)
     return;
 }
 
-#if 0
-#define MAKE_WINDOW_GETTER(name, part) \
-  W_Callback name(w) \
-       W_Window w; \
- { \
-     return W_Void2Window(w)->part; \
- }
-
-#define MAKE_WINDOW_SETTER(name, port) \
-   W_Callback name(w, c) \
-      W_Window w; \
-      W_Callback c; \
-   { \
-      W_Void2Window(w)->port = c; \
-   }
-
-MAKE_WINDOW_GETTER(W_GetWindowKeyDownHandler, handle_keydown);
-MAKE_WINDOW_SETTER(W_SetWindowKeyDownHandler, handle_keydown);
-
-MAKE_WINDOW_GETTER(W_GetWindowKeyUpHandler, handle_keyup);
-MAKE_WINDOW_SETTER(W_SetWindowKeyUpHandler, handle_keyup);
-
-MAKE_WINDOW_GETTER(W_GetWindowButtonHandler, handle_button);
-MAKE_WINDOW_SETTER(W_SetWindowButtonHandler, handle_button);
-
-MAKE_WINDOW_GETTER(W_GetWindowExposeHandler, handle_expose);
-MAKE_WINDOW_SETTER(W_SetWindowExposeHandler, handle_expose);
-#endif				/* 0 */
-
 void
-W_ResizeWindow(window, neww, newh)	/* TSH 2/93 */
-    W_Window window;
-    int     neww, newh;
+W_ResizeWindow(W_Window window, int neww, int newh)	/* TSH 2/93 */
 {
     struct window *win = W_Void2Window(window);
 
@@ -3656,26 +2995,21 @@ W_ResizeWindow(window, neww, newh)	/* TSH 2/93 */
 }
 
 void
-W_ResizeMenu(window, neww, newh)/* TSH 2/93 */
-    W_Window window;
-    int     neww, newh;
+W_ResizeMenu(W_Window window, int neww, int newh)/* TSH 2/93 */
 {
     W_ResizeWindow(window, neww * W_Textwidth + WIN_EDGE * 2,
 	      newh * (W_Textheight + MENU_PAD * 2) + (newh - 1) * MENU_BAR);
 }
 
 void
-W_ResizeText(window, neww, newh)/* TSH 2/93 */
-    W_Window window;
-    int     neww, newh;
+W_ResizeText(W_Window window, int neww, int newh)/* TSH 2/93 */
 {
     W_ResizeWindow(window, neww * W_Textwidth + WIN_EDGE * 2,
 		   newh * W_Textheight + MENU_PAD * 2);
 }
 
 void
-W_Deiconify(window)
-    W_Window window;
+W_Deiconify(W_Window window)
 {
     struct window *win;
     win = W_Void2Window(window);
@@ -3684,11 +3018,8 @@ W_Deiconify(window)
 }
 
 void
-W_DrawShield(window, centerx, centery, diameter, color)
-    W_Window window;
-    unsigned int diameter;
-    int centerx, centery;
-    W_Color color;
+W_DrawShield(W_Window window, int centerx, int centery, 
+             unsigned int diameter, W_Color color)
 {
     XDrawArc(W_Display, W_Void2Window(window)->drawable, 
     	     colortable[color].contexts[0], 
@@ -3696,70 +3027,18 @@ W_DrawShield(window, centerx, centery, diameter, color)
 	     (int)(centery - diameter / 2), 
 	     diameter - 1, diameter - 1, 0, 360 * 64);
 }
-   
-#if 0
-W_Image
-W_MakeShieldBitmap(width, height, window)
-    int     width, height;
-    W_Window window;
-{
-    static GC pen = 0;
-    struct window *win;
-    struct icon *newicon;
-
-    win = W_Void2Window(window);
-
-    newicon = (struct icon *) malloc(sizeof(struct icon));
-    newicon->width = width;
-    newicon->height = height;
-    newicon->bitmap = XCreatePixmap(W_Display, win->drawable, width, height, 1);
-    newicon->pixmap = 0;
-
-    pen = XCreateGC(W_Display, newicon->bitmap, 0L, 0);
-    XSetForeground(W_Display, pen, 0L);
-    XFillRectangle(W_Display, newicon->bitmap, pen, 0, 0, width, height);
-    XSetForeground(W_Display, pen, 1L);
-    XDrawArc(W_Display, newicon->bitmap, pen, 0, 0, width - 1, height - 1, 0, 360 * 64);
-    XFreeGC(W_Display, pen);
-
-    return W_Icon2Void(newicon);
-}
-
-#ifdef BEEPLITE
-void 
-W_OverlayBitmap(window, x, y, bit, color)
-    W_Window window;
-    int     x, y;
-    W_Icon  bit;
-    W_Color color;
-{
-    struct icon *icon = W_Void2Icon(bit);
-#ifdef DEBUG
-    /*printf("Overlaying bitmap to %d\n", icon->drawable);*/
-#endif
-    XCopyPlane(W_Display, icon->bitmap, W_Void2Window(window)->drawable,
-	     colortable[color].contexts[0], 0, 0, icon->width, icon->height,
-	       x, y, 1);
-}
-#endif /*BEEPLITE*/
-#endif /*0*/
 
 /* synchronize the X server with the client [BDyess] */
 void 
-W_Sync()
+W_Sync(void)
 {
   XSync(W_Display,False);
 }
 
 /* needed by newstats.c [BDyess] */
 void
-W_WriteArc(filled, window, x, y, width, height, angle1, angle2, color)
-    int      filled;
-    W_Window window;
-    int      x, y;
-    int      width, height;
-    int      angle1, angle2;
-    W_Color  color;
+W_WriteArc(int filled, W_Window window, int x, int y, int width, int height,
+           int angle1, int angle2, W_Color color)
 {
     static GC pen = 0;
     struct window *win;

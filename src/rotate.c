@@ -3,39 +3,17 @@
  *
  */
 #include "copyright2.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <sys/types.h>
-#ifndef AMIGA			/* not that this file needs any network
-				   stuff... -JR */
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
-#endif
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#endif
-#include <math.h>
-#include <errno.h>
 #include "config.h"
-#include "Wlib.h"
+#include <math.h>
+
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
-
-#ifdef ROTATERACE
+#include "proto.h"
 
 void
-rotate_dir(d, r)
-    unsigned char *d;
-    int     r;
+rotate_dir(unsigned char *d, int r)
 {
     (*d) += r;
 }
@@ -47,10 +25,7 @@ rotate_dir(d, r)
     int     cx, cy;		 around center point 
 */
 void
-rotate_coord(x, y, d, cx, cy)
-    int    *x, *y;
-    int     d;
-    int     cx, cy;
+rotate_coord(int *x, int *y, int d, int cx, int cy)
 {
     register
     int     ox, oy;
@@ -105,15 +80,13 @@ rotate_coord(x, y, d, cx, cy)
 }
 
 void
-rotate_gcenter(x, y)
-    int    *x, *y;
+rotate_gcenter(int *x, int *y)
 {
     rotate_coord(x, y, rotate_deg, blk_gwidth / 2, blk_gwidth / 2);
 }
 
-#endif
-
-void rotate_all()
+void
+rotate_all(void)
 {
     register int i;
     register struct planet *l;

@@ -2,24 +2,16 @@
  * planetlist.c
  */
 #include "copyright.h"
-#include "defines.h"
-#include <stdio.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-
 #include "config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
 
 /* Prototypes */
 static void planet_list_paradise P((void));
@@ -33,7 +25,7 @@ static void print_planet P((W_Window wind, int line, struct planet * j));
 */
 
 void
-planetlist()
+planetlist(void)
 {
     /*
        W_ClearWindow(planetw);
@@ -49,7 +41,7 @@ planetlist()
 /*This function provides the planet list for a normal server. */
 
 static void
-planet_list_normal()
+planet_list_normal(void)
 {
     int     k = 0;		/* for row number */
     int     i;			/* looping var */
@@ -66,7 +58,7 @@ planet_list_normal()
 		wind = planetw2;
 	    }
 	    sprintf(buf, "Planet name           Own Armies      Resources          Info");
-	    W_WriteText(wind, 2, 1, textColor, buf, (int)strlen(buf), 
+	    W_WriteText(wind, 2, 1, textColor, buf, strlen(buf), 
 	    		W_RegularFont);
 	    k = 2;
 	}
@@ -79,14 +71,14 @@ planet_list_normal()
 		    (j->pl_flags & PLFUEL ? "FUEL " : "     "),
 		    (j->pl_flags & PLAGRI ? "AGRI " : "     "),
 		    team_bit_string(j->pl_info));
-	    W_WriteText(wind, 2, k, planetColor(j), buf1, (int)strlen(buf1),
+	    W_WriteText(wind, 2, k, planetColor(j), buf1, strlen(buf1),
 			planetFont(j));
-	    W_WriteText(wind, 24, k++, planetColor(j), buf, (int)strlen(buf),
+	    W_WriteText(wind, 24, k++, planetColor(j), buf, strlen(buf),
 			planetFont(j));
 	}
 	/* end of have info */
 	else {			/* else no info on planet */
-	    W_WriteText(wind, 2, k++, planetColor(j), buf1, (int)strlen(buf1),
+	    W_WriteText(wind, 2, k++, planetColor(j), buf1, strlen(buf1),
 			planetFont(j));
 	}
     }				/* end of for loop */
@@ -98,7 +90,7 @@ planet_list_normal()
 /*This function provides the planet list for a paradise server version 2.0 */
 
 static void
-planet_list_paradise()
+planet_list_paradise(void)
 {
     typedef struct planet *plptr;
 
@@ -143,7 +135,7 @@ planet_list_paradise()
 		    if (k != 0)
 			wind = planetw2;
 		    sprintf(buf, "Planet name      sctr own armies RESOURCES  SURFC  ATMOS    VISIT    TIME");
-		    W_WriteText(wind, 2, 1, textColor, buf, (int)strlen(buf),
+		    W_WriteText(wind, 2, 1, textColor, buf, strlen(buf),
 		    		W_RegularFont);
 		    k = 2;
 		}
@@ -166,7 +158,7 @@ planet_list_paradise()
 		if (i != 0) {
 		    wind = planetw2;
 		}
-		W_WriteText(wind, 2, 1, textColor, buf, (int)strlen(buf), 
+		W_WriteText(wind, 2, 1, textColor, buf, strlen(buf), 
 		  	    W_RegularFont);
 		k = 2;
 	    }
@@ -181,10 +173,10 @@ planet_list_paradise()
 
 	cur_color = shipCol[i];
 	sprintf(buf, "%s: ", teaminfo[i-1].shortname);
-	W_WriteText(wind, i * 7 + 2, k, cur_color, buf, (int)strlen(buf), 
+	W_WriteText(wind, i * 7 + 2, k, cur_color, buf, strlen(buf), 
 		    W_RegularFont);
 	sprintf(buf, " %-2d", team_pcount[i]);
-	W_WriteText(wind, i * 7 + 2, k + 1, cur_color, buf, (int)strlen(buf), 
+	W_WriteText(wind, i * 7 + 2, k + 1, cur_color, buf, strlen(buf), 
 	            W_RegularFont);
     }
 
@@ -195,16 +187,13 @@ planet_list_paradise()
 
 /****************************** print_planet() ************************/
 static void
-print_planet(wind, line, j)
-    W_Window wind;
-    int     line;
-    struct planet *j;
+print_planet(W_Window wind, int line, struct planet *j)
 {
     char    buf[100];		/* to sprintf into */
 
     sprintf(buf, "%-16s %d-%d", j->pl_name, (j->pl_x / GRIDSIZE) + 1,
 	    (j->pl_y / GRIDSIZE) + 1);
-    W_WriteText(wind, 2, line, textColor, buf, (int)strlen(buf),
+    W_WriteText(wind, 2, line, textColor, buf, strlen(buf),
 		W_RegularFont);
 
     if (j->pl_info & idx_to_mask(me->p_teami)) {
@@ -243,19 +232,19 @@ print_planet(wind, line, j)
 		    (j->pl_flags & PLARABLE ? 'A' : ' '),
 		    s);
 
-	    W_WriteText(wind, 24, line, planetColor(j), buf, (int)strlen(buf),
+	    W_WriteText(wind, 24, line, planetColor(j), buf, strlen(buf),
 			planetFont(j));
 
 	    sprintf(buf, "%4s   %3ld",
 		    team_bit_string(j->pl_info),
 		    ((idx_to_mask(me->p_teami) == j->pl_owner) ? 0 : (status2->clock - j->pl_timestamp)));
 
-	    W_WriteText(wind, 64, line, planetColor(j), buf, (int)strlen(buf),
+	    W_WriteText(wind, 64, line, planetColor(j), buf, strlen(buf),
 			planetFont(j));
 	}
     } else {
 	sprintf(buf, "--- No info; Scout me ---");
-	W_WriteText(wind, 24, line, textColor, buf, (int)strlen(buf),
+	W_WriteText(wind, 24, line, textColor, buf, strlen(buf),
 		    W_RegularFont);
     }
 }				/* end of print_planet */

@@ -2,55 +2,16 @@
 # NetrekII: Paradise Client Makefile
 #
 
-SHELL=/bin/sh
+@SET_MAKE@
 
-SRCDIR=./src
-SCRIPTDIR=./scripts
-
-authorizing:
-	@cd $(SRCDIR); $(MAKE) $@ SYSDEFS=-DAUTHORIZE STATIC=$(STATIC)
-
-generic:
-	@cd $(SRCDIR); $(MAKE) $@
-
-help:
-	@cd $(SRCDIR); $(MAKE) $@
-
-damiga:
-	@cd $(SRCDIR); $(MAKE) $@
-
-damiga.68000:
-	@cd $(SRCDIR); $(MAKE) $@
-
-depend:
-	@cd $(SRCDIR); $(MAKE) $@
-
-makefile:
-	@./configure
-
-dust:
-	@cd $(SRCDIR); $(MAKE) $@
-
-clean:
-	@cd $(SRCDIR); $(MAKE) $@
-
-dynamic_images:
-	@cd $(SRCDIR); $(MAKE) $@
+all:
+	(cd src && $(MAKE))
 
 static_images:
-	@cd $(SRCDIR); $(MAKE) $@
+	(cd src && $(MAKE) static_images)
+
+dynamic_images:
+	(cd src && $(MAKE) dynamic_images)
 
 unused_images:
-	@cd $(SRCDIR); $(MAKE) $@
-
-patchable: clean
-	@cd $(SRCDIR); $(MAKE) $@
-	-rm -f Makefile config.cache config.log config.status
-	-rm -f $(SCRIPTDIR)/expiretime $(SCRIPTDIR)/make_shippicfile.perl
-	-rm -f $(SCRIPTDIR)/mkcredits $(SCRIPTDIR)/mkimgsrc
-	-rm -f $(SCRIPTDIR)/netrektoxbm $(SCRIPTDIR)/numtoship
-	-rm -f $(SCRIPTDIR/scrambleargs $(SCRIPTDIR)/unused_images
-
-archive: patchable
-	tar cf ../tedturner-`cat etc/version`.tar
-	gzip ../tedturner-`cat etc/version`.tar
+	(cd src && $(MAKE) unused_images)

@@ -5,38 +5,33 @@
  * code for message window scrollback added by Bill Dyess 12/7/93
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <string.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#include <ctype.h>
-#include <math.h>
 #include "config.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif
-#include "version.h"
-#include "uname.h"
 
 #define MESSAGESIZE	20
 #define YOFF		0
 
 /* Prototypes */
-int instr P((char *string1, char *string2));
 void CheckFeatures P((char *m));
 void print_message P((char *message, unsigned int flags, unsigned int from,
 		      unsigned int to));
 void evalFlags P((int type, char *flagList));
 
-void    initMessageWindows()
+void
+initMessageWindows(void)
 {
     int     i;
     char   *s;
@@ -102,9 +97,7 @@ void    initMessageWindows()
 }
 
 void
-evalFlags(type, flagList)
-    int     type;
-    char   *flagList;
+evalFlags(int type, char *flagList)
 {
     messWin[type].flags = 0;
     while (*flagList) {
@@ -144,8 +137,7 @@ evalFlags(type, flagList)
    button respectively).  It beeps if there is no messages to scroll (ie at
    the top or bottom already). [BDyess] 12/07/93 */
 void
-messageWinEvent(evt)
-    W_Event *evt;
+messageWinEvent(W_Event *evt)
 {
     W_Window window = evt->Window;
     int     key = evt->key;
@@ -167,16 +159,8 @@ messageWinEvent(evt)
 }
 
 void
-rsvp_borg_call(message, from)
-    char   *message;
-    int     from;
+rsvp_borg_call(char *message, int from)
 {
-#if 0
-    int     len, pos;
-    len = strlen(message);
-    pos = len - 5;
-    if (strncmp(message + pos, "     ", 5) == 0)
-#else
     char   *chk;
 
     if (strlen(message) < 15)
@@ -185,11 +169,13 @@ rsvp_borg_call(message, from)
 	 /* empty body */ ;
     if (*chk)
 	return;
-#endif
     {
-	char    buf[120];
+        char   *type = "Paradise Client";
+	struct  utsname un;
+	char    buf[sizeof(type) + MAX_CLIENT_VERSION_STRING + 2*SYS_NMLN + 10];
 
-	sprintf(buf, "Paradise Client %s (%s)", CLIENTVERS, MACHINE_UNAME );
+        uname(&un);
+	sprintf(buf, "%s %s (%s %s)", type, CLIENTVERS, un.sysname, un.release);
 	if (from == 255) {
 	    sendMessage(buf, MGOD, 0);
 	} else
@@ -197,11 +183,10 @@ rsvp_borg_call(message, from)
     }
 }
 
-void
-logit(message)
-    char   *message;
 /* logs the given message if the 'logmess' variable is set to one.  It send the
    message to stdout by default, or to a file if one is defined. [BDyess] */
+void
+logit(char *message)
 {
     if (!logmess)
 	return;
@@ -214,31 +199,12 @@ logit(message)
 }
 
 static void
-writeMessage(message, color, len, type)
-    char   *message;
-    W_Color color;
-    int     len;
-    int     type;
+writeMessage(char *message, W_Color color, int len, int type)
 {
     struct messageWin *j;
 
     /*printf("writeMessage: message = %s, len = %d\n",message,len);*/
 
-#ifdef SPEECH /* was AMIGA... ya never know ;-) */
-    if (((S_SpeakYour && type & WA_INDIV) ||
-	 (S_SpeakTeam && type & WA_TEAM) ||
-	 (S_SpeakAll && type & WA_ALL) ||
-	 (S_SpeakKill && type & WA_KILL)) &&
-	((strncmp(message,"GOD->",5) != 0) || S_SpeakGod) &&
-	((data->from != me->p_no) || S_SpeakSelf)) {
-	S_SpeakString(message, len);
-    }
-#endif				/* SPEECH */
-#ifdef SOUND
-    if ((type & WA_INDIV) && data->from != me->p_no) {
-	S_PlaySound(S_WHISTLE);
-    }
-#endif
     for (j = &messWin[0]; j < &messWin[WNUM]; j++) {
 	if (!(j->flags & type))
 	    continue;
@@ -246,12 +212,11 @@ writeMessage(message, color, len, type)
     }
 }
 
-void
-print_message(message, flags, from, to)
-    char   *message;
-    unsigned int flags, from, to;
 /* this function determines the color that the given message should be and
    then passes it to writeMessage [BDyess] */
+void
+print_message(char *message, unsigned int flags, unsigned int from, 
+              unsigned int to)
 {
     register int len;
     W_Color color;
@@ -322,7 +287,7 @@ print_message(message, flags, from, to)
 	if (flags == conq) {
 	    /* output conquer stuff to stdout in addition to message window */
 	    fprintf(stdout, "%s\n", message);
-	    if (instr(message, "kill")) {
+	    if (strstr(message, "kill")) {
 		fprintf(stdout, "NOTE: The server here does not properly set message flags\n");
 		fprintf(stdout, "You should probably pester the server god to update....\n");
 	    }
@@ -354,11 +319,11 @@ print_message(message, flags, from, to)
 	   Kludge stuff for report kills...
 	*/
 	if ((strncmp(message, "GOD->ALL", 8) == 0 &&
-	     (instr(message, "was kill") ||
-	      instr(message, "killed by"))) ||
-	    instr(message, "burned to a crisp by") ||
-	    instr(message, "shot down by") ||
-	    (*message != ' ' && instr(message, "We are being attacked"))) {
+	     (strstr(message, "was kill") ||
+	      strstr(message, "killed by"))) ||
+	      strstr(message, "burned to a crisp by") ||
+	      strstr(message, "shot down by") ||
+	     (*message != ' ' && strstr(message, "We are being attacked"))) {
 
 	    /* strip off the useless GOD->ALL by adding 9 to message [BDyess] */
 	    message += 9;
@@ -416,30 +381,24 @@ print_message(message, flags, from, to)
    messages are still received but not printed.  [BDyess] 12/07/93 */
 /* NOT [BDyess] 8/22/95 */
 void
-dmessage(message, flags, from, to)
-    char   *message;
-    unsigned int flags, from, to;
+dmessage(char *message, unsigned int flags, unsigned int from, unsigned int to)
 {
     struct distress dist;
     int len;
     /*char dead[20], alive[20];*/
 
-#ifdef RC_DISTRESS
     /* aha! A new type distress/macro call came in. parse it appropriately */
     if (F_gen_distress && (flags == (MTEAM | MDISTR | MVALID))) {
 	if (paradise)
 	    printf("RCD: %s\n", message);
 	HandleGenDistr(message, from, to, &dist);
 	len = makedistress(&dist, message, distmacro[dist.distype].macro);
-#ifdef BEEPLITE
 	if (UseLite)
 	    rcdlite(&dist);
-#endif
 	if (len <= 0)
 	    return;
 	flags ^= MDISTR;
     }
-#endif
     /*
        keep track of how many queued messages there are for use with the
        infoIcon [BDyess]
@@ -468,7 +427,7 @@ dmessage(message, flags, from, to)
 	upgrading = 0;
 
     if ((from != me->p_no) || pigSelf)
-	rsvp_borg_call(message, (int)from);
+	rsvp_borg_call(message, from);
 
     /* beep when a personal message is sent while iconified [BDyess] */
     if (to == me->p_no && (flags & MINDIV) && iconified) {
@@ -480,36 +439,16 @@ dmessage(message, flags, from, to)
     }
     /* want a warning for personal kills, so check here [BDyess] */
     /* and personal deaths [BDyess] */
-    /*if(1 == sscanf(message,"GOD->ALL %s (%*c%*c) was kill %*f for %s",dead,
-                   alive) &&
-       (0 == strcmp(dead,pseudo) || 0 == strcmp(alive,pseudo))) {*/
     if(strncmp(message,"GOD->ALL",8) && (0 == strcmp(message,pseudo))) {
       hwarning(message+9);
     }
     print_message(message, flags, from, to);
 }
 
-
-int
-instr(string1, string2)
-    char   *string1, *string2;
-{
-    char   *s;
-    int     length;
-
-    length = strlen(string2);
-    for (s = string1; *s != 0; s++) {
-	if (*s == *string2 && strncmp(s, string2, (unsigned int)length) == 0)
-	    return (1);
-    }
-    return (0);
-}
-
-void
-CheckFeatures(m)
-    char   *m;
 /* I don't know if this works correctly or not.  It is ripped from BRM and has
    been modified a bit to fit.  Right now it doesn't do anything.  [BDyess] */
+void
+CheckFeatures(char *m)
 {
     char    buf[BUFSIZ];
     char   *pek = &m[10];
@@ -526,12 +465,10 @@ CheckFeatures(m)
 	allowViewBox = 0;
 	strcat(buf, pek);
     }
-#ifdef CONTINUOUS_MOUSE
     if (!strcmp(pek, "NO_CONTINUOUS_MOUSE")) {
 	allowContinuousMouse = 0;
 	strcat(buf, pek);
     }
-#endif				/* CONTINUOUS_MOUSE */
     if (!strcmp(pek, "NO_SHOW_ALL_TRACTORS")) {
 	allowShowAllTractorPressor = 0;
 	strcat(buf, pek);
@@ -574,7 +511,7 @@ CheckFeatures(m)
 }
 
 void
-sendVersion()
+sendVersion(void)
 {
     static int version_sent = 0;
     char    buf[80];

@@ -4,32 +4,20 @@
  * This version modified to work as the client in a socket based protocol.
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <pwd.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <ctype.h>
 #include "config.h"
-#include "Wlib.h"
+
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "packets.h"
 
 /* Enter the game */
 
 /* Prototypes */
 
 void
-enter()
+enter(void)
 {
     redrawTstats();
     delay = 0;
@@ -41,7 +29,7 @@ enter()
 static struct status dummy1;
 static struct status2 dummy2;
 void
-openmem()
+openmem(void)
 {
     /* players, weapons, planets are handled in build_default_configuration */
 

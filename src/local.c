@@ -1,35 +1,28 @@
 /* local.c, all code that writes to the local window (w) [BDyess] */
 
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
 #include <stdio.h>
 #include <signal.h>
 #include <ctype.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include <math.h>
-#include "config.h"
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
+#include "packets.h"
 #include "gameconf.h"
 #include "images.h"
+#ifdef UNIX_SOUND
 #include "sound.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif
-#ifdef HAVE_ASSERT_H
-#include <assert.h>
 #endif
 
 PlanetImageNode *localhead = NULL;
@@ -37,17 +30,13 @@ PlanetImageNode *localhead = NULL;
 bitstruct createPlanetBits P((struct planet *p, char *showlocal, 
                                  int showLocalLen));
 
-#ifdef ASTEROIDS
 /* data from planets.c [BDyess] */
 extern struct point *asteroid_footprints;
-#endif /* ASTEROIDS */
 
 /* creates a new PlanetImageNode (including the associated image) given the 
    planet [BDyess] */
 PlanetImageNode *
-createLocalImageNode(p,bits)
-  struct planet *p;
-  bitstruct bits;
+createLocalImageNode(struct planet *p, bitstruct bits)
 {
   int     offset;
   W_Image *image = NULL;
@@ -168,9 +157,7 @@ createLocalImageNode(p,bits)
 }
 
 static void
-drawPlanet(p,x,y)
-    struct planet *p;
-    int x,y;
+drawPlanet(struct planet *p, int x, int y)
 {
     W_Image *image = NULL;
     int     bigx = 0, bigy = 0;
@@ -199,7 +186,6 @@ drawPlanet(p,x,y)
 		     image,
 		     planetColor(p));
 
-#ifdef SHOW_IND
     if (showIND && (p->pl_info & idx_to_mask(me->p_teami)) && 
        (p->pl_owner == NOBODY) && (PL_TYPE(*p) == PLPLANET)) {
 	W_CacheLine (w, x - (bigx / 2), y - (bigy / 2),
@@ -209,7 +195,6 @@ drawPlanet(p,x,y)
 		     x - (bigx / 2), y + (bigy / 2 - 1),
 		     W_White);
     }
-#endif
     if (namemode) {
      if (PL_TYPE(*p) != PLWHOLE) {
 	W_MaskText(w, x - p->pl_namelen * W_Textwidth / 2, y + 
@@ -264,8 +249,7 @@ drawPlanet(p,x,y)
 
 /* call this from local for each player, instead of having an extra loop! */
 static void
-redraw_photon_torps(j)
-    struct player *j;
+redraw_photon_torps(struct player *j)
 {
     int     i, h;
     struct torp *k;
@@ -316,12 +300,6 @@ redraw_photon_torps(j)
 	    cz->y = dy - (image->height / 2);
 	    cz->width = image->width;
 	    cz->height = image->height;
-#if 0
-	} else if (k->t_owner != me->p_no && 
-	         ((k->t_war & idx_to_mask(me->p_teami)) ||
-		  (idx_to_mask(players[k->t_owner].p_teami) & 
-		  (me->p_hostile | me->p_swar)))) {
-#endif /*0*/
         } else if (!friendlyTorp(k)) {
 	    image = getImage(I_ETORP);
 	    W_DrawImage(w, dx - image->width / 2,
@@ -353,8 +331,7 @@ redraw_photon_torps(j)
 }
 
 static void
-draw_one_thingy(k)
-    struct thingy *k;
+draw_one_thingy(struct thingy *k)
 {
     int     dx, dy;
     struct _clearzone *cz;
@@ -460,8 +437,7 @@ draw_one_thingy(k)
 }
 
 static void
-redraw_drones(j)
-    struct player *j;
+redraw_drones(struct player *j)
 {
     int     i, h;
     int     count;
@@ -481,7 +457,7 @@ redraw_drones(j)
 }
 
 static void
-redraw_other_drones()
+redraw_other_drones(void)
 {
     int     h;
 
@@ -490,8 +466,7 @@ redraw_other_drones()
 }
 
 static void
-redraw_plasma_torps(j)
-    struct player *j;
+redraw_plasma_torps(struct player *j)
 {
     int     h, i;
     register struct plasmatorp *pt;
@@ -555,9 +530,8 @@ redraw_plasma_torps(j)
 
 void tactical_hockey P((void));
 
-#ifdef ASTEROIDS
 void
-redraw_asteroids()
+redraw_asteroids(void)
 {
   int x, y, minx, miny, maxx, maxy;
   struct _clearzone *cz;
@@ -667,11 +641,10 @@ redraw_asteroids()
     }
   }
 }
-#endif /* ASTEROIDS */
 
 
 void
-redraw_all_planets()
+redraw_all_planets(void)
 {
     int     i;
     int     dx, dy;
@@ -680,11 +653,9 @@ redraw_all_planets()
 
     nplan = paradise ? nplanets : 40;
 
-#ifdef HOCKEY
     if(hockey) {
       tactical_hockey();
     }
-#endif /*HOCKEY*/
     for (i = 0, l = &planets[i]; i < nplan; i++, l++) {
 	dx = l->pl_x - me->p_x;
 	dy = l->pl_y - me->p_y;
@@ -697,10 +668,7 @@ redraw_all_planets()
 }
 
 void 
-doShowMySpeed(dx, dy, ship_bits, j)
-    int     dx, dy;
-    W_Image *ship_bits;
-    struct player *j;
+doShowMySpeed(int dx, int dy, W_Image *ship_bits, struct player *j)
 {
     struct _clearzone *cz;
     char    idbuf[5];
@@ -715,27 +683,6 @@ doShowMySpeed(dx, dy, ship_bits, j)
 
        Changed to team color because of xpm mode. [BDyess]
     */
-#if 0
-    switch (me->p_flags & (PFWARP | PFAFTER | PFWARPPREP)) {
-    case PFWARP:
-	color = W_Cyan;
-	me->p_flags &= ~PFWARPPREP;
-	break;
-    case PFAFTER:
-	color = rColor;
-	break;
-    case PFWARPPREP:
-	color = yColor;
-	break;
-    default:			/* impulse */
-	if (me->p_speed > 0) {
-	    color = gColor;
-	} else {		/* stopped */
-	    color = textColor;
-	}
-	break;
-    }
-#endif /*0*/
     color = shipCol[1 + me->p_teami];
     dx += ship_bits->width / 2;
     dy -= ship_bits->height / 2;
@@ -750,7 +697,6 @@ doShowMySpeed(dx, dy, ship_bits, j)
     cz->height = W_Textheight;
 }
 
-#ifdef LOCAL_SHIPSTATS
 /* show just about anything next to ship on local display
    DSFAPWE - for each letter in statString, show a line for:
    Damage, Shields, Fuel, Armies, sPeed, Wtemp, Etemp 
@@ -758,7 +704,7 @@ doShowMySpeed(dx, dy, ship_bits, j)
    lower case = reverse length
  */
 static void
-doLocalShipstats()
+doLocalShipstats(void)
 {
     char *sptr;
     int len, x=localStatsX;
@@ -816,10 +762,9 @@ doLocalShipstats()
 	cz->height=statHeight-2;
     }
 }
-#endif
 
 void
-local()
+local(void)
 {
     int i;
     struct player *j;
@@ -850,9 +795,7 @@ local()
     idbuf[0] = '0';
     idbuf[1] = '\0';
 
-#ifdef ASTEROIDS
     redraw_asteroids();
-#endif /* ASTEROIDS */
 
     /* Draw Planets */
     redraw_all_planets();
@@ -873,10 +816,6 @@ local()
 	dx = scaleLocal(dx);
 	dy = scaleLocal(dy);
 	k = j->p_explode;
-#ifdef SOUND
-	if(k==0)
-	    S_PlaySound(S_EXPLOSION);
-#endif
 #ifdef UNIX_SOUND
         if (k==0)
                 {
@@ -969,16 +908,13 @@ local()
 		    cz->width = cloakimage->width + 2;
 		    cz->height = cloakimage->height + 2;
 		    doShields(dx, dy, shipimage, j);
-#ifdef VARY_HULL
 		    doHull(dx, dy, shipimage, j);
-#endif				/* VARY_HULL */
 		    if (showMySpeed)
 			doShowMySpeed(dx, dy, shipimage, j);
 		}
 		continue;
 	    }
 	    cz = new_czone();
-#ifdef BEEPLITE
 	    if (emph_player_seq_n[j->p_no] > 0 &&
 		((F_beeplite_flags & LITE_PLAYERS_LOCAL) ||
 		 ((j == me) && (F_beeplite_flags & LITE_SELF)))) {
@@ -993,7 +929,6 @@ local()
 			       image,
 			       emph_player_color[j->p_no]);
 	    } else
-#endif
 	    {
 		cz->x = dx - (shipimage->width / 2);
 		cz->y = dy - (shipimage->height / 2);
@@ -1026,9 +961,7 @@ local()
 		}
 		doShields(dx, dy, shipimage, j);
 		if (j == me) {
-#ifdef VARY_HULL
 		    doHull(dx, dy, shipimage, j);
-#endif				/* VARY_HULL */
 		    if (showMySpeed)
 			doShowMySpeed(dx, dy, shipimage, j);
 		}
@@ -1051,9 +984,7 @@ local()
 		}
 	    }
 	    doShields(dx, dy, shipimage, j);
-#ifdef VARY_HULL
 	    doHull(dx, dy, shipimage, j);
-#endif				/* VARY_HULL */
 	    if (showMySpeed && j == me)
 		doShowMySpeed(dx, dy, shipimage, j);
 	    else {
@@ -1070,11 +1001,9 @@ local()
 		cz->width = W_Textwidth;
 		cz->height = W_Textheight;
 	    }
-#ifdef HOCKEY
 	    if (j == puck && puckArrow) {
 	      drawPuckArrow();
 	    }
-#endif /*HOCKEY*/
 	}
 	/* Now draw his phaser (if it exists) */
 	php = &phasers[j->p_no];
@@ -1086,13 +1015,6 @@ local()
  		ty = j->p_y + j->p_ship->s_phaserrange * Sin[dir];
   		tx = scaleLocal(tx - me->p_x);
   		ty = scaleLocal(ty - me->p_y);
-#if 0
-		/* Here I will have to compute end coordinate */
-		tx = j->p_x + j->p_ship->s_phaserrange * Cos[php->ph_dir];
-		ty = j->p_y + j->p_ship->s_phaserrange * Sin[php->ph_dir];
-		tx = scaleLocal(tx - me->p_x);
-		ty = scaleLocal(ty - me->p_y);
-#endif /*0*/
 	    } else if (php->ph_status == PHHIT2) {
 		tx = scaleLocal(php->ph_x - me->p_x);
 		ty = scaleLocal(php->ph_y - me->p_y);
@@ -1103,14 +1025,6 @@ local()
 
 	    php->ph_fuse++;
 
-#ifdef CHECK_DROPPED
-	    if (php->ph_fuse > longest_ph_fuse + 1 && php->ph_status != PHGHOST) {
-		if (reportDroppedPackets)
-		    printf("Dropped phaser free, player %d (fuse)\n", j->p_no);
-		php->ph_status = PHGHOST;
-	    }
-	    if (php->ph_status != PHGHOST)
-#endif
 	    {
 		if(friendlyPlayer(j) || j==me) /* check for j==me is for the screwy
 						  dogfight server, where you are hostile
@@ -1157,13 +1071,8 @@ local()
 		    lx = tx + enemyPhasers * Cos[NORMALIZE (dir - 64)];
 		    ly = ty + enemyPhasers * Sin[NORMALIZE (dir - 64)];
 
-#ifdef W_PHASERLINE
-		    W_MakePhaserLine (w, wx, wy, dx, dy, shipCol[1 + j->p_teami]);
-		    W_MakePhaserLine (w, lx, ly, dx, dy, shipCol[1 + j->p_teami]);
-#else
 		    W_CacheLine (w, wx, wy, dx, dy, shipCol[1 + j->p_teami]);
 		    W_CacheLine (w, lx, ly, dx, dy, shipCol[1 + j->p_teami]);
-#endif
 		    php->ph_fuse++;
 		    
 		    clearline[0][clearlcount] = wx;
@@ -1181,11 +1090,7 @@ local()
 		    W_Color ph_col = (php->ph_fuse % 2 && php->ph_status != PHMISS) ?
 			             foreColor :
 				     shipCol[1 + j->p_teami];
-#ifdef W_PHASERLINE
-		    W_MakePhaserLine(w, dx, dy, tx, ty, ph_col);
-#else
 		    W_CacheLine(w, dx, dy, tx, ty, ph_col);
-#endif
 		    clearline[0][clearlcount] = dx;
 		    clearline[1][clearlcount] = dy;
 		    clearline[2][clearlcount] = tx;
@@ -1246,9 +1151,8 @@ local()
 	    py = scaleLocal(victim->p_y - me->p_y);
 	    if (px == dx && py == dy)
 		break;
-#define XPI     3.1415926
-	    theta = atan2((double) (px - dx), (double) (dy - py)) + XPI / 2.0;
-	    dir = (unsigned char) (theta / XPI * 128.0);
+	    theta = atan2((double) (px - dx), (double) (dy - py)) + M_PI / 2.0;
+	    dir = (unsigned char) (theta / M_PI * 128.0);
 	    target_width = getShipImage(victim->p_teami + 1,
 				        victim->p_ship->s_bitmap)->width;
 	    if (!(victim->p_flags & PFSHIELD))
@@ -1257,7 +1161,6 @@ local()
 	    ly[0] = py + (Sin[dir] * (target_width / 2));
 	    lx[1] = px - (Cos[dir] * (target_width / 2));
 	    ly[1] = py - (Sin[dir] * (target_width / 2));
-#undef XPI
 	    if (j->p_flags & PFPRESS) {
 		W_MakeTractLine(w, dx, dy, lx[0], ly[0], W_Yellow);
 		W_MakeTractLine(w, dx, dy, lx[1], ly[1], W_Yellow);
@@ -1442,10 +1345,8 @@ local()
     if (blk_showStars)
 	drawStars();
 
-#ifdef LOCAL_SHIPSTATS
     if(localShipStats)
 	doLocalShipstats();
-#endif
     if(hudwarning) {
       if(warncount)
 	W_MaskText(w, center - (warncount / 2) * W_Textwidth, 

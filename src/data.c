@@ -2,24 +2,15 @@
  * data.c
  */
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
+#include "conftime.h"
+#include <stdlib.h>
 #include <stdio.h>
 
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(TIME_WITH_SYS_TIME) && (HAVE_SYS_TIME_H)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
-#include "config.h"
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
-#include "data.h"
-#include "proto.h"
 
 int     useExternalImages = 0;	/* uses external images in preference to
                                    compiled in images [BDyess] */
@@ -52,9 +43,7 @@ int	hwarntimer = -1;	/* timer for clearing of hwarning [BDyess] */
 int	hudwarning = 1;		/* HUD warning on or off [BDyess] */
 
 int     paradise = 0;		/* is the server a paradise server */
-#ifdef HOCKEY
 int	hockey = 0;		/* is the server a hockey server [BDyess] */
-#endif /*HOCKEY*/
 
 int     planetChill = 1;	/* udcounter is divided by this to find out
                                    the current frame - higher numbers mean
@@ -68,14 +57,12 @@ Tractor *tracthead = NULL,      /* data for remembering where tractor lines */
         *tractcurrent = NULL,   /* were drawn [BDyess] */
 	*tractrunner;
 
-#ifdef XPM
 int	xpm = 0;		/* use xpm's or not [BDyess] */
 char   *xpmPath = NULL;		/* path prefix used to find pixmaps [BDyess] */
 int     cookie = 1;		/* cookie mode [BDyess] */
 int	verbose_image_loading = 0; /* image loading logging [BDyess] */
 int     useOR = 0;		/* turn Rob's color allocator on so GXor can
                                    be used to draw images [BDyess] */
-#endif /*XPM [BDyess]*/
 
 char   *imagedir = NULL;	/* dir containing image files [BDyess] */
 char   *imagedirend = NULL;	/* end of original imagedir [BDyess] */
@@ -89,7 +76,6 @@ int     nplasmas = 1;
 int     nphasers = 1;
 int     nplanets = 60;
 
-#ifdef HOCKEY
 /* hockey stuff [BDyess] */
 int	galacticHockeyLines = 1;  /* draw lines on the galactic? [BDyess] */
 int	tacticalHockeyLines = 1;  /* draw lines on the tactical? [BDyess] */
@@ -100,7 +86,6 @@ int	puckBitmap = 1;		  /* use the puck bitmap [BDyess] */
 int	puckArrow = 1;		  /* draw a direction arrow on puck [BDyess] */
 int 	puckArrowSize = 3;	  /* size of puckArrow [BDyess] */
 struct	hockeyLine hlines[NUM_HOCKEY_LINES];
-#endif /*HOCKEY*/
 
 int     metaFork = 0;		/* allow spawning off of clients from meta-
 				   server window [BDyess] */
@@ -114,15 +99,11 @@ int     lockLine = 0;		/* flag for line in lock for galactic -TH */
 int     mapSort = 1;		/* sort player list by team -TH */
 int     autoSetWar = 1;         /* do war decl's when tmode starts -TH */
 
-#ifdef WIDE_PLIST
 char   *playerList;		/* string of fields for wide playerlist */
 char   *playerListStart;	/* comma seperated set of strings for plist */
 int     resizePlayerList = 0;
-#endif				/* WIDE_PLIST */
 
-#ifdef PACKET_LIGHTS
 int     packetLights = 0;	/* flag for packetLights [BDyess] */
-#endif				/* PACKET_LIGHTS */
 
 /* for showgalactic and showlocal rotation sequence [BDyess] */
 char   *showGalacticSequence, *showLocalSequence;
@@ -169,16 +150,16 @@ struct dmacro_list dist_defaults[] =
     {control('l'), "controlling", " %T%c->%O Controlling at %l\0"},
     {control('5'), "asw", " %T%c->%O Anti-bombing %p near %b.\0"},
     {control('6'), "asbomb", " %T%c->%O DON'T BOMB %l. Let me bomb it (%S)\0"},
-    {control('7'), "doing1", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at lal.  %d%% dam, %s%% shd, %f%% fuel\0"},
-    {control('8'), "doing2", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at lal.  %d%% dam, %s%% shd, %f%% fuel\0"},
+    {control('7'), "doing1", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at %b.  %d%% dam, %s%% shd, %f%% fuel\0"},
+    {control('8'), "doing2", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at %b.  %d%% dam, %s%% shd, %f%% fuel\0"},
     {control('f'), "free_beer", " %T%c->%O %p is free beer\0"},
     {control('n'), "no_gas", " %T%c->%O %p @ %l has no gas\0"},
     {control('h'), "crippled", " %T%c->%O %p @ %l crippled\0"},
     {control('9'), "pickup", " %T%c->%O %p++ @ %l\0"},
     {control('0'), "pop", " %T%c->%O %l%?%n>-1%{ @ %n%}!\0"},
      /* F */ {'F', "carrying", " %T%c->%O %?%S=SB%{Your Starbase is c%!C%}arrying %?%a>0%{%a%!NO%} arm%?%a=1%{y%!ies%}.\0"},
-    {control('@'), "other1", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at lal. (%d%%D, %s%%S, %f%%F)\0"},
-    {control('#'), "other2", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at lal. (%d%%D, %s%%S, %f%%F)\0"},
+    {control('@'), "other1", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at %b. (%d%%D, %s%%S, %f%%F)\0"},
+    {control('#'), "other2", " %T%c->%O (%i)%?%a>0%{ has %a arm%?%a=1%{y%!ies%}%} at %b. (%d%%D, %s%%S, %f%%F)\0"},
      /* E */ {'E', "help", " %T%c->%O Help(%S)! %s%% shd, %d%% dmg, %f%% fuel,%?%S=SB%{ %w%% wtmp,%!%}%E%{ ETEMP!%}%W%{ WTEMP!%} %a armies!\0"},
     {'\0', '\0', '\0'},
 };
@@ -198,18 +179,14 @@ int     ghost_pno = 0;		/* my p_no if it is */
 /* time client connected to server [BDyess] */
 time_t  timeStart = 0;
 
-#ifdef TIMER
 /* dashboard timer data [BDyess] */
 int     timerType = T_SHIP;	/* timer defaults to ship timer */
 time_t  timeBank[T_TOTAL];	/* array of times	 */
-#endif				/* TIMER */
 
-#ifdef MACROS
 struct macro *macrotable[256];
 int     macroState = 0;		/* 0=nothing, 1=in macro mode, 2=in macro,
 				   want destination */
 char    lastMessage[100] = {0};
-#endif				/* MACROS */
 
 /* defaults list */
 struct stringlist *defaults = NULL;
@@ -221,11 +198,7 @@ int     upgrading = 0;
 int     czsize = (8 + 1 + /* MAXTHINGIES */ 8 + 1 + 1) * 32 + 60;
 struct _clearzone *clearzone = 0;
 int     clearcount = 0;
-#ifdef HOCKEY
 int     clearline[4][32 + 2 * 32 + NUM_HOCKEY_LINES];
-#else
-int     clearline[4][32 + 2 * 32];
-#endif /*HOCKEY*/
 int     clearlmark[2];
 int     clearlmcount;
 int     clearlcount;
@@ -242,12 +215,10 @@ struct ship *myship;
 struct shiplist *shiptypes = NULL;
 struct stats *mystats;
 struct planet *planets;
-#ifdef ASTEROIDS
 struct t_unit *terrainInfo;
 int received_terrain_info = 0;
 int terrain_x;
 int terrain_y;
-#endif /* ASTEROIDS */
 struct phaser *phasers;
 struct message *messages;
 struct mctl *mctl;
@@ -331,8 +302,8 @@ int     vary_hull = 0;		/* setting for varying hull indicator
 int     warpStreaks = 1;	/* flag for warp star streaking [BDyess]    */
 int     fastQuit = 0;		/* flag for fast quit [BDyess]              */
 int     pigSelf = 1;		/* pigcall response from self [BDyess]      */
-#ifdef CONTINUOUS_MOUSE
 int     continuousMouse = 0;	/* continuous mouse flag [BDyess]	    */
+int	extendedMouse = 0;	/* more buttons for mouse */
 int     clickDelay = 5;		/* # of updates to delay before repeating   */
  /* turns on and off continuousMouse for each button [BDyess] */
 int     buttonRepeatMask = 0;
@@ -340,12 +311,7 @@ int     buttonRepeatMask = 0;
 int     allowContinuousMouse = 1;	/* allow continuous mouse to work
 					   flag, so  */
  /* each server can turn it off [BDyess]     */
-#endif				/* CONTINUOUS_MOUSE */
 int     autoQuit = 60;		/* time to wait before auto-quit [BDyess]   */
-
-#ifdef GATEWAY
-unsigned long netaddr = 0;	/* for blessing */
-#endif
 
 int     msgBeep = 1;		/* ATM - msg beep */
 int     scanmapped = 0;		/* ATM - scanners */
@@ -393,29 +359,19 @@ int     udpClientSend = 1;	/* UDP: send our packets using UDP? */
 int     udpClientRecv = 1;	/* UDP: receive with simple UDP */
 int     udpSequenceChk = 1;	/* UDP: check sequence numbers */
 int     updateSpeed = 5;	/* updates per second */
-#ifdef GATEWAY
-int     gw_serv_port, gw_port, gw_local_port;	/* UDP */
-char   *gw_mach = NULL;		/* UDP */
-#endif
 
 /* MOTD data */
 struct page *currpage = NULL;
 struct page *motddata = NULL;
 
-#ifdef METASERVER
 /* metaserver window stuff */
 int     usemeta = 0;
 char   *metaserverAddress;
-#endif				/* METASERVER */
 
 char    blk_refitstring[80] = "s=scout, d=destroyer, c=cruiser, b=battleship, a=assault, o=starbase";
 int     blk_gwidth;
 float   blk_windgwidth;
-#if 0
-int     blk_altbits = 1;
-#else
 int     showKitchenSink = 0;
-#endif
 int     blk_showStars = 1;
 int     blk_bozolist = -1;
 /*
@@ -471,29 +427,16 @@ W_Window messagew, w, mapw, statwin, baseWin, infow = 0, iconWin, tstatw,
 
 W_Window scanw, scanwin, udpWin;
 
-#ifdef SHORT_PACKETS
 W_Window spWin;
-#endif
 
-#ifdef TOOLS
 W_Window toolsWin = NULL;
 int     shelltools = 1;
 
-#endif
-
-#ifdef SOUND
-W_Window soundWin = 0;
-#endif
-
-#ifdef ROTATERACE
 int     rotate = 0;
 int     rotate_deg = 0;
-#endif
 
-#ifdef NOWARP
 int     messageon = 0;
 int     warp = 0;
-#endif
 
 int     RSA_Client = 1;
 int     blk_zoom = 0;		/* zoom in to 1/4 galaxy */
@@ -506,12 +449,8 @@ int     autoZoom=0, autoUnZoom=0, auto_zoom_timer=0, autoZoomOverride=15;
 int     use_msgw = 0;		/* send last message to message window */
 
 int     show_shield_dam = 1;	/* show shield damage by color */
-#ifdef BORGTEST
-int     bd = 0;			/* BORG TEST */
-#endif
 
 
-#ifdef SHORT_PACKETS
 int     tryShort = 1;		/* for .xtrekrc option */
 int     recv_short = 0;
 int     recv_mesg = 1;
@@ -520,7 +459,6 @@ int     recv_threshold = 0;
 char    recv_threshold_s[8] = {'0', '\0'};
 int     recv_warn = 1;
 int godToAllOnKills = 1;
-#endif
 
 int     ping = 0;		/* to ping or not to ping */
 long    packets_sent = 0;	/* # all packets sent to server */
@@ -529,30 +467,18 @@ W_Window pStats;
 
 int     lowercaset = 0;		/* I hate shift-T for team.  put "lowercaset:
 				   on" to allow 't' -JR */
-
-#ifdef DNET
-unsigned long sigsPending = 0;
-unsigned long sockMask = 0;
-unsigned long udpSockMask = 0;
-#endif
-
-#ifdef FEATURE
 int     why_dead = 0;		/* add reason for death to SP kill msgs. */
 int     cloakerMaxWarp = 0;	/* server reports cloaker's speed as 15. */
 int     F_dead_warp = 0;	/* dead players reported at warp 14 */
 int     F_feature_packets = 0;	/* whether to use them or not */
 int     F_multiline_enabled = 0;/* is the MMACRO flag enabled? */
 int     F_UseNewMacro = 1;	/* Not sure this is actually checked... */
-#ifdef ASTEROIDS
 int	F_terrain = 1;		/* Enable terrain sending */
 unsigned char F_terrain_major = 1;	/* Version 1.0 of terrain */
 unsigned char F_terrain_minor = 0;
 int	F_gz_motd = 0;		/* Can't handle gzipped MOTD yet */
 unsigned char	F_gz_motd_major = 0;	/* call it v0.0 then */
 unsigned char	F_gz_motd_minor = 0;
-#endif /* ASTEROIDS */
-
-#ifdef BEEPLITE
 
 int     F_allow_beeplite = 1;
 unsigned char    F_beeplite_flags = LITE_PLAYERS_MAP |
@@ -573,25 +499,10 @@ int     UseLite = 0;
 
 int     emph_planet_seq_n[MAX_PLANETS] = {0,};
 int     emph_player_seq_n[MAX_PLAYER] = {0,};
-#if 0
-W_Icon  emph_planet_seq[10];
-W_Icon  emph_player_seq[10];
-W_Icon  emph_player_seql[10];
-#endif /*0*/
 int     beep_lite_cycle_time_player = 10;
 int     beep_lite_cycle_time_planet = 10;
 W_Color emph_planet_color[MAX_PLANETS];
 W_Color emph_player_color[MAX_PLAYER];
-#endif				/* BEEPLITE */
-
-#endif				/* FEATURE */
-
-#ifdef CHECK_DROPPED
-int     reportDroppedPackets = 0;	/* report when dropped packet kludges
-					   are used. */
-int     longest_ph_fuse = 0;
-#endif
-
 
 /* When you enter game send request for full update SRS 3/15/94 */
 int     askforUpdate = 0;
@@ -603,7 +514,6 @@ int     enemyPhasers = 0;       /* Draw wide beams for enemy phasers.
 
 int     scrollBeep = 1;
 
-#ifdef RECORDER
 int     recordGame = 0;
 char   *recordFile = 0;
 int     maxRecord = 1000000;	/* default 1 meg max */
@@ -611,21 +521,17 @@ int     maxRecord = 1000000;	/* default 1 meg max */
 int     playback = 0;
 char   *playFile = 0;
 int     pb_update = 0, pb_advance = 0, paused = 1, pb_scan=0, pb_slow=0;
-#endif
-
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
-int showMapAtMotd = 0;
-#endif
 
 int redrawDelay = 0;
 
-#ifdef LOCAL_SHIPSTATS
 int localShipStats = 0;
 char *statString;
 int statHeight=20, localStatsX=200, localStatsY=260;
-#endif
 
-#ifdef SHOW_IND
 int showIND=0;
-#endif
 
+char CLIENTVERS[MAX_CLIENT_VERSION_STRING] = "3.1p0 ALPHA";
+
+/* old stuff from gameconf.h */
+struct teaminfo_s *teaminfo = NULL;
+int number_of_teams = 0;

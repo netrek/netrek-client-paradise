@@ -9,7 +9,6 @@
  * Routines to allow connection to the xtrek server.
  */
 #include "copyright2.h"
-#include "defines.h"
 
 /* to see the packets sent/received: [BDyess] */
 #if 0
@@ -18,120 +17,55 @@
 #endif				/* 0 */
 
 #include "config.h"
-
-#ifndef GATEWAY
-#define USE_PORTSWAP		/* instead of using recvfrom() */
-#endif
-
-#undef USE_PORTSWAP		/* recvfrom is a better scheme */
-
 #include <stdio.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
+#include <math.h>
+#include <errno.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#include <sys/time.h>
+#endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif
-#ifndef DNET
+#endif  
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif  
+#ifdef HAVE_NETINET_IN_H 
 #include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
-#else
-#include <devices/timer.h>
-#include <dos/dos.h>
-#endif				/* DNET */
-#include <errno.h>
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#ifdef HAVE_VALUES_H
-#include <values.h>
-#endif
-#include <math.h>
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#ifndef MAXINT
-#define MAXINT INT_MAX
-#endif
-#endif
-#ifdef ASTEROIDS
+#endif 
+#ifdef HAVE_ZLIB_H
 #include <zlib.h>
-#endif /* ASTEROIDS */
+#endif
+#include "str.h"
+        
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
-#include "gameconf.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif				/* SOUND */
-#include "sound.h"
+#include "packets.h"
 
-#if 0
-#ifndef MAXINT
-#define MAXINT ~(unsigned int)0;
-#endif /*MAXINT*/
-#endif /*0*/
+#ifdef UNIX_SOUND
+#include "sound.h"
+#endif  
 
 #define BIGINT 2000000000
 
-#define INCLUDE_SCAN		/* include Amdahl scanning beams */
-#define INCLUDE_VISTRACT	/* include visible tractor beams */
-
-#ifdef GATEWAY
-/*
- * (these values are now defined in "main.c":)
- * char *gw_mach        = "charon";     |client gateway; strcmp(serverName)
- * int   gw_serv_port   = 5000;         |what to tell the server to use
- * int   gw_port        = 5001;         |where we will contact gw
- * int   gw_local_port  = 5100;         |where we expect gw to contact us
- *
- * The client binds to "5100" and sends "5000" to the server (TCP).  The
- * server sees that and sends a UDP packet to gw on port udp5000, which passes
- * it through to port udp5100 on the client.  The client-gw gets the server's
- * host and port from recvfrom.  (The client can't use the same method since
- * these sockets are one-way only, so it connect()s to gw_port (udp5001)
- * on the gateway machine regardless of what the server sends.)
- *
- * So all we need in .gwrc is:
- *      udp 5000 5001 tde.uts 5100
- *
- * assuming the client is on tde.uts.  Note that a UDP declaration will
- * work for ANY server, but you need one per player, and the client has to
- * have the port numbers in advance.
- *
- * If we're using a standard server, we're set.  If we're running through a
- * gatewayed server, we have to do some unpleasant work on the server side...
- */
-#endif
-
-#ifdef SIZE_LOGGING
 int     send_total = 0;
 int     receive_total = 0;
-#endif				/* SIZE_LOGGING */
-
-#ifdef TERM
-u_short serv_port;
-#endif /*TERM*/
 
 /* Prototypes */
 static void resetForce P((void));
 static void checkForce P((void));
-#ifdef nodef
-static void set_tcp_opts P((int s));
-static void set_udp_opts P((int s));
-#endif				/* nodef */
 static int doRead P((int asock));
 static void handleTorp P((struct torp_spacket * packet));
 static void handleTorpInfo P((struct torp_info_spacket * packet));
@@ -168,9 +102,6 @@ static void handleSequence P((struct sequence_spacket * packet));
 static void handleUdpReply P((struct udp_reply_spacket * packet));
 static void informScan P((int p));
 static int openUdpConn P((void));
-#ifdef USE_PORTSWAP
-static int connUdpConn P((void));
-#endif
 static int recvUdpConn P((void));
 static void printUdpInfo P((void));
 /*static void dumpShip P((struct ship *shipp ));*/
@@ -180,10 +111,8 @@ static void handleMotdPic P((struct motd_pic_spacket * packet));
 static void handleStats2 P((struct stats_spacket2 * packet));
 static void handleStatus2 P((struct status_spacket2 * packet));
 static void handlePlanet2 P((struct planet_spacket2 * packet));
-#ifdef ASTEROIDS
 static void handleTerrain2 P((struct terrain_packet2 * pkt));
 static void handleTerrainInfo2 P((struct terrain_info_packet2 *pkt));
-#endif /* ASTEROIDS */
 static void handleTempPack P((struct obvious_packet * packet));
 static void handleThingy P((struct thingy_spacket * packet));
 static void handleThingyInfo P((struct thingy_info_spacket * packet));
@@ -194,15 +123,11 @@ static void handleExtension1 P((struct paradiseext1_spacket *));
 static void handleEmpty();
 
 
-#ifdef SHORT_PACKETS
 void    handleShortReply(), handleVPlayer(), handleVTorp(),
         handleSelfShort(), handleSelfShip(), handleVPlanet(), handleSWarning();
 void    handleVTorpInfo(), handleSMessage();
-#endif
 
-#ifdef FEATURE
 void    handleFeature();	/* feature.c */
-#endif
 
 struct packet_handler handlers[] = {
     {NULL},			/* record 0 */
@@ -246,52 +171,27 @@ struct packet_handler handlers[] = {
     {handleThingyInfo},		/* SP_THINGY_INFO */
     {handleShipCap},		/* SP_SHIP_CAP */
 
-#ifdef SHORT_PACKETS
     {handleShortReply},		/* SP_S_REPLY */
     {handleSMessage},		/* SP_S_MESSAGE */
     {handleSWarning},		/* SP_S_WARNING */
     {handleSelfShort},		/* SP_S_YOU */
     {handleSelfShip},		/* SP_S_YOU_SS */
     {handleVPlayer},		/* SP_S_PLAYER */
-#else
-    {handleEmpty},		/* 40 */
-    {handleEmpty},		/* 41 */
-    {handleEmpty},		/* 42 */
-    {handleEmpty},		/* 43 */
-    {handleEmpty},		/* 44 */
-    {handleEmpty},		/* 45 */
-#endif
     {handlePing},		/* SP_PING */
-#ifdef SHORT_PACKETS
     {handleVTorp},		/* SP_S_TORP */
     {handleVTorpInfo},		/* SP_S_TORP_INFO */
     {handleVTorp},		/* SP_S_8_TORP */
     {handleVPlanet},		/* SP_S_PLANET */
-#else
-    {handleEmpty},		/* 47 */
-    {handleEmpty},
-    {handleEmpty},
-    {handleEmpty},		/* 50 */
-#endif
     {handleGameparams},
     {handleExtension1},
-#ifndef ASTEROIDS
-    {handleEmpty},
-    {handleEmpty},
-#else
     {handleTerrain2},		/* 53 */
     {handleTerrainInfo2},
-#endif /* ASTEROIDS */
     {handleEmpty},
     {handleEmpty},
     {handleEmpty},
     {handleEmpty},
     {handleEmpty},		/* 59 */
-#ifdef FEATURE
     {handleFeature},		/* SP_FEATURE */
-#else
-    {handleEmpty},		/* 60 */
-#endif
 };
 
 #define NUM_HANDLERS	(sizeof(handlers)/sizeof(*handlers))
@@ -300,11 +200,10 @@ struct packet_handler handlers[] = {
 
 int     serverDead = 0;
 
-#ifdef SIZE_LOGGING
 /* prints the total number of bytes sent/received.  Called when exiting the
    client [BDyess] */
 void
-print_totals()
+print_totals(void)
 {
     time_t  timeSpent = time(NULL) - timeStart;
     
@@ -335,9 +234,6 @@ print_totals()
 	       (float) receive_total / (1024.0 * timeSpent));
     }
 }
-#else
-#define EXIT exit
-#endif				/* SIZE_LOGGING */
 
 int     udpLocalPort = 0;
 static int udpServerPort = 0;
@@ -353,7 +249,7 @@ static short fSpeed, fDirection, fShield, fOrbit, fRepair, fBeamup, fBeamdown, f
 
 /* reset all the "force command" variables */
 static void
-resetForce()
+resetForce(void)
 {
     fSpeed = fDirection = fShield = fOrbit = fRepair = fBeamup = fBeamdown =
     fCloak = fBomb = fDockperm = fPhaser = fPlasma = fPlayLock = fPlanLock =
@@ -410,7 +306,7 @@ resetForce()
 }
 
 static void
-checkForce()
+checkForce(void)
 {
     struct speed_cpacket speedReq;
     struct tractor_cpacket tractorReq;
@@ -441,8 +337,7 @@ checkForce()
 
 
 int
-idx_to_mask(i)
-    int     i;
+idx_to_mask(int i)
 {
     if (i == number_of_teams)
 	return ALLTEAM;
@@ -450,8 +345,7 @@ idx_to_mask(i)
 }
 
 int
-mask_to_idx(m)
-    int     m;
+mask_to_idx(int m)
 {
     switch(m) {
       case NOBODY:
@@ -470,10 +364,8 @@ mask_to_idx(m)
 }
 
 void
-connectToServer(port)
-    int     port;
+connectToServer(int port)
 {
-#ifndef DNET
     int     s;
     struct sockaddr_in addr;
     struct sockaddr_in naddr;
@@ -490,30 +382,12 @@ connectToServer(port)
     sleep(3);			/* I think this is necessary for some unknown
 				   reason */
 
-#ifdef RWATCH
-    printf("rwatch: Waiting for connection. \n");
-#else
     printf("Waiting for connection (port %d). \n", port);
-#endif				/* RWATCH */
 
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-#ifdef RWATCH
-	printf("rwatch: I can't create a socket\n");
-#else
 	printf("I can't create a socket\n");
-#endif				/* RWATCH */
-#ifdef AUTOKEY
-	if (autoKey)
-	    W_AutoRepeatOn();
-#endif
-
 	EXIT(2);
     }
-#ifndef RWATCH
-#ifdef nodef			/* don't use for now */
-    set_tcp_opts(s);
-#endif				/* nodef */
-#endif				/* RWATCH */
 
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
@@ -524,15 +398,7 @@ connectToServer(port)
 	if (bind(s, (struct sockaddr *) & addr, sizeof(addr)) < 0) {
 	    sleep(10);
 	    if (bind(s, (struct sockaddr *) & addr, sizeof(addr)) < 0) {
-#ifdef RWATCH
-		printf("rwatch: I can't bind to port!\n");
-#else
 		printf("I can't bind to port!\n");
-#endif				/* RWATCH */
-#ifdef AUTOKEY
-		if (autoKey)
-		    W_AutoRepeatOn();
-#endif
 
 		EXIT(3);
 	    }
@@ -548,26 +414,13 @@ tryagain:
     FD_ZERO(&readfds);
     FD_SET(s, &readfds);
     if (select(32, &readfds, NULL, NULL, &timeout) == 0) {
-#ifdef RWATCH
-	printf("rwatch: server died.\n");
-#else
 	printf("Well, I think the server died!\n");
-#endif				/* RWATCH */
-#ifdef AUTOKEY
-	if (autoKey)
-	    W_AutoRepeatOn();
-#endif
-
 	EXIT(0);
     }
     sock = accept(s, (struct sockaddr *) & naddr, &len);
 
     if (sock == -1) {
-#ifdef RWATCH
-	perror("rwatch: accept");
-#else
 	perror("accept");
-#endif				/* RWATCH */
 	goto tryagain;
     }
 
@@ -596,85 +449,24 @@ tryagain:
 	}
     }
     printf("Connection from server %s (0x%lx)\n", serverName, serveraddr);
-
-#else				/* DNET */
-    /*
-       unix end DNet server process connects to the server, on specified *
-       port
-    */
-    ConnectToDNetServer(port);
-#endif				/* DNET */
-
 }
-
-
-#ifndef DNET
-#ifdef nodef
-static void
-set_tcp_opts(s)
-    int     s;
-{
-    int     optval = 1;
-    struct protoent *ent;
-
-    ent = getprotobyname("TCP");
-    if (!ent) {
-	fprintf(stderr, "TCP protocol not found.\n");
-	return;
-    }
-    if (setsockopt(s, ent->p_proto, TCP_NODELAY, &optval, sizeof(int)) < 0)
-	perror("setsockopt");
-}
-
-static void
-set_udp_opts(s)
-    int     s;
-{
-    int     optval = BUFSIZ;
-    struct protoent *ent;
-    ent = getprotobyname("UDP");
-    if (!ent) {
-	fprintf(stderr, "UDP protocol not found.\n");
-	return;
-    }
-    if (setsockopt(s, ent->p_proto, SO_RCVBUF, &optval, sizeof(int)) < 0)
-	perror("setsockopt");
-}
-#endif				/* nodef */
-
-#endif				/* DNET */
 
 char *
-callServer(port, server)
-    int     port;
-    char   *server;
+callServer(int port, char *server)
 {
-#ifndef DNET
     int     s;
     struct sockaddr_in addr;
     struct hostent *hp;
-#endif
     serverDead = 0;
 
     printf("Calling %s on port %d.\n", server, port);
-#ifdef DNET
-    CallDNetServer(server, port);
-#else
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	printf("I can't create a socket\n");
 	EXIT(0);
     }
-#ifndef RWATCH
-#ifdef nodef
-    set_tcp_opts(s);
-#endif				/* nodef */
-#endif				/* RWATCH */
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-#ifdef TERM
-    serv_port = addr.sin_port;
-#endif
 
     if ((addr.sin_addr.s_addr = inet_addr(server)) == -1) {
 	if ((hp = gethostbyname(server)) == NULL) {
@@ -700,39 +492,30 @@ callServer(port, server)
     printf("Got connection.\n");
 
     sock = s;
-#endif				/* DNET */
 /* pickSocket is utterly useless with DNet, but the server needs the
    packet to tell it the client is ready to start. */
 
-#ifdef RECORDER
     startRecorder();
-#endif
     pickSocket(port);		/* new socket != port */
 
     return server;
 }
 
 int
-isServerDead()
+isServerDead(void)
 {
     return (serverDead);
 }
 
 void
-socketPause(sec, usec)
+socketPause(int sec, int usec)
     int     sec, usec;
 {
     struct timeval timeout;
     fd_set  readfds;
 
-#ifdef RECORDER
     if (playback)
 	return;
-#endif
-#ifdef DNET
-    (void) DNetServerPause(sec, usec, 0);
-#else
-
     timeout.tv_sec = sec;
     timeout.tv_usec = usec;
     FD_ZERO(&readfds);
@@ -740,30 +523,26 @@ socketPause(sec, usec)
     if (udpSock >= 0)		/* new */
 	FD_SET(udpSock, &readfds);
     select(32, &readfds, 0, 0, &timeout);
-#endif				/* DNET */
 }
 
 int
-readFromServer()
+readFromServer(void)
 {
     struct timeval timeout;
     fd_set  readfds;
     int     retval = 0, rs;
 
-#ifdef RECORDER
     if (playback) {
 	while (!pb_update)
 	    doRead(sock);
 	return 1;
     }
-#endif
 
     if (serverDead)
 	return (0);
     if (commMode == COMM_TCP)
 	drop_flag = 0;		/* just in case */
 
-#ifndef DNET
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
@@ -777,17 +556,6 @@ readFromServer()
 	    perror("select");
 	    return 0;
 	}
-#else
-	/* this should have been done before calling the function.. not sure about this, should maybe be doing
-	   DNetServerPause here? -JR*/
-	/*	sigsPending=Wait(sockMask | udpSockMask | SIGBREAKF_CTRL_C);
-	 */
-	if (sigsPending & SIGBREAKF_CTRL_C) {
-	    printf("readFromServer: Ctrl-C break, exiting\n");
-	    exit(0);
-	}
-	/* note for DNet FD_ISSET is  redefined. */
-#endif				/* DNET */
 	/* Read info from the xtrek server */
 	if (FD_ISSET(sock, &readfds)) {
 	    chan = sock;
@@ -818,9 +586,7 @@ readFromServer()
 	    }
 	    retval += doRead(udpSock);
 	}
-#ifndef DNET
     }
-#endif
 
     /* if switching comm mode, decrement timeout counter */
     if (commSwitchTimeout > 0) {
@@ -852,43 +618,26 @@ readFromServer()
 
 
 /* this used to be part of the routine above */
-char    buf[BUFSIZ * 2 + 16];
+unsigned char buf[BUFSIZ * 2 + 16];
 
 static int
-doRead(asock)
-    int     asock;
+doRead(int asock)
 {
-    char   *bufptr;
+    unsigned char   *bufptr;
     int     size;
     int     count;
     int     temp;
-#ifdef HANDLER_TIMES
-    struct timeval htpre, htpost;
-    extern void log_time(int, struct timeval *, struct timeval *);
-#endif
 
-#ifndef DNET
     struct timeval timeout;
     fd_set  readfds;
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
-#endif				/* DNET */
 
     count = sock_read(asock, buf, 2 * BUFSIZ);
-#ifdef DNET
-    if (count == 0) {		/* yuck. */
-	return 0;
-    }
-#endif
 /* TMP */
-#ifdef nodef
-    if (asock == udpSock)
-	printf("read %d bytes\n", count);
-#endif				/* nodef */
 
     if (count <= 0) {
 	if (asock == udpSock) {
-#ifndef DNET
 	    if (errno == ECONNREFUSED) {
 		struct sockaddr_in addr;
 
@@ -908,7 +657,6 @@ doRead(asock)
 		    return (0);
 		}
 	    }
-#endif				/* DNET */
 	    UDPDIAG(("*** UDP disconnected (res=%d, err=%d)\n",
 		     count, errno));
 	    warning("UDP link severed");
@@ -922,16 +670,13 @@ doRead(asock)
 	    }
 	    return (0);
 	}
-#ifndef RWATCH
 	printf("1) Got read() of %d. Server dead\n", count);
 	perror("");
-#endif				/* RWATCH */
 	serverDead = 1;
 	return (0);
     }
     bufptr = buf;
     while (bufptr < buf + count) {
-#ifdef SHORT_PACKETS
 computesize:
 	if ((*bufptr == SP_S_MESSAGE && (buf + count - bufptr <= 4))
 	    || (buf + count - bufptr < 4)) {	/* last part may only be
@@ -949,29 +694,18 @@ computesize:
 				   on 4 byte boundaries,  other size bytes
 				   are always in the first 4. -JR */
 	} else
-#endif
 	{
 	    size = size_of_spacket((unsigned char *)bufptr);
 	    if (size < 1) {
-#if 0
-		fprintf(stderr, "Unknown packet %d.  Faking it.\n",
-			*bufptr);
-		size = 4;
-#else
 		fprintf(stderr, "Unknown packet %d.  Aborting.\n",
 			*bufptr);
 		return (0);
-#endif
 	    }
 #ifdef SHOW_RECEIVED
 	    printf("recieved packet type %d, size %d\n", *bufptr, size);
 #endif				/* SHOW_RECEIVED */
-#ifdef PACKET_LIGHTS
 	    light_receive();
-#endif				/* PACKET_LIGHTS */
-#ifdef SIZE_LOGGING
 	    receive_total += size;
-#endif				/* SIZE_LOGGING */
 	}
 	while (size > count + (buf - bufptr) || size == 0) {
 	    /*
@@ -982,56 +716,35 @@ computesize:
 	       printf("er, possible packet fragment, waiting for the
 	       rest...\n");
 	    */
-#ifdef RECORDER
 	    if (!playback)
-#endif
 	    {
-#ifdef DNET
-		temp = DNetServerPause(20, 0, asock);
-#else				/* DNET */
 		timeout.tv_sec = 20;
 		timeout.tv_usec = 0;
 		FD_ZERO(&readfds);
 		FD_SET(asock, &readfds);
 		/* readfds=1<<asock; */
 		temp = select(32, &readfds, 0, 0, &timeout);
-#endif
 		if (temp == 0) {
 		    printf("Packet fragment.  Server must be dead\n");
 		    serverDead = 1;
 		    return (0);
 		}
 	    }
-#ifdef SHORT_PACKETS
 	    if (size == 0)
 		/* 84=largest short packet message - the 4 we have */
 		temp = sock_read(asock, buf + count, 84);
 	    else
-#endif
 		temp = sock_read(asock, buf + count, size - (count + (buf - bufptr)));
 	    count += temp;
-#ifdef DNET
-	    if (temp < 0)
-#else
 	    if (temp <= 0)
-#endif				/* DNET */
 	    {
-#ifndef RWATCH
 		printf("2) Got read() of %d.  Server is dead\n", temp);
-#endif				/* RWATCH */
 		serverDead = 1;
 		return (0);
 	    }
-#ifdef SHORT_PACKETS
 	    if (size == 0)	/* for the SP_S_MESSAGE problem */
 		goto computesize;
-#endif
 	}
-#ifdef UPDATE_SIZES
-	totalbytes += size;
-	packetbytes[*bufptr] += size;
-#endif
-#ifdef RECORDER
 	if (playback && (*bufptr == REC_UPDATE)) {
 	    pb_update++;
 	    me->p_tractor = bufptr[1];
@@ -1041,7 +754,6 @@ computesize:
 		me->p_planet = bufptr[2];
 /*	    printf("Read REC_UPDATE pseudo-packet!\n");*/
 	} else
-#endif
 	    if (*bufptr >= 1 &&
 		*bufptr < NUM_HANDLERS &&
 		handlers[(int) *bufptr].handler != NULL) {
@@ -1049,18 +761,9 @@ computesize:
 		(!drop_flag || *bufptr == SP_SEQUENCE || *bufptr == SP_SC_SEQUENCE)) {
 		if (asock == udpSock)
 		    packets_received++;	/* ping stuff */
-#ifdef RECORDER
 		if (recordGame)
 		    recordPacket(bufptr, size);
-#endif
-#ifdef HANDLER_TIMES
-		gettimeofday(&htpre,0);
-#endif
 		(*(handlers[(unsigned char)*bufptr].handler)) (bufptr);
-#ifdef HANDLER_TIMES
-		gettimeofday(&htpost,0);
-		log_time(*bufptr, &htpre, &htpost);
-#endif
 		/* printf("handled packet %d\n", (unsigned char)*bufptr); */
 	    } else
 		UDPDIAG(("Ignored type %d\n", *bufptr));
@@ -1070,35 +773,23 @@ computesize:
 
 	bufptr += size;
 	if (bufptr > buf + BUFSIZ) {
-	    bcopy(buf + BUFSIZ, buf, BUFSIZ);
+	    memcpy(buf, buf + BUFSIZ, BUFSIZ);
 	    if (count == BUFSIZ * 2) {
-#ifdef RECORDER
 		if (playback)
 		    temp = 0;
 		else
-#endif
 		{
-#ifdef DNET
-		    temp = DNetServerPause(3, 0, asock);
-#else
 		    FD_ZERO(&readfds);
 		    FD_SET(asock, &readfds);
 		    /* readfds = 1<<asock; */
 		    temp = select(32, &readfds, 0, 0, &timeout);
-#endif				/* DNET */
 		}
 		if (temp != 0) {
 		    temp = sock_read(asock, buf + BUFSIZ, BUFSIZ);
 		    count = BUFSIZ + temp;
-#ifdef DNET
-		    if (temp < 0)
-#else
 		    if (temp <= 0)
-#endif				/* DNET */
 		    {
-#ifndef RWATCH
 			printf("3) Got read() of %d.  Server is dead\n", temp);
-#endif				/* RWATCH */
 			serverDead = 1;
 			return (0);
 		    }
@@ -1158,34 +849,26 @@ computesize:
 
 
 static void
-handleTorp(packet)
-    struct torp_spacket *packet;
+handleTorp(struct torp_spacket *packet)
 {
     struct torp *thetorp;
 
     SANITY_TORPNUM(ntohs(packet->tnum));
 
     thetorp = &torps[ntohs(packet->tnum)];
-    thetorp->t_x = ntohl((unsigned)packet->x);
-    thetorp->t_y = ntohl((unsigned)packet->y);
+    thetorp->t_x = ntohl(packet->x);
+    thetorp->t_y = ntohl(packet->y);
     thetorp->t_dir = packet->dir;
 
-#ifdef ROTATERACE
     if (rotate) {
 	rotate_gcenter(&thetorp->t_x, &thetorp->t_y);
 	rotate_dir(&thetorp->t_dir, rotate_deg);
-#endif
-#ifdef BORGTEST
-	if (bd)
-	    bd_test_torp(ntohs(packet->tnum), thetorp);
-#endif
     }
 }
 
 
 static void
-handleTorpInfo(packet)
-    struct torp_info_spacket *packet;
+handleTorpInfo(struct torp_info_spacket *packet)
 {
     struct torp *thetorp;
 
@@ -1204,11 +887,6 @@ handleTorpInfo(packet)
     if (thetorp->t_status == TFREE && packet->status) {
 	players[thetorp->t_owner].p_ntorp++;
 	thetorp->frame = 0;
-#ifdef BORGTEST
-	if (bd)
-	    bd_new_torp(ntohs(packet->tnum), thetorp);
-#endif
-
     }
     if (thetorp->t_status && packet->status == TFREE) {
 	players[thetorp->t_owner].p_ntorp--;
@@ -1228,21 +906,19 @@ handleTorpInfo(packet)
 }
 
 static void
-handleStatus(packet)
-    struct status_spacket *packet;
+handleStatus(struct status_spacket *packet)
 {
     status->tourn = packet->tourn;
-    status->armsbomb = ntohl((unsigned)packet->armsbomb);
-    status->planets = ntohl((unsigned)packet->planets);
-    status->kills = ntohl((unsigned)packet->kills);
-    status->losses = ntohl((unsigned)packet->losses);
-    status->time = ntohl((unsigned)packet->time);
-    status->timeprod = ntohl((unsigned)packet->timeprod);
+    status->armsbomb = ntohl(packet->armsbomb);
+    status->planets = ntohl(packet->planets);
+    status->kills = ntohl(packet->kills);
+    status->losses = ntohl(packet->losses);
+    status->time = ntohl(packet->time);
+    status->timeprod = ntohl(packet->timeprod);
 }
 
 static void
-handleSelf(packet)
-    struct you_spacket *packet;
+handleSelf(struct you_spacket *packet)
 {
     SANITY_PNUM(packet->pnum);
     me = (ghoststart ? &players[ghost_pno] : &players[packet->pnum]);
@@ -1251,34 +927,24 @@ handleSelf(packet)
     me->p_hostile = packet->hostile;
     me->p_swar = packet->swar;
     me->p_armies = packet->armies;
-    me->p_flags = ntohl((unsigned)packet->flags);
-    me->p_damage = ntohl((unsigned)packet->damage);
-    me->p_shield = ntohl((unsigned)packet->shield);
-    me->p_fuel = ntohl((unsigned)packet->fuel);
+    me->p_flags = ntohl(packet->flags);
+    me->p_damage = ntohl(packet->damage);
+    me->p_shield = ntohl(packet->shield);
+    me->p_fuel = ntohl(packet->fuel);
     me->p_etemp = ntohs(packet->etemp);
     me->p_wtemp = ntohs(packet->wtemp);
     me->p_whydead = ntohs(packet->whydead);
     me->p_whodead = ntohs(packet->whodead);
     status2->clock = (unsigned long) packet->pad2;
     status2->clock += ((unsigned long) packet->pad3) << 8;
-#ifdef INCLUDE_VISTRACT
     if (packet->tractor & 0x40)
 	me->p_tractor = (short) packet->tractor & (~0x40);	/* ATM - visible trac
 								   tors */
-#ifdef nodef			/* tmp */
-    else
-	me->p_tractor = -1;
-#endif				/* nodef */
-#endif
-#ifdef SOUND
-    S_HandlePFlags();
-#endif
 
 }
 
 static void
-handlePlayer(packet)
-    struct player_spacket *packet;
+handlePlayer(struct player_spacket *packet)
 {
     register struct player *pl;
     unsigned char newdir;
@@ -1288,40 +954,12 @@ handlePlayer(packet)
 
     pl = &players[packet->pnum];
     newdir = packet->dir;
-#ifdef ROTATERACE
     if (rotate)
 	rotate_dir(&newdir, rotate_deg);
-#endif
-#ifdef CHECK_DROPPED
-    /* Kludge to fix lost uncloak packets! [3/94] -JR */
-    if (pl->p_flags & PFCLOAK && pl->p_cloakphase >= (CLOAK_PHASES - 1)) {
-	if (pl->p_dir != newdir) {	/* always sends the same direction
-					   when cloaked! */
-	    int     i, plocked = 0;
-
-	    /*
-	       nplayers is for paradise, probably want MAX_PLAYERS for other
-	       clients
-	    */
-	    for (i = 0; i < nplayers; i++) {	/* except when someone has
-						   this person phasered :( */
-		if ((phasers[i].ph_status & PHHIT) && (phasers[i].ph_target == packet->pnum)) {
-		    plocked = 1;
-		    break;
-		}
-	    }
-	    if (!plocked) {
-		pl->p_flags &= ~(PFCLOAK);
-		if (reportDroppedPackets)
-		    printf("Uncloak kludge, player %d\n", pl->p_no);
-	    }
-	}
-    }
-#endif
     pl->p_dir = newdir;
     pl->p_speed = packet->speed;
-    pl->p_x = ntohl((unsigned)packet->x);
-    pl->p_y = ntohl((unsigned)packet->y);
+    pl->p_x = ntohl(packet->x);
+    pl->p_y = ntohl(packet->y);
     if (pl == me) {
 	extern int my_x, my_y;	/* from shortcomm.c */
 	my_x = me->p_x;
@@ -1334,43 +972,36 @@ handlePlayer(packet)
 	my_x = pl->p_x;
 	my_y = pl->p_y;
     }
-#ifdef ROTATERACE
     if (rotate) {
 	rotate_gcenter(&pl->p_x, &pl->p_y);
     }
-#endif
-
 }
 
 
 static void
-handleWarning(packet)
-    struct warning_spacket *packet;
+handleWarning(struct warning_spacket *packet)
 {
     warning((char *) packet->mesg);
 }
 
 static void
-handleThingy(packet)
-    struct thingy_spacket *packet;
+handleThingy(struct thingy_spacket *packet)
 {
     struct thingy *thetorp;
 
     SANITY_THINGYNUM(ntohs(packet->tnum));
 
     thetorp = &thingies[ntohs(packet->tnum)];
-    thetorp->t_x = ntohl((unsigned)packet->x);
-    thetorp->t_y = ntohl((unsigned)packet->y);
+    thetorp->t_x = ntohl(packet->x);
+    thetorp->t_y = ntohl(packet->y);
     /* printf("drone at %d, %d\n", thetorp->t_x, thetorp->t_y); */
     thetorp->t_dir = packet->dir;
 
 
-#ifdef ROTATERACE
     if (rotate) {
 	rotate_gcenter(&thetorp->t_x, &thetorp->t_y);
 	rotate_dir(&thetorp->t_dir, rotate_deg);
     }
-#endif
 
     if (thetorp->t_shape == SHP_WARP_BEACON)
 	redrawall = 1;		/* shoot, route has changed */
@@ -1378,8 +1009,7 @@ handleThingy(packet)
 }
 
 static void
-handleThingyInfo(packet)
-    struct thingy_info_spacket *packet;
+handleThingyInfo(struct thingy_info_spacket *packet)
 {
     struct thingy *thetorp;
 
@@ -1387,11 +1017,7 @@ handleThingyInfo(packet)
 
     thetorp = &thingies[ntohs(packet->tnum)];
 
-#if 1
     thetorp->t_owner = ntohs(packet->owner);
-#else
-    /* we have the gameparam packet now */
-#endif
 
     if (thetorp->t_shape == SHP_WARP_BEACON)
 	redrawall = 1;		/* redraw the lines, I guess */
@@ -1428,8 +1054,7 @@ handleThingyInfo(packet)
 }
 
 void
-sendShortPacket(type, state)
-    int    type, state;
+sendShortPacket(int type, int state)
 {
     struct speed_cpacket speedReq;
 
@@ -1496,17 +1121,11 @@ sendShortPacket(type, state)
     }
 }
 
-#ifndef __CEXTRACT__
 /* Pick a random type for the packet */
 void
-sendServerPacket(packet)
-    struct player_spacket *packet;
+sendServerPacket(struct player_spacket *packet)
 {
     int     size;
-
-#ifdef RWATCH
-    return;
-#endif				/* RWATCH */
 
     if (serverDead)
 	return;
@@ -1519,12 +1138,7 @@ sendServerPacket(packet)
     printf("sending packet type %d, size %d\n", packet->type,
 	   size);
 #endif				/* SHOW_SEND */
-#ifdef PACKET_LIGHTS
     light_send();
-#endif				/* PACKET_LIGHTS */
-#ifdef SIZE_LOGGING
-    send_total += size;
-#endif				/* SIZE_LOGGING */
     if (commMode == COMM_UDP) {
 	/* for now, just sent everything via TCP */
     }
@@ -1604,18 +1218,14 @@ sendServerPacket(packet)
 	}
     }
 }
-#endif /*__CEXTRACT__*/
 
 static void
-handlePlanet(packet)
-    struct planet_spacket *packet;
+handlePlanet(struct planet_spacket *packet)
 {
     struct planet *plan;
     /* FAT: prevent excessive redraw */
     int     redrawflag = 0;
-#ifdef HOCKEY
     int     hockey_update = 0;
-#endif /*HOCKEY*/
 
     SANITY_PLANNUM(packet->pnum);
 
@@ -1638,10 +1248,10 @@ handlePlanet(packet)
 	redrawflag = 1;
     plan->pl_flags = (unsigned short) ntohs(packet->flags);
 
-    if (plan->pl_armies != ntohl((unsigned)packet->armies))
+    if (plan->pl_armies != ntohl(packet->armies))
 	redrawflag = 1;
 
-    plan->pl_armies = ntohl((unsigned)packet->armies);
+    plan->pl_armies = ntohl(packet->armies);
     if (plan->pl_info == 0) {
 	plan->pl_owner = NOBODY;
     }
@@ -1656,51 +1266,29 @@ handlePlanet(packet)
 	if (infomapped && infotype == PLANETTYPE &&
 	    ((struct planet *) infothing)->pl_no == packet->pnum)
 	    infoupdate = 1;
-#ifdef HOCKEY
         if(hockey_update && hockey) hockeyInit();
-#endif /*HOCKEY*/
     }
 }
 
 static void
-handlePhaser(packet)
-    struct phaser_spacket *packet;
+handlePhaser(struct phaser_spacket *packet)
 {
     struct phaser *phas;
 
     SANITY_PHASNUM(packet->pnum);
 
     phas = &phasers[packet->pnum];
-#ifdef CHECK_DROPPED
-    /* can't fire weapons cloaked, this guy must be uncloaked.. */
-    /* applying this to torps is trickier... -JR */
-    if (packet->status != PHFREE) {
-	if (reportDroppedPackets && (players[packet->pnum].p_flags & PFCLOAK))
-	    printf("Dropped uncloak, player %d. (fired phaser)\n", packet->pnum);
-	players[packet->pnum].p_flags &= ~(PFCLOAK);
-    } else {
-	if (longest_ph_fuse < phas->ph_fuse)
-	    longest_ph_fuse = phas->ph_fuse;
-    }
-#endif
     phas->ph_status = packet->status;
     phas->ph_dir = packet->dir;
-    phas->ph_x = ntohl((unsigned)packet->x);
-    phas->ph_y = ntohl((unsigned)packet->y);
-    phas->ph_target = ntohl((unsigned)packet->target);
+    phas->ph_x = ntohl(packet->x);
+    phas->ph_y = ntohl(packet->y);
+    phas->ph_target = ntohl(packet->target);
     phas->ph_fuse = 0;
 
-#ifdef ROTATERACE
     if (rotate) {
 	rotate_gcenter(&phas->ph_x, &phas->ph_y);
 	rotate_dir(&phas->ph_dir, rotate_deg);
     }
-#endif
-#ifdef SOUND
-    if ((me->p_no == packet->pnum) && (packet->status != PHFREE)) {
-	S_PlaySound(S_PHASER);
-    }
-#endif
 #ifdef UNIX_SOUND
     if ((me->p_no == packet->pnum) && (packet->status != PHFREE)) {
         play_sound(SND_PHASER); /* Phasers */
@@ -1708,37 +1296,31 @@ handlePhaser(packet)
 #endif
 }
 
-#ifndef __CEXTRACT__
 void
-handleMessage(packet)
-    struct mesg_spacket *packet;
+handleMessage(struct mesg_spacket *packet)
 {
     if ((int) packet->m_from >= nplayers)
 	packet->m_from = 255;
     dmessage(packet->mesg, packet->m_flags, packet->m_from, packet->m_recpt);
 }
-#endif /*__CEXTRACT__*/
 
 
 static void
-handleQueue(packet)
-    struct queue_spacket *packet;
+handleQueue(struct queue_spacket *packet)
 {
     queuePos = ntohs(packet->pos);
     /* printf("Receiving queue position %d\n",queuePos); */
 }
 
 static void
-handleEmpty(ptr)
-    char   *ptr;
+handleEmpty(char *ptr)
 {
     printf("Unknown packet type: %d\n", *ptr);
     return;
 }
 
 void
-sendTeamReq(team, ship)
-    int     team, ship;
+sendTeamReq(int team, int ship)
 {
     struct outfit_cpacket outfitReq;
 
@@ -1749,23 +1331,17 @@ sendTeamReq(team, ship)
 }
 
 static void
-handlePickok(packet)
-    struct pickok_spacket *packet;
+handlePickok(struct pickok_spacket *packet)
 {
     pickOk = packet->state;
-#ifdef RECORDER
     if (playback) {		/* added when the packet is recorded. */
 	extern int lastTeamReq;
 	lastTeamReq = packet->pad2;
     }
-#endif
 }
 
 void
-sendLoginReq(name, pass, loginname, query)
-    char   *name, *pass;
-    char   *loginname;
-    int     query;
+sendLoginReq(char *name, char *pass, char *loginname, int query)
 {
     struct login_cpacket packet;
 
@@ -1782,8 +1358,7 @@ sendLoginReq(name, pass, loginname, query)
 }
 
 static void
-handleLogin(packet)
-    struct login_spacket *packet;
+handleLogin(struct login_spacket *packet)
 {
 
 
@@ -1799,15 +1374,13 @@ handleLogin(packet)
 
 	/* we no longer accept keymaps from the server */
 
-	mystats->st_flags = ntohl((unsigned)packet->flags);
+	mystats->st_flags = ntohl(packet->flags);
 	keeppeace = (me->p_stats.st_flags / ST_KEEPPEACE) & 1;
     }
 }
 
 void
-sendTractorReq(state, pnum)
-    int    state;
-    int    pnum;
+sendTractorReq(int state, int pnum)
 {
     struct tractor_cpacket tractorReq;
 
@@ -1823,9 +1396,7 @@ sendTractorReq(state, pnum)
 }
 
 void
-sendRepressReq(state, pnum)
-    int    state;
-    int    pnum;
+sendRepressReq(int state, int pnum)
 {
     struct repress_cpacket repressReq;
 
@@ -1841,8 +1412,7 @@ sendRepressReq(state, pnum)
 }
 
 void
-sendDetMineReq(torp)
-    int   torp;
+sendDetMineReq(int torp)
 {
     struct det_mytorp_cpacket detReq;
 
@@ -1852,8 +1422,7 @@ sendDetMineReq(torp)
 }
 
 static void
-handlePlasmaInfo(packet)
-    struct plasma_info_spacket *packet;
+handlePlasmaInfo(struct plasma_info_spacket *packet)
 {
     struct plasmatorp *thetorp;
 
@@ -1884,80 +1453,54 @@ handlePlasmaInfo(packet)
 }
 
 static void
-handlePlasma(packet)
-    struct plasma_spacket *packet;
+handlePlasma(struct plasma_spacket *packet)
 {
     struct plasmatorp *thetorp;
 
     SANITY_PLASNUM(ntohs(packet->pnum));
 
     thetorp = &plasmatorps[ntohs(packet->pnum)];
-    thetorp->pt_x = ntohl((unsigned)packet->x);
-    thetorp->pt_y = ntohl((unsigned)packet->y);
+    thetorp->pt_x = ntohl(packet->x);
+    thetorp->pt_y = ntohl(packet->y);
 
-#ifdef ROTATERACE
     if (rotate) {
 	rotate_gcenter(&thetorp->pt_x, &thetorp->pt_y);
     }
-#endif
 }
 
 static void
-handleFlags(packet)
-    struct flags_spacket *packet;
+handleFlags(struct flags_spacket *packet)
 {
     SANITY_PNUM(packet->pnum);
 
-    if (players[packet->pnum].p_flags != ntohl((unsigned)packet->flags) ||
+    if (players[packet->pnum].p_flags != ntohl(packet->flags) ||
     players[packet->pnum].p_tractor != ((short) packet->tractor & (~0x40))) {
 	/* FAT: prevent redundant player update */
 	redrawPlayer[packet->pnum] = 1;
     } else
 	return;
 
-#ifdef CHECK_DROPPED
-/* TEST */
-/* For the dropped uncloak kludge, completely ignore uncloaks :-) */
-/*    if(players[packet->pnum].p_flags & PFCLOAK) packet->flags |= htonl(PFCLOA(unsigned)K);*/
-/* TEST */
-    /* when a player cloaks, clear his phaser */
-    if (ntohl((unsigned)packet->flags) & PFCLOAK) {
-	if (phasers[packet->pnum].ph_status != PFREE) {
-	    if (reportDroppedPackets)
-		printf("Lost phaser free packet, player %d. (cloaked)\n", packet->pnum);
-	    phasers[packet->pnum].ph_status = PHFREE;
-	    phasers[packet->pnum].ph_fuse = 0;
-	}
-    }
-#endif
-
-    players[packet->pnum].p_flags = ntohl((unsigned)packet->flags);
-#ifdef INCLUDE_VISTRACT
+    players[packet->pnum].p_flags = ntohl(packet->flags);
     if (packet->tractor & 0x40)
 	players[packet->pnum].p_tractor = (short) packet->tractor & (~0x40);	/* ATM - visible
 										   tractors */
     else
-#endif				/* INCLUDE_VISTRACT */
 	players[packet->pnum].p_tractor = -1;
 }
 
 static void
-handleKills(packet)
-    struct kills_spacket *packet;
+handleKills(struct kill_spacket *packet)
 {
 
     SANITY_PNUM(packet->pnum);
 
-    if (players[packet->pnum].p_kills != ntohl((unsigned)packet->kills) / 100.0) {
-	players[packet->pnum].p_kills = ntohl((unsigned)packet->kills) / 100.0;
+    if (players[packet->pnum].p_kills != ntohl(packet->kills) / 100.0) {
+	players[packet->pnum].p_kills = ntohl(packet->kills) / 100.0;
 	/* FAT: prevent redundant player update */
 	updatePlayer[packet->pnum] |= ALL_UPDATE;
 	if (infomapped && infotype == PLAYERTYPE &&
 	    ((struct player *) infothing)->p_no == packet->pnum)
 	    infoupdate = 1;
-#ifdef PLPROF
-	printf("Got handleKills for %d\n", packet->pnum);
-#endif				/* PLPROF */
 #ifdef ARMY_SLIDER
 	if (me == &players[packet->pnum]) {
 	    calibrate_stats();
@@ -1968,8 +1511,7 @@ handleKills(packet)
 }
 
 static void
-handlePStatus(packet)
-    struct pstatus_spacket *packet;
+handlePStatus(struct pstatus_spacket *packet)
 {
     SANITY_PNUM(packet->pnum);
 
@@ -1987,60 +1529,24 @@ handlePStatus(packet)
     if (players[packet->pnum].p_status != packet->status) {
 	players[packet->pnum].p_status = packet->status;
 	redrawPlayer[packet->pnum] = 1;
-#ifdef PLPROF
-	printf("Got handlePStatus for %d\n", packet->pnum);
-#endif				/* PLPROF */
 	updatePlayer[packet->pnum] |= ALL_UPDATE;
 	if (infomapped && infotype == PLAYERTYPE &&
 	    ((struct player *) infothing)->p_no == packet->pnum)
 	    infoupdate = 1;
-#ifdef CHECK_DROPPED
-	if (players[packet->pnum].p_status == POUTFIT) {
-	    int     i;
-	    /* clear phasers on this guy */
-#if 0
-	    for (i = 0; i < nplayers; i++) {
-		if (phasers[i].ph_target == packet->pnum && phasers[i].ph_status == PHHIT) {
-		    if (reportDroppedPackets)
-			printf("Lost phaser free packet, player %d->player %d (target not alive)\n",
-			       i, packet->pnum);
-		    phasers[i].ph_status = PHFREE;
-		}
-	    }
-#endif
-	    if (phasers[packet->pnum].ph_status != PHFREE) {
-		if (reportDroppedPackets)
-		    printf("Lost phaser free packet, player %d (outfitting)\n", packet->pnum);
-		phasers[packet->pnum].ph_status = PHFREE;	/* and his own */
-	    }
-	    if (reportDroppedPackets && players[packet->pnum].p_ntorp > 1)
-		/* only report it on 2 or more left, always clear it. */
-		printf("Lost torp free packet, (%d torps) player %d (outfitting)\n",
-		       players[packet->pnum].p_ntorp, packet->pnum);
-	    players[packet->pnum].p_ntorp = 0;
-	    for (i = packet->pnum * ntorps; i < (packet->pnum + 1) * ntorps; i++) {
-		torps[i].t_status = TFREE;
-	    }
-	}
-#endif
     }
 }
 
 static void
-handleMotd(packet)
-    struct motd_spacket *packet;
+handleMotd(struct motd_spacket *packet)
 {
     newMotdLine((char *) packet->line);
 }
 
 void
-sendMessage(mes, group, indiv)
-    char   *mes;
-    int     group, indiv;
+sendMessage(char *mes, int group, int indiv)
 {
     struct mesg_cpacket mesPacket;
 
-#ifdef SHORT_PACKETS
     if (recv_short) {
 	int     size;
 	size = strlen(mes);
@@ -2055,7 +1561,6 @@ sendMessage(mes, group, indiv)
 
 	mesPacket.type = CP_S_MESSAGE;
     } else
-#endif
 	mesPacket.type = CP_MESSAGE;
     mesPacket.group = group;
     mesPacket.indiv = indiv;
@@ -2064,14 +1569,13 @@ sendMessage(mes, group, indiv)
 }
 
 static void
-handleMask(packet)
-    struct mask_spacket *packet;
+handleMask(struct mask_spacket *packet)
 {
     tournMask = packet->mask;
 }
 
 void
-sendOptionsPacket()
+sendOptionsPacket(void)
 {
     struct options_cpacket optPacket;
     register int i;
@@ -2083,25 +1587,20 @@ sendOptionsPacket()
 	     ST_KEEPPEACE * keeppeace +
 	     0
 	);
-    optPacket.flags = htonl((unsigned)flags);
+    optPacket.flags = htonl(flags);
     /* copy the keymap and make sure no ctrl chars are sent [BDyess] */
     for (i = 32; i < 128; i++) {
 	optPacket.keymap[i - 32] =
 	    (myship->s_keymap[i] & 128) ? i : myship->s_keymap[i];
     }
-    /* bcopy(mystats->st_keymap+32, optPacket.keymap,96); */
     sendServerPacket((struct player_spacket *) & optPacket);
 }
 
 static void
-pickSocket(old)
-    int     old;
+pickSocket(int old)
 {
     int     newsocket;
     struct socket_cpacket sockPack;
-#ifdef RWATCH
-    nextSocket = old;
-#else
     newsocket = (getpid() & 32767);
     if (ghoststart)
 	nextSocket = old;
@@ -2109,7 +1608,7 @@ pickSocket(old)
 	newsocket = (newsocket + 10687) & 32767;
     }
     sockPack.type = CP_SOCKET;
-    sockPack.socket = htonl((unsigned)newsocket);
+    sockPack.socket = htonl(newsocket);
     sockPack.version = (char) SOCKVERSION;
     sockPack.udp_version = (char) UDPVERSION;
     sendServerPacket((struct player_spacket *) & sockPack);
@@ -2117,12 +1616,10 @@ pickSocket(old)
     if (serverDead)
 	return;
     nextSocket = newsocket;
-#endif				/* RWATCH */
 }
 
 static void
-handleBadVersion(packet)
-    struct badversion_spacket *packet;
+handleBadVersion(struct badversion_spacket *packet)
 {
     switch (packet->why) {
     case 0:
@@ -2138,19 +1635,14 @@ handleBadVersion(packet)
 }
 
 int
-gwrite(fd, buffer, bytes)
-    int     fd;
-    char   *buffer;
-    register int bytes;
+gwrite(int fd, char *buffer, int bytes)
 {
     long    orig = bytes;
     register long n;
-#ifdef RECORDER
     if (playback)		/* pretend all is well */
 	return (bytes);
-#endif
     while (bytes) {
-	n = sock_write(fd, buffer, (unsigned)bytes);
+	n = sock_write(fd, buffer, bytes);
 	if (n < 0) {
 	    if (fd == udpSock) {
 		fprintf(stderr, "Tried to write %d, 0x%x, %d\n",
@@ -2167,31 +1659,16 @@ gwrite(fd, buffer, bytes)
 }
 
 int
-sock_read(s, data, size)
-    int     s, size;
-    char   *data;
+sock_read(int s, char *data, int size)
 {
-#ifdef RECORDER
     if (playback)
 	return readRecorded(s, data, size);
-#endif
 
-#ifndef AMIGA
-    return read(s, data, (unsigned)size);
-#else
-#ifdef DNET
-    return DNet_Read(s, data, size);
-#else
-    /* NET_SOCKETS code here */
-    /* No idea if this works, old version had it: */
-    return recv(s, data, size, 0);
-#endif				/* DNET  */
-#endif				/* AMIGA */
+    return read(s, data, size);
 }
 
 static void
-handleHostile(packet)
-    struct hostile_spacket *packet;
+handleHostile(struct hostile_spacket *packet)
 {
     register struct player *pl;
 
@@ -2209,16 +1686,12 @@ handleHostile(packet)
 }
 
 static void
-handlePlyrLogin(packet)
-    struct plyr_login_spacket *packet;
+handlePlyrLogin(struct plyr_login_spacket *packet)
 {
     register struct player *pl;
 
     SANITY_PNUM(packet->pnum);
 
-#ifdef PLPROF
-    printf("Got handlPlyrLogin for %d\n", packet->pnum);
-#endif				/* PLPROF */
     updatePlayer[packet->pnum] |= ALL_UPDATE;
     pl = &players[packet->pnum];
 
@@ -2242,48 +1715,40 @@ handlePlyrLogin(packet)
 }
 
 static void
-handleStats(packet)
-    struct stats_spacket *packet;
+handleStats(struct stats_spacket *packet)
 {
     register struct player *pl;
 
     SANITY_PNUM(packet->pnum);
 
-#ifdef PLPROF
-    printf("Got handleStats for %d\n", packet->pnum);
-#endif				/* PLPROF */
     updatePlayer[packet->pnum] |= LARGE_UPDATE;
     if (infomapped && infotype == PLAYERTYPE &&
 	((struct player *) infothing)->p_no == packet->pnum)
 	infoupdate = 1;
     pl = &players[packet->pnum];
-    pl->p_stats.st_tkills = ntohl((unsigned)packet->tkills);
-    pl->p_stats.st_tlosses = ntohl((unsigned)packet->tlosses);
-    pl->p_stats.st_kills = ntohl((unsigned)packet->kills);
-    pl->p_stats.st_losses = ntohl((unsigned)packet->losses);
-    pl->p_stats.st_tticks = ntohl((unsigned)packet->tticks);
-    pl->p_stats.st_tplanets = ntohl((unsigned)packet->tplanets);
-    pl->p_stats.st_tarmsbomb = ntohl((unsigned)packet->tarmies);
-    pl->p_stats.st_sbkills = ntohl((unsigned)packet->sbkills);
-    pl->p_stats.st_sblosses = ntohl((unsigned)packet->sblosses);
-    pl->p_stats.st_armsbomb = ntohl((unsigned)packet->armies);
-    pl->p_stats.st_planets = ntohl((unsigned)packet->planets);
-    pl->p_stats.st_maxkills = ntohl((unsigned)packet->maxkills) / 100.0;
-    pl->p_stats.st_sbmaxkills = ntohl((unsigned)packet->sbmaxkills) / 100.0;
+    pl->p_stats.st_tkills = ntohl(packet->tkills);
+    pl->p_stats.st_tlosses = ntohl(packet->tlosses);
+    pl->p_stats.st_kills = ntohl(packet->kills);
+    pl->p_stats.st_losses = ntohl(packet->losses);
+    pl->p_stats.st_tticks = ntohl(packet->tticks);
+    pl->p_stats.st_tplanets = ntohl(packet->tplanets);
+    pl->p_stats.st_tarmsbomb = ntohl(packet->tarmies);
+    pl->p_stats.st_sbkills = ntohl(packet->sbkills);
+    pl->p_stats.st_sblosses = ntohl(packet->sblosses);
+    pl->p_stats.st_armsbomb = ntohl(packet->armies);
+    pl->p_stats.st_planets = ntohl(packet->planets);
+    pl->p_stats.st_maxkills = ntohl(packet->maxkills) / 100.0;
+    pl->p_stats.st_sbmaxkills = ntohl(packet->sbmaxkills) / 100.0;
 }
 
 static void
-handlePlyrInfo(packet)
-    struct plyr_info_spacket *packet;
+handlePlyrInfo(struct plyr_info_spacket *packet)
 {
     register struct player *pl;
     static int lastship = -1;
 
     SANITY_PNUM(packet->pnum);
 
-#ifdef PLPROF
-    printf("Got PlyrInfo for %d\n", packet->pnum);
-#endif				/* PLPROF */
     updatePlayer[packet->pnum] |= ALL_UPDATE;
     if (infomapped && infotype == PLAYERTYPE &&
 	((struct player *) infothing)->p_no == packet->pnum)
@@ -2309,23 +1774,18 @@ handlePlyrInfo(packet)
 }
 
 void
-sendUpdatePacket(speed)
-    long    speed;
+sendUpdatePacket(long speed)
 {
     struct updates_cpacket packet;
 
     packet.type = CP_UPDATES;
     timerDelay = speed;
-    packet.usecs = htonl((unsigned)speed);
+    packet.usecs = htonl(speed);
     sendServerPacket((struct player_spacket *) & packet);
-#ifdef DEBUG
-    printf("sent request for an update every %d microseconds (%d/sec)\n",speed,1000000/speed);
-#endif
 }
 
 static void
-handlePlanetLoc(packet)
-    struct planet_loc_spacket *packet;
+handlePlanetLoc(struct planet_loc_spacket *packet)
 {
     struct planet *pl;
 
@@ -2339,15 +1799,15 @@ handlePlanetLoc(packet)
 	pl_update[packet->pnum].plu_update = 1;
 	/*
 	   printf("update: %s, old (%d,%d) new (%d,%d)\n", pl->pl_name,
-	   pl->pl_x, pl->pl_y, ntohl((unsigned)packet->x),ntohl((unsigned)packet->y));
+	   pl->pl_x, pl->pl_y, ntohl(packet->x),ntohl(packet->y));
 	*/
     } else {
 	pl_update[packet->pnum].plu_update = 0;
-	pl_update[packet->pnum].plu_x = ntohl((unsigned)packet->x);
-	pl_update[packet->pnum].plu_y = ntohl((unsigned)packet->y);
+	pl_update[packet->pnum].plu_x = ntohl(packet->x);
+	pl_update[packet->pnum].plu_y = ntohl(packet->y);
     }
-    pl->pl_x = ntohl((unsigned)packet->x);
-    pl->pl_y = ntohl((unsigned)packet->y);
+    pl->pl_x = ntohl(packet->x);
+    pl->pl_y = ntohl(packet->y);
     strcpy(pl->pl_name, packet->name);
     pl->pl_namelen = strlen(packet->name);
     pl->pl_flags |= PLREDRAW;
@@ -2359,33 +1819,13 @@ handlePlanetLoc(packet)
 	blk_gwidth = 200000;
 	blk_windgwidth = ((float) MAPSIDE) / blk_gwidth;
     }
-#ifdef ROTATERACE
     if (rotate) {
 	rotate_gcenter(&pl->pl_x, &pl->pl_y);
     }
-#endif
 }
 
-#if 0
-
 static void
-handleReserved(packet)
-    struct reserved_spacket *packet;
-{
-    struct reserved_cpacket response;
-
-#ifndef RWATCH
-    encryptReservedPacket(packet, &response, serverName, me->p_no);
-    sendServerPacket((struct player_spacket *) & response);
-#endif				/* RWATCH */
-}
-
-#else
-
-
-static void
-handleReserved(packet)
-    struct reserved_spacket *packet;
+handleReserved(struct reserved_spacket *packet)
 {
 #ifdef AUTHORIZE
     struct reserved_cpacket response;
@@ -2396,114 +1836,44 @@ handleReserved(packet)
 	strncpy(response.resp, RSA_VERSION, RESERVED_SIZE);
 	memcpy(response.data, packet->data, RESERVED_SIZE);
     } else {
-#if 0
-	/*
-	   if we ever go back to reserved.c checking, we'll reactivate this
-	   code.  However, our reserved.c module hasn't done any real
-	   computation since paradise 1.
-	*/
-	encryptReservedPacket(packet, &response, serverName, me->p_no);
-#else
 	memcpy(response.data, packet->data, 16);
 	memcpy(response.resp, packet->data, 16);
-#endif
     }
     sendServerPacket((struct player_spacket *) & response);
 #endif
 }
 
 static void
-handleRSAKey(packet)
-    struct rsa_key_spacket *packet;
+handleRSAKey(struct rsa_key_spacket *packet)
 {
 #ifdef AUTHORIZE
     struct rsa_key_cpacket response;
-    void rsa_black_box P(( unsigned char* out, unsigned char* in, 
-                           unsigned char* public, unsigned char* global));
-#ifndef DNET
     struct sockaddr_in saddr;
-#endif
     unsigned char *data;
-#ifndef TERM
     int     len;
-#endif /*!TERM [BDyess]*/
 
-#ifdef GATEWAY
-    extern unsigned long netaddr;
-#endif
-
-#ifndef DNET
-#ifdef GATEWAY
-    /* if we didn't get it from -H, go ahead and query the socket */
-    if (netaddr == 0) {
-	len = sizeof(saddr);
-	if (getpeername(sock, (struct sockaddr *) & saddr, &len) < 0) {
-	    perror("getpeername(sock)");
-	    exit(1);
-	}
-    } else {
-	saddr.sin_addr.s_addr = serveraddr; /*netaddr;*/
-	saddr.sin_port = serv_port;
-    }
-#else				/* GATEWAY */
-#ifdef TERM
-    saddr.sin_addr.s_addr = serveraddr;
-    saddr.sin_port = serv_port;
-#else				/* TERM [BDyess] */
     /* query the socket to determine the remote host (ATM) */
     len = sizeof(saddr);
     if (getpeername(sock, (struct sockaddr *) & saddr, &len) < 0) {
 	perror("getpeername(sock)");
 	exit(1);
     }
-#endif 				/* TERM [BDyess] */
-#endif				/* GATEWAY */
 
     data = packet->data;
-    bcopy(&saddr.sin_addr.s_addr, data, sizeof(saddr.sin_addr.s_addr));
+    memcpy(data, &saddr.sin_addr.s_addr, sizeof(saddr.sin_addr.s_addr));
     data += sizeof(saddr.sin_addr.s_addr);
-    bcopy(&saddr.sin_port, data, sizeof(saddr.sin_port));
-#else				/* DNET */
-    {
-	extern long netrek_server_addr;
-	extern unsigned short netrek_server_port;
+    memcpy(data, &saddr.sin_port, sizeof(saddr.sin_port));
 
-	data = packet->data;
-	bcopy(&netrek_server_addr, data, sizeof(netrek_server_addr));
-	data += sizeof(netrek_server_addr);
-	bcopy(&netrek_server_port, data, sizeof(netrek_server_port));
-    }
-#endif				/* DNET */
-
-#ifdef DEBUG
-    {
-	struct timeval start, end;
-	gettimeofday(&start, NULL);
-#endif
 	rsa_black_box(response.resp, packet->data,
 		      response.public, response.global);
-#ifdef DEBUG
-	gettimeofday(&end, NULL);
-	printf("rsa_black_box took %d ms.\n",
-	       (1000 * (end.tv_sec - start.tv_sec) +
-		(end.tv_usec - start.tv_usec) / 1000));
-    }
-#endif
     response.type = CP_RSA_KEY;
 
     sendServerPacket((struct player_spacket *) & response);
-#ifdef DEBUG
-    printf("RSA verification requested.\n");
-#endif
 #endif				/* AUTHORIZE */
 }
 
-#endif
-
-#ifdef INCLUDE_SCAN
 static void
-handleScan(packet)
-    struct scan_spacket *packet;
+handleScan(struct scan_spacket *packet)
 {
     struct player *pp;
 
@@ -2511,35 +1881,22 @@ handleScan(packet)
 
     if (packet->success) {
 	pp = &players[packet->pnum];
-	pp->p_fuel = ntohl((unsigned)packet->p_fuel);
-	pp->p_armies = ntohl((unsigned)packet->p_armies);
-	pp->p_shield = ntohl((unsigned)packet->p_shield);
-	pp->p_damage = ntohl((unsigned)packet->p_damage);
-	pp->p_etemp = ntohl((unsigned)packet->p_etemp);
-	pp->p_wtemp = ntohl((unsigned)packet->p_wtemp);
-	informScan(packet->pnum);
+	pp->p_fuel = ntohl(packet->p_fuel);
+	pp->p_armies = ntohl(packet->p_armies);
+	pp->p_shield = ntohl(packet->p_shield);
+	pp->p_damage = ntohl(packet->p_damage);
+	pp->p_etemp = ntohl(packet->p_etemp);
+	pp->p_wtemp = ntohl(packet->p_wtemp);
     }
 }
-
-static void
-informScan(p)
-    int     p;
-{
-}
-
-#endif				/* INCLUDE_SCAN */
 
 /*
  * UDP stuff
  */
 void
-sendUdpReq(req)
-    int     req;
+sendUdpReq(int req)
 {
     struct udp_req_cpacket packet;
-#ifdef RWATCH
-    return;
-#endif				/* RWATCH */
 
     packet.type = CP_UDP_REQ;
     packet.request = req;
@@ -2551,7 +1908,6 @@ sendUdpReq(req)
 	return;
     }
     if (req == COMM_UPDATE) {
-#ifdef SHORT_PACKETS
 	if (recv_short) {	/* not necessary */
 /* Let the client do the work, and not the network :-) */
 	    register int i;
@@ -2567,7 +1923,6 @@ sendUdpReq(req)
 		phasers[i].ph_status = PHFREE;
 	    }
 	}
-#endif
 	sendServerPacket((struct player_spacket *) & packet);
 	warning("Sent request for full update");
 	return;
@@ -2595,19 +1950,8 @@ sendUdpReq(req)
     /* send the request */
     packet.type = CP_UDP_REQ;
     packet.request = req;
-    packet.port = htonl((unsigned)udpLocalPort);
-#ifdef GATEWAY
-    if (!strcmp(serverName, gw_mach)) {
-	packet.port = htons(gw_serv_port);	/* gw port that server should
-						   call */
-	UDPDIAG(("+ Telling server to contact us on %d\n", gw_serv_port));
-    }
-#endif
-#ifdef USE_PORTSWAP
-    packet.connmode = CONNMODE_PORT;	/* have him send his port */
-#else
+    packet.port = htonl(udpLocalPort);
     packet.connmode = CONNMODE_PACKET;	/* we get addr from packet */
-#endif
     sendServerPacket((struct player_spacket *) & packet);
 
     /* update internal state stuff */
@@ -2621,7 +1965,6 @@ sendUdpReq(req)
     UDPDIAG(("Sent request for %s mode\n", (req == COMM_TCP) ?
 	     "TCP" : "UDP"));
 
-#ifndef USE_PORTSWAP
     if ((req == COMM_UDP) && recvUdpConn() < 0) {
 	UDPDIAG(("Sending TCP reset message\n"));
 	packet.request = COMM_TCP;
@@ -2634,15 +1977,13 @@ sendUdpReq(req)
 	commSwitchTimeout = 0;
 	closeUdpConn();
     }
-#endif
 
     if (udpWin)
 	udprefresh(UDP_STATUS);
 }
 
 static void
-handleUdpReply(packet)
-    struct udp_reply_spacket *packet;
+handleUdpReply(struct udp_reply_spacket *packet)
 {
     struct udp_req_cpacket response;
 
@@ -2675,31 +2016,6 @@ handleUdpReply(packet)
 	    if (commModeReq != COMM_UDP) {
 		UDPDIAG(("Got unsolicited SWITCH_UDP_OK; ignoring\n"));
 	    } else {
-#ifdef USE_PORTSWAP
-		udpServerPort = ntohl((unsigned)packet->port);
-#ifdef nodef			/* simulate calvin error */
-		/* XXX TMP */
-		udpServerPort = 3333;
-#endif
-		if (connUdpConn() < 0) {
-		    UDPDIAG(("Unable to connect, resetting\n"));
-		    warning("Connection attempt failed");
-		    commModeReq = COMM_TCP;
-		    commStatus = STAT_CONNECTED;
-		    if (udpSock >= 0)
-			closeUdpConn();
-		    if (udpWin) {
-			udprefresh(UDP_STATUS);
-			udprefresh(UDP_CURRENT);
-		    }
-		    response.request = COMM_TCP;
-		    response.port = 0;
-		    goto send;
-		}
-#else
-		/* this came down UDP, so we MUST be connected */
-		/* (do the verify thing anyway just for kicks) */
-#endif
 		UDPDIAG(("Connected to server's UDP port\n"));
 		commStatus = STAT_VERIFY_UDP;
 		if (udpWin)
@@ -2707,9 +2023,6 @@ handleUdpReply(packet)
 		response.request = COMM_VERIFY;	/* send verify request on UDP */
 		response.port = 0;
 		commSwitchTimeout = 25;	/* wait 25 updates */
-#ifdef USE_PORTSWAP
-	send:
-#endif				/* USE_PORTSWAP */
 		sendServerPacket((struct player_spacket *) & response);
 	    }
 	}
@@ -2742,17 +2055,14 @@ handleUdpReply(packet)
 
 #define MAX_PORT_RETRY  10
 static int
-openUdpConn()
+openUdpConn(void)
 {
-#ifndef DNET
     struct sockaddr_in addr;
     struct hostent *hp;
     int     attempts;
 
-#ifdef RECORDER
     if (playback)
 	return 0;
-#endif
     if (udpSock >= 0) {
 	fprintf(stderr, "netrek: tried to open udpSock twice\n");
 	return (0);		/* pretend we succeeded (this could be bad) */
@@ -2761,9 +2071,6 @@ openUdpConn()
 	perror("netrek: unable to create DGRAM socket");
 	return (-1);
     }
-#ifdef nodef
-    set_udp_opts(udpSock);
-#endif				/* nodef */
 
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_family = AF_INET;
@@ -2774,13 +2081,6 @@ openUdpConn()
 	while (udpLocalPort < 2048) {
 	    udpLocalPort = (udpLocalPort + 10687) & 32767;
 	}
-#ifdef GATEWAY
-	/* we need the gateway to know where to find us */
-	if (!strcmp(serverName, gw_mach)) {
-	    UDPDIAG(("+ gateway test: binding to %d\n", gw_local_port));
-	    udpLocalPort = gw_local_port;
-	}
-#endif
 	addr.sin_port = htons(udpLocalPort);
 	if (bind(udpSock, (struct sockaddr *) & addr, sizeof(addr)) >= 0)
 	    break;
@@ -2799,10 +2099,6 @@ openUdpConn()
 	if ((addr.sin_addr.s_addr = inet_addr(serverName)) == -1) {
 	    if ((hp = gethostbyname(serverName)) == NULL) {
 		printf("Who is %s?\n", serverName);
-#ifdef AUTOKEY
-		if (autoKey)
-		    W_AutoRepeatOn();
-#endif
 
 		EXIT(0);
 	    } else {
@@ -2813,71 +2109,19 @@ openUdpConn()
 	UDPDIAG(("Found serveraddr == 0x%x\n", (unsigned int) serveraddr));
     }
     return (0);
-#else				/* DNET */
-#ifdef RECORDER
-    if (playback)
-	return 0;
-#endif
-    return DNetOpenUDPConn(serverName);
-#endif				/* DNET */
 }
 
-#ifdef USE_PORTSWAP
 static int
-connUdpConn()
+recvUdpConn(void)
 {
-#ifndef DNET
-    struct sockaddr_in addr;
-    int     len;
-
-#ifdef RECORDER
-    if (playback)
-	return 0;
-#endif
-    addr.sin_addr.s_addr = serveraddr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(udpServerPort);
-
-    UDPDIAG(("Connecting to host 0x%x on port %d\n", serveraddr, udpServerPort));
-    if (connect(udpSock, &addr, sizeof(addr)) < 0) {
-	fprintf(stderr, "Error %d: ");
-	perror("netrek: unable to connect UDP socket");
-	printUdpInfo();		/* debug */
-	return (-1);
-    }
-#ifdef nodef
-    len = sizeof(addr);
-    if (getsockname(udpSock, &addr, &len) < 0) {
-	perror("netrek: unable to getsockname(UDP)");
-	UDPDIAG(("Can't get our own socket; connection failed\n"));
-	close(udpSock);
-	udpSock = -1;
-	return -1;
-    }
-    printf("udpLocalPort %d, getsockname port %d\n",
-	   udpLocalPort, addr.sin_port);
-#endif
-
-    return (0);
-#endif				/* DNET */
-}
-#endif
-
-#ifndef USE_PORTSWAP
-static int
-recvUdpConn()
-{
-#ifndef DNET
     fd_set  readfds;
     struct timeval to;
     struct sockaddr_in from;
     int     fromlen, res;
 
-#ifdef RECORDER
     if (playback)
 	return 0;
-#endif
-    bzero(&from, sizeof(from));	/* don't get garbage if really broken */
+    memset(&from, 0, sizeof(from));	/* don't get garbage if really broken */
 
     /* we patiently wait until the server sends a packet to us */
     /* (note that we silently eat the first one) */
@@ -2914,13 +2158,6 @@ recvUdpConn()
     }
     udpServerPort = ntohs(from.sin_port);
     UDPDIAG(("recvfrom() succeeded; will use server port %d\n", udpServerPort));
-#ifdef GATEWAY
-    if (!strcmp(serverName, gw_mach)) {
-	UDPDIAG(("+ actually, I'm going to use %d\n", gw_port));
-	udpServerPort = gw_port;
-	from.sin_port = htons(udpServerPort);
-    }
-#endif
 
     if (connect(udpSock, (struct sockaddr *) & from, sizeof(from)) < 0) {
 	perror("netrek: unable to connect UDP socket after recvfrom()");
@@ -2929,29 +2166,15 @@ recvUdpConn()
 	return (-1);
     }
     return (0);
-#else				/* DNET */
-#ifdef RECORDER
-    if (playback)
-	return 0;
-#endif
-    return DNetRecvUDPConn();
-#endif				/* DNET */
 }
-#endif
 
 int
-closeUdpConn()
+closeUdpConn(void)
 {
     V_UDPDIAG(("Closing UDP socket\n"));
-#ifdef RECORDER
     if (playback)
 	return 0;
-#endif
 
-#ifdef DNET
-    DNetCloseUDP();
-    return 0;
-#else
     if (udpSock < 0) {
 	fprintf(stderr, "netrek: tried to close a closed UDP socket\n");
 	return (-1);
@@ -2960,13 +2183,11 @@ closeUdpConn()
     close(udpSock);
     udpSock = -1;
     return 0;
-#endif				/* DNET */
 }
 
 static void
-printUdpInfo()
+printUdpInfo(void)
 {
-#ifndef DNET
     struct sockaddr_in addr;
     int     len;
 
@@ -2986,12 +2207,10 @@ printUdpInfo()
     UDPDIAG(("PEER : addr=0x%x, family=%d, port=%d\n",
 	     (unsigned int) addr.sin_addr.s_addr,
 	     addr.sin_family, ntohs(addr.sin_port)));
-#endif
 }
 
 static void
-handleSequence(packet)
-    struct sequence_spacket *packet;
+handleSequence(struct sequence_spacket *packet)
 {
     static int recent_count = 0, recent_dropped = 0;
     long    newseq;
@@ -3064,8 +2283,8 @@ handleSequence(packet)
 
 
 /*
-static void dumpShip(shipp)
-struct ship *shipp;
+static void
+dumpShip(struct ship *shipp)
 {
   printf("ship stats:\n");
   printf("phaser range = %d\n", shipp->s_phaserrange);
@@ -3084,8 +2303,7 @@ struct ship *shipp;
 */
 
 static void
-handleShipCap(packet)		/* SP_SHIP_CAP */
-    struct ship_cap_spacket *packet;
+handleShipCap(struct ship_cap_spacket *packet)		/* SP_SHIP_CAP */
 {
     struct shiplist *temp;
 
@@ -3129,12 +2347,12 @@ handleShipCap(packet)		/* SP_SHIP_CAP */
 	    if (temp->ship->s_phaserrange < 200)	/* backward
 							   compatibility */
 		temp->ship->s_phaserrange *= PHASEDIST / 100;
-	    temp->ship->s_maxspeed = ntohl((unsigned)packet->s_maxspeed);
-	    temp->ship->s_maxfuel = ntohl((unsigned)packet->s_maxfuel);
-	    temp->ship->s_maxshield = ntohl((unsigned)packet->s_maxshield);
-	    temp->ship->s_maxdamage = ntohl((unsigned)packet->s_maxdamage);
-	    temp->ship->s_maxwpntemp = ntohl((unsigned)packet->s_maxwpntemp);
-	    temp->ship->s_maxegntemp = ntohl((unsigned)packet->s_maxegntemp);
+	    temp->ship->s_maxspeed = ntohl(packet->s_maxspeed);
+	    temp->ship->s_maxfuel = ntohl(packet->s_maxfuel);
+	    temp->ship->s_maxshield = ntohl(packet->s_maxshield);
+	    temp->ship->s_maxdamage = ntohl(packet->s_maxdamage);
+	    temp->ship->s_maxwpntemp = ntohl(packet->s_maxwpntemp);
+	    temp->ship->s_maxegntemp = ntohl(packet->s_maxegntemp);
 	    temp->ship->s_maxarmies = ntohs(packet->s_maxarmies);
 	    temp->ship->s_letter = packet->s_letter;
 	    temp->ship->s_desig[0] = packet->s_desig1;
@@ -3160,12 +2378,12 @@ handleShipCap(packet)		/* SP_SHIP_CAP */
     temp->ship->s_type = ntohs(packet->s_type);
     temp->ship->s_torpspeed = ntohs(packet->s_torpspeed);
     temp->ship->s_phaserrange = ntohs(packet->s_phaserrange);
-    temp->ship->s_maxspeed = ntohl((unsigned)packet->s_maxspeed);
-    temp->ship->s_maxfuel = ntohl((unsigned)packet->s_maxfuel);
-    temp->ship->s_maxshield = ntohl((unsigned)packet->s_maxshield);
-    temp->ship->s_maxdamage = ntohl((unsigned)packet->s_maxdamage);
-    temp->ship->s_maxwpntemp = ntohl((unsigned)packet->s_maxwpntemp);
-    temp->ship->s_maxegntemp = ntohl((unsigned)packet->s_maxegntemp);
+    temp->ship->s_maxspeed = ntohl(packet->s_maxspeed);
+    temp->ship->s_maxfuel = ntohl(packet->s_maxfuel);
+    temp->ship->s_maxshield = ntohl(packet->s_maxshield);
+    temp->ship->s_maxdamage = ntohl(packet->s_maxdamage);
+    temp->ship->s_maxwpntemp = ntohl(packet->s_maxwpntemp);
+    temp->ship->s_maxegntemp = ntohl(packet->s_maxegntemp);
     temp->ship->s_maxarmies = ntohs(packet->s_maxarmies);
     temp->ship->s_letter = packet->s_letter;
     temp->ship->s_desig[0] = packet->s_desig1;
@@ -3176,8 +2394,7 @@ handleShipCap(packet)		/* SP_SHIP_CAP */
 }
 
 static void
-handleMotdPic(packet)		/* SP_SHIP_CAP */
-    struct motd_pic_spacket *packet;
+handleMotdPic(struct motd_pic_spacket *packet)		/* SP_SHIP_CAP */
 {
     int     x, y, page, width, height;
 
@@ -3191,8 +2408,7 @@ handleMotdPic(packet)		/* SP_SHIP_CAP */
 }
 
 static void
-handleStats2(packet)
-    struct stats_spacket2 *packet;
+handleStats2(struct stats_spacket2 *packet)
 {
     struct stats2 *p;		/* to hold packet's player's stats2 struct */
 
@@ -3203,75 +2419,73 @@ handleStats2(packet)
 	((struct player *) infothing)->p_no == packet->pnum)
 	infoupdate = 1;
     p = &(players[packet->pnum].p_stats2);	/* get player's stats2 struct */
-    p->st_genocides = ntohl((unsigned)packet->genocides);
-    p->st_tmaxkills = (float) ntohl((unsigned)packet->maxkills) / 100.0;
-    p->st_di = (float) ntohl((unsigned)packet->di) / 100.0;
-    p->st_tkills = (int) ntohl((unsigned)packet->kills);
-    p->st_tlosses = (int) ntohl((unsigned)packet->losses);
-    p->st_tarmsbomb = (int) ntohl((unsigned)packet->armsbomb);
-    p->st_tresbomb = (int) ntohl((unsigned)packet->resbomb);
-    p->st_tdooshes = (int) ntohl((unsigned)packet->dooshes);
-    p->st_tplanets = (int) ntohl((unsigned)packet->planets);
-    p->st_tticks = (int) ntohl((unsigned)packet->tticks);
-    p->st_sbkills = (int) ntohl((unsigned)packet->sbkills);
-    p->st_sblosses = (int) ntohl((unsigned)packet->sblosses);
-    p->st_sbticks = (int) ntohl((unsigned)packet->sbticks);
-    p->st_sbmaxkills = (float) ntohl((unsigned)packet->sbmaxkills) / 100.0;
-    p->st_wbkills = (int) ntohl((unsigned)packet->wbkills);
-    p->st_wblosses = (int) ntohl((unsigned)packet->wblosses);
-    p->st_wbticks = (int) ntohl((unsigned)packet->wbticks);
-    p->st_wbmaxkills = (float) ntohl((unsigned)packet->wbmaxkills) / 100.0;
-    p->st_jsplanets = (int) ntohl((unsigned)packet->jsplanets);
-    p->st_jsticks = (int) ntohl((unsigned)packet->jsticks);
-    if (p->st_rank != (int) ntohl((unsigned)packet->rank) ||
-	p->st_royal != (int) ntohl((unsigned)packet->royal)) {
-	p->st_rank = (int) ntohl((unsigned)packet->rank);
-	p->st_royal = (int) ntohl((unsigned)packet->royal);
+    p->st_genocides = ntohl(packet->genocides);
+    p->st_tmaxkills = (float) ntohl(packet->maxkills) / 100.0;
+    p->st_di = (float) ntohl(packet->di) / 100.0;
+    p->st_tkills = (int) ntohl(packet->kills);
+    p->st_tlosses = (int) ntohl(packet->losses);
+    p->st_tarmsbomb = (int) ntohl(packet->armsbomb);
+    p->st_tresbomb = (int) ntohl(packet->resbomb);
+    p->st_tdooshes = (int) ntohl(packet->dooshes);
+    p->st_tplanets = (int) ntohl(packet->planets);
+    p->st_tticks = (int) ntohl(packet->tticks);
+    p->st_sbkills = (int) ntohl(packet->sbkills);
+    p->st_sblosses = (int) ntohl(packet->sblosses);
+    p->st_sbticks = (int) ntohl(packet->sbticks);
+    p->st_sbmaxkills = (float) ntohl(packet->sbmaxkills) / 100.0;
+    p->st_wbkills = (int) ntohl(packet->wbkills);
+    p->st_wblosses = (int) ntohl(packet->wblosses);
+    p->st_wbticks = (int) ntohl(packet->wbticks);
+    p->st_wbmaxkills = (float) ntohl(packet->wbmaxkills) / 100.0;
+    p->st_jsplanets = (int) ntohl(packet->jsplanets);
+    p->st_jsticks = (int) ntohl(packet->jsticks);
+    if (p->st_rank != (int) ntohl(packet->rank) ||
+	p->st_royal != (int) ntohl(packet->royal)) {
+	p->st_rank = (int) ntohl(packet->rank);
+	p->st_royal = (int) ntohl(packet->royal);
 	updatePlayer[packet->pnum] |= ALL_UPDATE;
     }
 }
 
 static void
-handleStatus2(packet)
-    struct status_spacket2 *packet;
+handleStatus2(struct status_spacket2 *packet)
 {
     updatePlayer[me->p_no] |= LARGE_UPDATE;
     if (infomapped && infotype == PLAYERTYPE &&
 	((struct player *) infothing)->p_no == me->p_no)
 	infoupdate = 1;
     status2->tourn = packet->tourn;
-    status2->dooshes = ntohl((unsigned)packet->dooshes);
-    status2->armsbomb = ntohl((unsigned)packet->armsbomb);
-    status2->resbomb = ntohl((unsigned)packet->resbomb);
-    status2->planets = ntohl((unsigned)packet->planets);
-    status2->kills = ntohl((unsigned)packet->kills);
-    status2->losses = ntohl((unsigned)packet->losses);
-    status2->sbkills = ntohl((unsigned)packet->sbkills);
-    status2->sblosses = ntohl((unsigned)packet->sblosses);
-    status2->sbtime = ntohl((unsigned)packet->sbtime);
-    status2->wbkills = ntohl((unsigned)packet->wbkills);
-    status2->wblosses = ntohl((unsigned)packet->wblosses);
-    status2->wbtime = ntohl((unsigned)packet->wbtime);
-    status2->jsplanets = ntohl((unsigned)packet->jsplanets);
-    status2->jstime = ntohl((unsigned)packet->jstime);
-    status2->time = ntohl((unsigned)packet->time);
-    status2->timeprod = ntohl((unsigned)packet->timeprod);
+    status2->dooshes = ntohl(packet->dooshes);
+    status2->armsbomb = ntohl(packet->armsbomb);
+    status2->resbomb = ntohl(packet->resbomb);
+    status2->planets = ntohl(packet->planets);
+    status2->kills = ntohl(packet->kills);
+    status2->losses = ntohl(packet->losses);
+    status2->sbkills = ntohl(packet->sbkills);
+    status2->sblosses = ntohl(packet->sblosses);
+    status2->sbtime = ntohl(packet->sbtime);
+    status2->wbkills = ntohl(packet->wbkills);
+    status2->wblosses = ntohl(packet->wblosses);
+    status2->wbtime = ntohl(packet->wbtime);
+    status2->jsplanets = ntohl(packet->jsplanets);
+    status2->jstime = ntohl(packet->jstime);
+    status2->time = ntohl(packet->time);
+    status2->timeprod = ntohl(packet->timeprod);
 }
 
 static void
-handlePlanet2(packet)
-    struct planet_spacket2 *packet;
+handlePlanet2(struct planet_spacket2 *packet)
 {
     SANITY_PLANNUM(packet->pnum);
 
     planets[packet->pnum].pl_owner = packet->owner;
     planets[packet->pnum].pl_info = packet->info;
-    planets[packet->pnum].pl_flags = ntohl((unsigned)packet->flags);
+    planets[packet->pnum].pl_flags = ntohl(packet->flags);
     if(PL_TYPE(planets[packet->pnum]) != PLPLANET) {
       planets[packet->pnum].pl_owner = ALLTEAM;
     }
-    planets[packet->pnum].pl_timestamp = ntohl((unsigned)packet->timestamp);
-    planets[packet->pnum].pl_armies = ntohl((unsigned)packet->armies);
+    planets[packet->pnum].pl_timestamp = ntohl(packet->timestamp);
+    planets[packet->pnum].pl_armies = ntohl(packet->armies);
     planets[packet->pnum].pl_flags |= PLREDRAW;
     pl_update[packet->pnum].plu_update = 1;
     pl_update[packet->pnum].plu_x = planets[packet->pnum].pl_x;
@@ -3280,11 +2494,9 @@ handlePlanet2(packet)
 	((struct planet *) infothing)->pl_no == packet->pnum)
 	infoupdate = 1;
 }
-#ifdef ASTEROIDS
 
 static void 
-handleTerrainInfo2(pkt)
-  struct terrain_info_packet2 *pkt;
+handleTerrainInfo2(struct terrain_info_packet2 *pkt)
 {
 #ifdef ZDIAG2
     fprintf( stderr, "Receiving terrain info packet\n" );
@@ -3296,8 +2508,7 @@ handleTerrainInfo2(pkt)
 }; 
 
 static void
-handleTerrain2(pkt)
-    struct terrain_packet2 *pkt;
+handleTerrain2(struct terrain_packet2 *pkt)
 {
     static int curseq = 0, totbytes = 0, done = 0;
     int i;
@@ -3394,11 +2605,9 @@ handleTerrain2(pkt)
 #endif
     }
 }    
-#endif /* ASTEROIDS */
 
 static void
-handleTempPack(packet)		/* SP_SHIP_CAP */
-    struct obvious_packet *packet;
+handleTempPack(struct obvious_packet *packet)		/* SP_SHIP_CAP */
 {
     struct obvious_packet reply;
     /* printf("New MOTD info available\n"); */
@@ -3410,8 +2619,7 @@ handleTempPack(packet)		/* SP_SHIP_CAP */
 /* handlers for the extension1 packet */
 
 int
-compute_extension1_size(pkt)
-    char   *pkt;
+compute_extension1_size(char *pkt)
 {
     if (pkt[0] != SP_PARADISE_EXT1)
 	return -1;
@@ -3427,8 +2635,7 @@ compute_extension1_size(pkt)
 }
 
 static void
-handleExtension1(packet)
-    struct paradiseext1_spacket *packet;
+handleExtension1(struct paradiseext1_spacket *packet)
 {
     switch (packet->subtype) {
     case SP_PE1_MISSING_BITMAP:

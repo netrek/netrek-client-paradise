@@ -3,23 +3,18 @@
  */
 #include "copyright.h"
 
-#include <stdio.h>
-#include <math.h>
 #include "config.h"
-#include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "gameconf.h"
+#include "proto.h"
 
 /*
    fills the ratings struct pointed to by r with the stats for the player
    pointed to by j [BDyess]
 */
 struct ratings *
-get_ratings(j, r)
-    struct player *j;
-    struct ratings *r;
+get_ratings(struct player *j, struct ratings *r)
 {
     if (paradise) {
 	struct stats2 *s;	/* point to player's paradise stats */

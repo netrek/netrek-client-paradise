@@ -6,35 +6,23 @@
  * Bill Dyess	   11/8/93  - created expandFilename function
  * Bill Dyess      11/20/93 - added #include capability
  */
+
 #include "copyright2.h"
-#include "defines.h"
-#include <stdio.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && (TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#include<ctype.h>
-#include<pwd.h>
-#ifdef HAVE_STRING_H
-#include<string.h>
-#else
-#include <strings.h>
-#endif
+
 #include "config.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "images.h"
-
 
 #define MAXLINE 1024
 
@@ -44,19 +32,11 @@ static char *filelist[] = {".tedrc",".paradiserc",".netrekrc",".xtrekrc",NULL};
 /* Prototypes */
 static FILE *findDefaults P((char *home, char **deffile, char *base));
 
-/* This should not be required.  It should be in stdlib.h.  */
-#if 0
-#ifndef linux
-char   *getenv P((const char *varname));
-#endif
-#endif
-
 /* expands ~ (home dir) and environment vars in filenames.  This is primarily
    for filenames specified in the .xtrekrc file, where the shell never gets
    a chance to expand them.  [BDyess] */
-char   *
-expandFilename(filename)
-    char   *filename;
+char *
+expandFilename(char *filename)
 {
     char    buf[MAXLINE], *src = filename, *dest = buf, tmpbuf[MAXLINE],
            *tmppntr, *envpntr;
@@ -131,7 +111,7 @@ expandFilename(filename)
 }
 
 void
-freeDefaults()
+freeDefaults(void)
 {
     struct stringlist *tmp;
     while (defaults) {
@@ -143,10 +123,8 @@ freeDefaults()
     }
 }
 
-/*    char   *deffile;	As opposed to defile? */
-char   *
-initDefaults(deffile)
-    char   *deffile;
+char *
+initDefaults(char *deffile)
 {
     FILE   *fp = NULL;
     char    buf[MAXLINE];
@@ -161,16 +139,6 @@ initDefaults(deffile)
     if (!deffile) {
 	deffile = (char *) malloc(256);
 	home = getenv("HOME");
-#ifdef AMIGA
-	/*
-	   This is VERY MISLEADING.  Really want to say home="netrek:" but
-	   that causes other problems.  ixemul.library will translate
-	   "/netrek" into "netrek:" Unless configured not to.  Does by
-	   default. Yuck, what a mess. -JR
-	*/
-	if (!home)
-	    home = "/netrek";
-#endif				/* AMIGA */
         for(i = 0;filelist[i];i++) {
 	  /* home == NULL means search the current directory [BDyess] */
 	  fp = findDefaults(NULL, &deffile, filelist[i]);
@@ -181,33 +149,22 @@ initDefaults(deffile)
     } else {
 	fp = fopen(deffile, "r");
     }
-#ifdef SYS_RC
-    if (!fp) {
-	fp = fopen(SYS_RC, "r");
-	if (!fp)
-	    return deffile;
-	printf("Using %s as defaults file.\n", SYS_RC);
-    } else {
-	printf("Using %s as defaults file.\n", deffile);
-    }
-#else
     if (!fp)
 	return deffile;
-#endif
     printf("Reading defaults from %s.\n", deffile);
     while (fgets(buf, MAXLINE - 1, fp)) {
 	if (skip) {
-	    skip = strncmpi(buf, "paradise-include", 16);
+	    skip = strncasecmp(buf, "paradise-include", 16);
 	    continue;
 	} else {
-	    skip = !strncmpi(buf, "paradise-exclude", 16);
+	    skip = !strncasecmp(buf, "paradise-exclude", 16);
 	    if (skip)
 		continue;
 	}
 	/* if (*buf=='#' || *buf==';') continue; */
 	v = buf;
 	if (*buf == '#') {
-	    if (strncmpi(buf + 1, "include", 7) == 0) {	/* #include statement */
+	    if (strncasecmp(buf + 1, "include", 7) == 0) {	/* #include statement */
 		v = buf + 8;
 		ok = 0;
 		while (*v == ' ' || *v == '<' || *v == '"') {
@@ -217,7 +174,7 @@ initDefaults(deffile)
 		}
 		if (!ok)
 		    continue;	/* must have " or < before filename */
-		includeFile = (char*)strdup(v);
+		includeFile = strdup(v);
 		r = includeFile + strlen(includeFile) - 1;
 		*r = 0;		/* remove trailing \n */
 		r--;
@@ -255,8 +212,8 @@ initDefaults(deffile)
 	    if(defaults)
 		defaults->prev=new;
 	    new->prev = NULL;
-	    new->string = (char*)strdup(buf);
-	    new->value = (char*)strdup(v);
+	    new->string = strdup(buf);
+	    new->value = strdup(v);
 	    new->searched = 0;
 	    defaults = new;
 	}
@@ -265,27 +222,12 @@ initDefaults(deffile)
     return deffile;
 }
 
-#if 0
-char   *
-strdup(str)
-    char   *str;
-{
-    char   *s;
-
-    s = (char *) malloc(strlen(str) + 1);
-    strcpy(s, str);
-    return (s);
-}
-#endif /*0, if you don't have this tell me [BDyess]*/
-
 /* changed to search the entire defaults list once instead of as many as 
    three times.  This is faster unless you have a "default.nickname:" entry
    for almost every default on every server... -JR */
 
-static char  *
-getdefault(str,defstr)
-    char   *str;
-    char   *defstr;
+static char *
+getdefault(char *str, char *defstr)
 {
     struct stringlist *slNick=0, *slFlavor=0, *slNorm=0, *sl;
     char    tempNick[80], tempFlavor[80];
@@ -303,16 +245,16 @@ getdefault(str,defstr)
 	sprintf(tempFlavor, "%s.%s", str, defFlavor);
 
     for(sl=defaults;sl;sl=sl->next) {
-	if(defNickName && !strcmpi(sl->string, tempNick)) {
+	if(defNickName && !strcasecmp(sl->string, tempNick)) {
 	    if(!dump_defaults) return sl->value;
 	    if(!slNick)
 		slNick=sl;
-	} else if(defFlavor && !strcmpi(sl->string, tempFlavor)) {
+	} else if(defFlavor && !strcasecmp(sl->string, tempFlavor)) {
 	    if(!slFlavor)
 		slFlavor = sl;
 	}
 
-	if (!strcmpi(sl->string, str)) {
+	if (!strcasecmp(sl->string, str)) {
 	    if(!slNorm)
 		slNorm = sl;
 	}
@@ -350,16 +292,15 @@ getdefault(str,defstr)
 }
 
 int
-booleanDefault(def, preferred)
-    char   *def;
-    int     preferred;
+booleanDefault(char *def, int preferred)
 {
     char   *str;
 
     str = getdefault(def,preferred ? "on" : "off");
     if (str == NULL)
 	return (preferred);
-    if (!strcmpi(str, "on") || !strcmpi(str, "true") || !strcmpi(str, "1")) {
+    if (!strcasecmp(str, "on") || !strcasecmp(str, "true") || 
+        !strcasecmp(str, "1")) {
 	return (1);
     } else {
 	return (0);
@@ -367,9 +308,7 @@ booleanDefault(def, preferred)
 }
 
 int
-intDefault(def, preferred)
-    char   *def;
-    int     preferred;
+intDefault(char *def, int preferred)
 {
     char   *str;
     char   numstring[20];
@@ -385,17 +324,15 @@ intDefault(def, preferred)
 
 /* gets the default for the given def and returns it if it exists.
    Otherwise returns a fresh copy of the preferred string */
-char   *
-stringDefault(def, preferred)
-    char   *def;
-    char   *preferred;
+char *
+stringDefault(char *def, char *preferred)
 {
     char   *str;
 
     str = getdefault(def,preferred ? preferred : "(null)");
     if (!str)
-	return preferred ? (char*)strdup(preferred) : NULL;
-    return (char*)strdup(str);
+	return preferred ? strdup(preferred) : NULL;
+    return strdup(str);
 }
 
 /* no default file given on command line.
@@ -406,8 +343,7 @@ stringDefault(def, preferred)
 /* extended to check for for unadorned base and to return a fp [BDyess] */
 
 static FILE *
-findDefaults(home, deffile, base)
-    char   *home, **deffile, *base;
+findDefaults(char *home, char **deffile, char *base)
 {
     FILE   *fp;
 
@@ -444,46 +380,58 @@ findDefaults(home, deffile, base)
 /* modified to accept pt/ut's 10/10/93 [BDyess] */
 
 int
-defaultShip(preferred)
-    int     preferred;
+defaultShip(int preferred)
 {
     char   *type;
 
     type = stringDefault("defaultship",NULL);
     if(type == NULL)
         return preferred;
-    if ((strcmpi(type, "scout") == 0) || (strcmpi(type, "SC") == 0))
+    if ((strcasecmp(type, "scout") == 0) || 
+        (strcasecmp(type, "SC") == 0))
 	return SCOUT;
-    else if ((strcmpi(type, "destroyer") == 0) || (strcmpi(type, "DD") == 0))
+    else if ((strcasecmp(type, "destroyer") == 0) || 
+             (strcasecmp(type, "DD") == 0))
 	return DESTROYER;
-    else if ((strcmpi(type, "cruiser") == 0) || (strcmpi(type, "CA") == 0))
+    else if ((strcasecmp(type, "cruiser") == 0) || 
+             (strcasecmp(type, "CA") == 0))
 	return CRUISER;
-    else if ((strcmpi(type, "battleship") == 0) || (strcmpi(type, "BB") == 0))
+    else if ((strcasecmp(type, "battleship") == 0) || 
+             (strcasecmp(type, "BB") == 0))
 	return BATTLESHIP;
-    else if ((strcmpi(type, "assault") == 0) || (strcmpi(type, "AS") == 0))
+    else if ((strcasecmp(type, "assault") == 0) || 
+             (strcasecmp(type, "AS") == 0))
 	return ASSAULT;
-    else if ((strcmpi(type, "starbase") == 0) || (strcmpi(type, "SB") == 0))
+    else if ((strcasecmp(type, "starbase") == 0) || 
+             (strcasecmp(type, "SB") == 0))
 	return STARBASE;
-    else if ((strcmpi(type, "jumpship") == 0) || (strcmpi(type, "JS") == 0))
+    else if ((strcasecmp(type, "jumpship") == 0) || 
+             (strcasecmp(type, "JS") == 0))
 	return JUMPSHIP;
-    else if ((strcmpi(type, "warbase") == 0) || (strcmpi(type, "WB") == 0))
+    else if ((strcasecmp(type, "warbase") == 0) || 
+             (strcasecmp(type, "WB") == 0))
 	return WARBASE;
-    else if ((strcmpi(type, "flagship") == 0) || (strcmpi(type, "FL") == 0))
+    else if ((strcasecmp(type, "flagship") == 0) || 
+             (strcasecmp(type, "FL") == 0))
 	return FLAGSHIP;
-    else if ((strcmpi(type, "lightcruiser") == 0) || (strcmpi(type, "CL") == 0))
+    else if ((strcasecmp(type, "lightcruiser") == 0) || 
+             (strcasecmp(type, "CL") == 0))
 	return LIGHTCRUISER;
-    else if ((strcmpi(type, "carrier") == 0) || (strcmpi(type, "CV") == 0))
+    else if ((strcasecmp(type, "carrier") == 0) || 
+             (strcasecmp(type, "CV") == 0))
 	return CARRIER;
-    else if ((strcmpi(type, "patrol") == 0) || (strcmpi(type, "PT") == 0))
+    else if ((strcasecmp(type, "patrol") == 0) || 
+             (strcasecmp(type, "PT") == 0))
 	return PATROL;
-    else if ((strcmpi(type, "utility") == 0) || (strcmpi(type, "UT") == 0))
+    else if ((strcasecmp(type, "utility") == 0) || 
+             (strcasecmp(type, "UT") == 0))
 	return UTILITY;
     else
 	return preferred;
 }
 
 void
-initLogFile()
+initLogFile(void)
 {
     if (logFile && logmess) {
 	logfilehandle = fopen(logFile, "a");
@@ -500,7 +448,7 @@ initLogFile()
 }
 
 void
-resetDefaults()
+resetDefaults(void)
 {
     char   *buf;
 #ifdef AUTHORIZE
@@ -515,9 +463,6 @@ resetDefaults()
     showStats = booleanDefault("showstats", showStats);
     keeppeace = booleanDefault("keeppeace", keeppeace);
     reportKills = booleanDefault("reportkills", reportKills);
-#if 0
-    blk_altbits = booleanDefault("altbitmaps", blk_altbits);
-#endif
     blk_showStars = booleanDefault("showstars", blk_showStars);
     showMySpeed = booleanDefault("showMySpeed", showMySpeed);
     showTractorPressor = booleanDefault("showTractorPressor",
@@ -547,13 +492,9 @@ resetDefaults()
 	logFile=expandFilename(logFile);
 
     initLogFile();
-#ifdef VARY_HULL
     vary_hull = booleanDefault("warnhull", vary_hull);
-#endif				/* VARY_HULL */
 
-#ifdef TOOLS
-  shelltools = booleanDefault("shellTools", shelltools);
-#endif
+    shelltools = booleanDefault("shellTools", shelltools);
     warpStreaks = booleanDefault("warpStreaks", warpStreaks);
     use_msgw = booleanDefault("useMsgw", use_msgw);
     logPhaserMissed = booleanDefault("logPhaserMissed", logPhaserMissed);
@@ -567,7 +508,6 @@ resetDefaults()
     extraBorder = booleanDefault("extraAlertBorder", extraBorder);
     if (booleanDefault("galacticfrequent", 0))
 	mapmode = GMAP_FREQUENT;
-#ifdef CONTINUOUS_MOUSE
     continuousMouse = booleanDefault("continuousMouse", continuousMouse);
     if (continuousMouse)
 	buttonRepeatMask = 1 << W_LBUTTON | 1 << W_RBUTTON | 1 << W_MBUTTON;
@@ -580,7 +520,6 @@ resetDefaults()
 	buttonRepeatMask |= 1 << W_RBUTTON;
     if (buttonRepeatMask)
 	continuousMouse = 1;
-#endif				/* CONTINUOUS_MOUSE */
     autoQuit = intDefault("autoQuit", autoQuit);
     if (autoQuit > 199) {
 	autoQuit = 199;
@@ -594,7 +533,7 @@ resetDefaults()
 	if (*buf - '0' > 5) {
 	    fprintf(stderr, "Error in showGalacticSequence: %d too high, ignoring\n", *buf);
 	    free(showGalacticSequence);
-	    showGalacticSequence = (char*)strdup("012345");
+	    showGalacticSequence = strdup("012345");
 	    break;
 	}
     }
@@ -603,7 +542,7 @@ resetDefaults()
 	if (*buf - '0' > 4) {
 	    fprintf(stderr, "Error in showLocalSequence: %d too high, ignoring\n", *buf);
 	    free(showLocalSequence);
-	    showLocalSequence = (char*)strdup("01234");
+	    showLocalSequence = strdup("01234");
 	    break;
 	}
     }
@@ -625,7 +564,6 @@ resetDefaults()
     showPreLogins = booleanDefault("showPreLogins", showPreLogins);
     sortOutfitting = booleanDefault("sortOutfitting", sortOutfitting);
     timerType = intDefault("timertype", timerType);
-#ifdef WIDE_PLIST
     /*
        default: old playerlist (ie, no format string), number shiptype rank
        name kills wins losses ratio offense defense di, number shiptype name
@@ -635,11 +573,8 @@ resetDefaults()
 				    ",nTRNKWLr O D d,nTR N  K lrSd");
     playerList = playerListStart;
     resizePlayerList = booleanDefault("resizePlayerList",resizePlayerList);
-#endif				/* WIDE_PLIST */
 
-#ifdef PACKET_LIGHTS
     packetLights = booleanDefault("packetLights", packetLights);
-#endif				/* PACKET_LIGHTS */
 
     viewBox = booleanDefault("viewBox", viewBox);
     sectorNums = booleanDefault("sectorNums", sectorNums);
@@ -651,27 +586,18 @@ resetDefaults()
 
     keepInfo = intDefault("keepInfo", keepInfo);
 
-#ifdef NOWARP
     /* if there are alternatives to message warp, use it anyway? -JR */
     warp = booleanDefault("messageWarp", warp);
-#endif
-
-#ifdef CHECK_DROPPED
-    reportDroppedPackets = booleanDefault("reportDroppedPackets", reportDroppedPackets);
-#endif
 
     askforUpdate = booleanDefault("askforUpdate", askforUpdate);
     lowercaset = booleanDefault("lowercaset", lowercaset);
     scrollBeep = booleanDefault("scrollBeep", scrollBeep);
-#ifdef SHORT_PACKETS
     godToAllOnKills = booleanDefault("godToAllOnKills",godToAllOnKills);
-#endif
 
     autoZoom=intDefault("autoZoom", autoZoom);
     autoUnZoom = intDefault("autoUnZoom",autoUnZoom);
     autoZoomOverride = intDefault("autoZoomOverride",autoZoomOverride);
 
-#ifdef BEEPLITE
     {
 	DefLite = booleanDefault("DefLite", DefLite);
 	UseLite = booleanDefault("UseLite", UseLite);
@@ -684,13 +610,7 @@ resetDefaults()
 	beep_lite_cycle_time_player = intDefault("playerCycleTime",
 					       beep_lite_cycle_time_player);
     }
-#endif				/* BEEPLITE */
 
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
-    showMapAtMotd = booleanDefault("showMapAtMotd",showMapAtMotd);
-#endif
-
-#ifdef LOCAL_SHIPSTATS
     localShipStats=booleanDefault("localShipStats",localShipStats);
     statString = stringDefault("statString","DSEWF");
     statHeight = intDefault("statHeight",statHeight);
@@ -698,13 +618,9 @@ resetDefaults()
     if(statHeight>100) statHeight = 100;
     localStatsX = intDefault("localStatsX", localStatsX);
     localStatsY = intDefault("localStatsY", localStatsY);
-#endif
 
-#ifdef SHOW_IND
     showIND = booleanDefault("showIND",showIND);
-#endif
 
-#ifdef HOCKEY
     /* hockey specific defs [BDyess] */
     galacticHockeyLines = booleanDefault("galacticHockeyLines",
     				galacticHockeyLines);
@@ -717,15 +633,6 @@ resetDefaults()
     puckBitmap = booleanDefault("puckBitmap",puckBitmap);
     puckArrow = booleanDefault("puckArrow",puckArrow);
     puckArrowSize = intDefault("puckArrowSize",puckArrowSize);
-#endif /*HOCKEY*/
-
-#ifdef AMIGA
-    getAmigaDefs();
-#endif
-
-#ifdef SOUND
-    getSoundDefs();
-#endif
 
     /* galactic map plotting line [BDyess] */
     plotter = booleanDefault("plotter",plotter);
@@ -816,9 +723,7 @@ showGalactic:	%s\n\
     useExternalImages = booleanDefault("useExternalImages", useExternalImages);
 
     initkeymap(-1);
-#ifdef MACROS
     initMacros();
-#endif				/* MACROS */
 
     /*
        sendOptionsPacket();

@@ -10,24 +10,14 @@
  * Hacked into paradise by Bill Dyess
  */
 
-#include "defines.h"
-#include <stdio.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <math.h>
 #include "config.h"
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-
 
 /* this is a set of routines that makes up a multi column help window,
    ** and shows just what the keymaps current keymap representation of the
@@ -159,49 +149,25 @@ char   *help_message[] =
     " =     Update all",
     " ,     Ping stats window",
     " M     Show MOTD window",
-#if 0
-    " .     NetstatWindow",
-    " \\     LagMeter",
-#endif
-
-#ifdef SHORT_PACKETS
     " ~     Toggle PacketWindow",
     " \\     Update small",
     " |     Update medium",
-#endif				/* SHORT_PACKETS */
 
     "       (space) Unmap special windows",
 
-#ifdef TIMER
     " @     Reset dashboard timer",
     "^t     Cycle timer",
-#endif				/* TIMER */
     "^m     Toggle map zoom",
-#ifdef WIDE_PLIST
     " K     Cycle playerlist",
-#endif				/* WIDE_PLIST */
 
-#ifdef MACROS
     " X     Enter Macro Mode",
     " X?    Show current Macros",
-#endif				/* MACROS */
 
     " &     Reread .paradiserc",
     " )     Rotate galaxy clockwise",
     " (     Rotate galaxy counter-clockwise",
-#ifdef RECORDER
     "^r     Stop recording",
-#endif
-#ifdef SOUND
-    "^s     Sound window toggle",
-#endif
-#ifdef TOOLS
   " \"     Toggle shell tools window",
-#endif
-#ifdef AMIGA
-    " A     Flush queued speech",
-    "HELP   Show Amiga keys/info",
-#endif
     " j     Toggle course plot line",
     0
 };
@@ -214,7 +180,7 @@ int     helpmessages = (sizeof(help_message) / sizeof(char *));
 
 
 void
-fillhelp()
+fillhelp(void)
 {
     register int i = 0, row, column;
     char    helpmessage[MAXHELP];
@@ -229,7 +195,7 @@ fillhelp()
 		strcpy(helpmessage, help_message[i]);
 		update_Help_to_Keymap(helpmessage);
 		W_WriteText(helpWin, MAXHELP * column, row - 1, textColor,
-			    helpmessage, (int)strlen(helpmessage), 
+			    helpmessage, strlen(helpmessage), 
 			    W_RegularFont);
 		i++;
 	    }
@@ -247,8 +213,7 @@ fillhelp()
  * translatedd here to    "[ sE  Computer options window",
  */
 void
-update_Help_to_Keymap(helpmessage)
-    char    helpmessage[];
+update_Help_to_Keymap(char *helpmessage)
 {
     int     i, num_mapped = 0, key;
 

@@ -10,28 +10,20 @@
  */
 
 #include "config.h"
-#ifdef TOOLS
-#include "defines.h"
 #include <stdio.h>
 #include <signal.h>
-#include <sys/types.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <math.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
 
-void showToolsWin();
+void showToolsWin P((void));
 
 void
-sendTools(str)
-char *str;
+sendTools(char *str)
 {
   char    pipebuf[100];
   FILE   *pipefp;
@@ -48,21 +40,19 @@ char *str;
 	  if (pipebuf[len - 1] == '\n')
 	    pipebuf[len - 1] = '\0';
 	  W_WriteText(toolsWin, 0, 0, textColor, pipebuf,
-		      (int)strlen(pipebuf), W_RegularFont);
+		      strlen(pipebuf), W_RegularFont);
 	}
       pclose(pipefp);
     }
   else
-    W_WriteText(toolsWin, 0, 0, textColor, str, (int)strlen(str), W_RegularFont);
+    W_WriteText(toolsWin, 0, 0, textColor, str, strlen(str), W_RegularFont);
 }
 
 void
-showToolsWin()
+showToolsWin(void)
 {
   if (W_IsMapped(toolsWin))
     W_UnmapWindow(toolsWin);
   else
     W_MapWindow(toolsWin);
 }
-
-#endif /* TOOLS */

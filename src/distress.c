@@ -2,38 +2,21 @@
  * distress.c
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#include <signal.h>
-#include <ctype.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#ifndef SERVER
 #include "config.h"
-#include "Wlib.h"
-#endif
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "gameconf.h"
+#include "proto.h"
 
 /* #$!@$#% length of address field of messages */
 #define ADDRLEN 10
 #define MAXMACLEN 256
-#define MZERO bzero
-
-/* prototypes [BDyess] */
-int testmacro P((char *bufa, char *bufb, int *inda, int *indb));
-int condmacro P((char *bufa, char *bufb, int *inda, int *indb, int flag));
-int solvetest P((char *bufa, int *inda));
-int skipmacro P((char buf[], int i));
 
 /*
  * The two in-line defs that follow enable us to avoid calling strcat over
@@ -59,9 +42,7 @@ char   *pappend;
  * MH.  10-18-93
  */
 int
-itoa2(n, s)
-    int     n;
-    char    s[];
+itoa2(int n, char *s)
 {
     int     i, c, j, len;
 
@@ -96,37 +77,17 @@ itoa2(n, s)
 #define APPEND_INT(ptr, i) \
     ptr += itoa2(i, ptr);
 
-
-#ifdef SERVER
-#define ADDRLEN 10
-#define MAXMACLEN 85
-extern char *shiptypes[];
-#define warning(x)	fprintf(stderr,x)
-#endif
-
-
-char    mbuf[MSG_LEN];
-char   *getaddr(), *getaddr2();
-
-
-
 /* This takes an MDISTR flagged message and makes it into a dist struct */
 void
-HandleGenDistr(message, from, to, dist)
-    char   *message;
-    struct distress *dist;
-    unsigned int from, to;
+HandleGenDistr(char *message, unsigned char from, unsigned char to, 
+               struct distress *dist)
 {
 
     char   *mtext;
     unsigned char i;
 
     mtext = &message[ADDRLEN];
-#ifndef SERVER
-    MZERO((char *) dist, sizeof(dist));
-#else
-    bzero((char *) dist, sizeof(dist));
-#endif
+    memset((char *) dist, 0, sizeof(dist));
 
     dist->sender = from;
     dist->distype = mtext[0] & 0x1f;
@@ -171,9 +132,7 @@ HandleGenDistr(message, from, to, dist)
    (excludes F1->FED text bit).. sorry if this is not what we said
    earlier jeff.. but I lost the paper towel I wrote it all down on */
 void
-Dist2Mesg(dist, buf)
-    struct distress *dist;
-    char   *buf;
+Dist2Mesg(struct distress *dist, char *buf)
 {
     int     len, i;
 
@@ -222,10 +181,7 @@ Dist2Mesg(dist, buf)
     char   *pm;			macro to parse, used for distress and macro
  */
 int
-makedistress(dist, cry, pm)
-    struct distress *dist;
-    char   *cry;
-    char   *pm;
+makedistress(struct distress *dist, char *cry, char *pm)
 {
     char    buf1[10 * MAXMACLEN];
     char   *pbuf1;
@@ -239,13 +195,10 @@ makedistress(dist, cry, pm)
     struct player *sender;
     struct player *j;
     struct planet *l;
-    char   *strcap();
-#ifndef SERVER
     extern int ping_tloss_sc;	/* total % loss 0--100, server to client */
     extern int ping_tloss_cs;	/* total % loss 0--100, client to server */
     extern int ping_av;		/* average rt */
     extern int ping_sd;		/* standard deviation */
-#endif
     char    c;
 
 
@@ -425,23 +378,9 @@ makedistress(dist, cry, pm)
 		cap = 0;
 		break;
 	    case 'S':		/* push ship type into buf */
-#ifndef SERVER
 		*pbuf1++ = sender->p_ship->s_desig[0];
 		*pbuf1++ = sender->p_ship->s_desig[1];
-#else
-		APPEND(pbuf1, shiptypes[sender->p_ship->s_type]);
-#endif
 		break;
-
-#ifdef SERVER
-	    case 'v':		/* push average ping round trip time into buf */
-	    case 'V':		/* push ping stdev into buf */
-	    case 'y':		/* push packet loss into buf */
-		APPEND(pbuf1, "0\0");
-	    case 'M':		/* push capitalized lastMessage into buf */
-	    case 'm':		/* push lastMessage into buf */
-		break;
-#else
 	    case 'M':		/* push capitalized lastMessage into buf */
 		cap = 1;
 	    case 'm':		/* push lastMessage into buf */
@@ -461,8 +400,6 @@ makedistress(dist, cry, pm)
 		/* this is the weighting formula used be socket.c ntserv */
 		APPEND_INT(pbuf1, (2 * ping_tloss_sc + ping_tloss_cs) / 3);
 		break;
-#endif
-
 	    case '*':		/* push %} into buf */
 		APPEND(pbuf1, "%*\0");
 		break;
@@ -527,11 +464,7 @@ makedistress(dist, cry, pm)
 }
 
 int
-testmacro(bufa, bufb, inda, indb)
-    char   *bufa;
-    char   *bufb;
-    int    *inda;
-    int    *indb;
+testmacro(char *bufa, char *bufb, int *inda, int *indb)
 {
     int     state = 0;
 
@@ -632,9 +565,7 @@ testmacro(bufa, bufb, inda, indb)
 }
 
 int
-solvetest(bufa, inda)
-    char   *bufa;
-    int    *inda;
+solvetest(char *bufa, int *inda)
 {
     int     state = 0;
     char    bufh[10 * MAXMACLEN];
@@ -710,12 +641,7 @@ solvetest(bufa, inda)
 }
 
 int
-condmacro(bufa, bufb, inda, indb, flag)
-    char   *bufa;
-    char   *bufb;
-    int    *inda;
-    int    *indb;
-    int     flag;
+condmacro(char *bufa, char *bufb, int *inda, int *indb, int flag)
 {
     int     newflag, include;
     int     state = 0;
@@ -800,9 +726,7 @@ condmacro(bufa, bufb, inda, indb, flag)
 }
 
 int
-skipmacro(buf, i)
-    char    buf[];
-    int     i;
+skipmacro(char *buf, int i)
 {
     int     state = 0;
     int     end = 0;
@@ -839,27 +763,4 @@ skipmacro(buf, i)
     }
 
     return (i);
-}
-
-
-/* return a pointer to a capitalized copy of string s */
-char   *
-strcap(s)
-    char   *s;
-{
-    static char buf[256];	/* returns static */
-    register char *t = buf;
-
-    while (*s) {
-	if (islower(*s))
-	    *t++ = toupper(*s++);
-	else
-	    *t++ = *s++;
-    }
-    *t = 0;
-    if (buf[255]) {
-	fprintf(stderr, "ERROR: String constant overwritten\n");
-	return NULL;
-    }
-    return buf;
 }

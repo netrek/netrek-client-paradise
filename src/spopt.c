@@ -1,16 +1,15 @@
-#include "config.h"
-#ifdef SHORT_PACKETS
 /*
  */
 #include "copyright.h"
 
+#include "config.h"
 #include <stdio.h>
-#include <ctype.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
 
 /*
@@ -18,8 +17,7 @@
  */
 
 void
-sprefresh(i)
-    int     i;
+sprefresh(int i)
 {
     char    buf[BUFSIZ];
 
@@ -49,11 +47,11 @@ sprefresh(i)
 	break;
     }
 
-    W_WriteText(spWin, 0, i, textColor, buf, (int)strlen(buf), 0);
+    W_WriteText(spWin, 0, i, textColor, buf, strlen(buf), 0);
 }
 
 void
-spwindow()
+spwindow(void)
 {
     register int i;
 
@@ -65,15 +63,14 @@ spwindow()
 }
 
 void
-spdone()
+spdone(void)
 {
     /* Unmap window */
     W_UnmapWindow(spWin);
 }
 
 void
-spaction(data)
-    W_Event *data;
+spaction(W_Event *data)
 {
     int     v;
     register int i;
@@ -180,4 +177,3 @@ spaction(data)
     }
 }
 
-#endif

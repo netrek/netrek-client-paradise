@@ -2,45 +2,29 @@
  * distress.c
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <signal.h>
-#include <ctype.h>
-#include <malloc.h>
-#ifdef HAVE_MEMORY_H
-#include <memory.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include "config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "gameconf.h"
 #include "proto.h"
-
 
 /* #$!@$#% length of address field of messages */
 #define ADDRLEN 10
 
 
-/*char    mbuf[MSG_LEN];*/
-
-
 /* this loads all sorts of useful data into a distress struct.
  */
 struct distress *
-loaddistress(i, data)
-    enum dist_type i;
-    W_Event *data;
+loaddistress(enum dist_type i, W_Event *data)
 {
     struct distress *dist;
-    struct obtype *gettarget(), *gettarget2(), *target;
+    struct obtype *target;
 
     dist = (struct distress *) malloc(sizeof(struct distress));
 
@@ -97,9 +81,7 @@ loaddistress(i, data)
 /* Send an rcd signal out to everyone. */
 
 void
-rcd(i, data)
-    enum dist_type i;
-    W_Event *data;
+rcd(enum dist_type i, W_Event *data)
 {
     char    ebuf[200];
     struct distress *dist;
@@ -146,10 +128,7 @@ rcd(i, data)
    **  6/3/93 - jn
  */
 int
-pmacro(mnum, who, data)
-    int     mnum;
-    int     who;
-    W_Event *data;
+pmacro(int mnum, char who, W_Event *data)
 {
     char    addr;
     int     group, len, recip;
@@ -175,7 +154,7 @@ pmacro(mnum, who, data)
     }
     pm = macrotable[mnum]->string;
 
-    dist = loaddistress(0, data);
+    dist = loaddistress(generic, data);
 
     len = makedistress(dist, cry, pm);
 

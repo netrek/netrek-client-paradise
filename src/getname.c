@@ -5,49 +5,25 @@
  *
  */
 #include "copyright2.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
+#include "config.h"
 #include <stdlib.h>
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#include <errno.h>
-#include <pwd.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <ctype.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
-#include "config.h"
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-
-/* This should be in one of the above header files. */
-#if 0
-#ifndef __osf__
-long    time();
-#endif
-#endif
 
 static char tempname[16];
 static char password1[16];
@@ -61,7 +37,7 @@ static char username[32] = "****";
 #define ST_DONE 4
 
 /* Prototypes */
-static void adjustString P((int ch, char *str, char *defname));
+static void adjustString P((char ch, char *str, char *defname));
 static void checkpassword P((void));
 static void displayStartup P((char *defname));
 static void loaddude P((void));
@@ -69,21 +45,20 @@ static void makeNewGuy P((void));
 static void loginproced P((int ch, char *defname));
 
 void
-noautologin()
+noautologin(void)
 {
     char   *tempstr;
 
     autolog = 0;
     *defpasswd = *password1 = *password2 = '\0';
     tempstr = "Automatic login failed";
-    W_WriteText(w, 100, 100, textColor, tempstr, (int)strlen(tempstr),
+    W_WriteText(w, 100, 100, textColor, tempstr, strlen(tempstr),
 		W_BoldFont);
 }
 
 /* Let person identify themselves from w */
 void
-getname(defname, def_passwd)
-    char   *defname, *def_passwd;
+getname(char *defname, char *def_passwd)
 {
     W_Event event;
     register int ch = 0;
@@ -92,10 +67,8 @@ getname(defname, def_passwd)
     long    lasttime;
     register int j = 0;
 
-#ifdef RECORDER
     if (playback)
 	return;
-#endif
 
     /* shows the credits in the map window [BDyess] */
     showCredits(mapw);
@@ -111,7 +84,7 @@ getname(defname, def_passwd)
 	    strcpy(username, passwd->pw_name);
     }
 
-    bzero(mystats, sizeof(struct stats));
+    memset(mystats, 0, sizeof(struct stats));
     mystats->st_tticks = 1;
     mystats->st_flags =
 	(ST_NOBITMAPS * (!sendmotdbitmaps) +
@@ -130,10 +103,6 @@ getname(defname, def_passwd)
     for (;;) {
 	if (isServerDead()) {
 	    printf("Ack!  We've been ghostbusted!\n");
-#ifdef AUTOKEY
-	    if (autoKey)
-		W_AutoRepeatOn();
-#endif
 	    EXIT(0);
 	}
 	if (lasttime != time(NULL)) {
@@ -142,23 +111,15 @@ getname(defname, def_passwd)
 	    if (!autolog) {
 		sprintf(tempstr, "Seconds to go: %d ", secondsLeft);
 		W_WriteText(w, 150, 400, textColor, tempstr, 
-			    (int)strlen(tempstr), W_BoldFont);
-#ifdef BUFFERING
+			    strlen(tempstr), W_BoldFont);
 		/* flush buffer if one exists [BDyess] */
 		if(W_IsBuffered(w)) W_DisplayBuffer(w);	
-#endif /*BUFFERING [BDyess]*/
 	    }
 	    if (secondsLeft == 0) {
 		me->p_status = PFREE;
 		printf("Auto-Quit\n");
-#ifdef BUFFERING
 		/* flush buffer if one exists [BDyess] */
 		if(W_IsBuffered(w)) W_DisplayBuffer(w);	
-#endif /*BUFFERING [BDyess]*/
-#ifdef AUTOKEY
-		if (autoKey)
-		    W_AutoRepeatOn();
-#endif
 		EXIT(0);
 	    }
 	}
@@ -215,21 +176,14 @@ getname(defname, def_passwd)
 }
 
 
-static
-void
-loginproced(ch, defname)
-    int     ch;
-    char   *defname;
+static void
+loginproced(int ch, char *defname)
 {
     if (ch > 255)
 	ch -= 256;		/* was alt key, ignore it */
     if (ch == 10)
 	ch = 13;
     if ((ch == ('d' + 128) || ch == ('D' + 128)) && state == ST_GETNAME && *tempname == '\0') {
-#ifdef AUTOKEY
-	if (autoKey)
-	    W_AutoRepeatOn();
-#endif
 	EXIT(0);
     }
     if ((ch < 32 || ch > 127) && ch != 21 && ch != 13 && ch != 8)
@@ -273,10 +227,10 @@ loginproced(ch, defname)
     }
 }
 
-static void
-loaddude()
 /* Query dude.
  */
+static void
+loaddude(void)
 {
     if (strcmp(tempname, "Guest") == 0 || strcmp(tempname, "guest") == 0) {
 	loginAccept = -1;
@@ -290,21 +244,11 @@ loaddude()
 	    readFromServer();
 	    if (isServerDead()) {
 		printf("Server is dead!\n");
-#ifdef AUTOKEY
-		if (autoKey)
-		    W_AutoRepeatOn();
-#endif
-
 		EXIT(0);
 	    }
 	}
 	if (loginAccept == 0) {
 	    printf("Hmmm... The SOB server won't let me log in as guest!\n");
-#ifdef AUTOKEY
-	    if (autoKey)
-		W_AutoRepeatOn();
-#endif
-
 	    EXIT(0);
 	}
 	return;
@@ -317,11 +261,6 @@ loaddude()
 	readFromServer();
 	if (isServerDead()) {
 	    printf("Server is dead!\n");
-#ifdef AUTOKEY
-	    if (autoKey)
-		W_AutoRepeatOn();
-#endif
-
 	    EXIT(0);
 	}
     }
@@ -333,11 +272,11 @@ loaddude()
     }
 }
 
-static void
-checkpassword()
 /* Check dude's password.
  * If he is ok, move to state ST_DONE.
  */
+static void
+checkpassword(void)
 {
     char   *s;
 
@@ -348,22 +287,15 @@ checkpassword()
 	readFromServer();
 	if (isServerDead()) {
 	    printf("Server is dead!\n");
-#ifdef AUTOKEY
-	    if (autoKey)
-		W_AutoRepeatOn();
-#endif
-
 	    EXIT(0);
 	}
     }
     if (loginAccept == 0) {
 	if (!autolog) {
 	    s = "Bad password!";
-	    W_WriteText(w, 100, 100, textColor, s, (int)strlen(s), W_BoldFont);
-#ifdef BUFFERING
+	    W_WriteText(w, 100, 100, textColor, s, strlen(s), W_BoldFont);
 	    /* flush buffer if one exists [BDyess] */
 	    if(W_IsBuffered(w)) W_DisplayBuffer(w);	
-#endif /*BUFFERING [BDyess]*/
 	    (void) W_EventsPending();
 	    sleep(3);
 	    W_ClearWindow(w);
@@ -379,22 +311,20 @@ checkpassword()
     state = ST_DONE;
 }
 
-static void
-makeNewGuy()
 /* Make the dude with name tempname and password password1.
  * Move to state ST_DONE.
  */
+static void
+makeNewGuy(void)
 {
     char   *s;
 
     if (strcmp(password1, password2) != 0) {
 	if (!autolog) {
 	    s = "Passwords do not match";
-	    W_WriteText(w, 100, 120, textColor, s, (int)strlen(s), W_BoldFont);
-#ifdef BUFFERING
+	    W_WriteText(w, 100, 120, textColor, s, strlen(s), W_BoldFont);
 	    /* flush buffer if one exists [BDyess] */
 	    if(W_IsBuffered(w)) W_DisplayBuffer(w);	
-#endif /*BUFFERING [BDyess]*/
 	    (void) W_EventsPending();
 	    sleep(3);
 	    W_ClearWindow(w);
@@ -409,9 +339,7 @@ makeNewGuy()
 }
 
 static void
-adjustString(ch, str, defname)
-    char    ch, *str;
-    char   *defname;
+adjustString(char ch, char *str, char *defname)
 {
     if (ch == 21) {
 	*str = '\0';
@@ -433,10 +361,9 @@ adjustString(ch, str, defname)
     }
 }
 
-static void
-displayStartup(defname)
-    char   *defname;
 /* Draws entry screen based upon state. */
+static void
+displayStartup(char *defname)
 {
     char    s[100];
     char   *t;
@@ -444,31 +371,29 @@ displayStartup(defname)
     if (state == ST_DONE || autolog)
 	return;
     t = "Enter your name.  Use the name 'guest' to remain anonymous.";
-    W_WriteText(w, 100, 30, textColor, t, (int)strlen(t), W_BoldFont);
+    W_WriteText(w, 100, 30, textColor, t, strlen(t), W_BoldFont);
     t = "Type ^D (Ctrl - D) to quit.";
-    W_WriteText(w, 100, 40, textColor, t, (int)strlen(t), W_BoldFont);
+    W_WriteText(w, 100, 40, textColor, t, strlen(t), W_BoldFont);
     sprintf(s, "Your name (default = %s): %s               ", defname, tempname);
-    W_WriteText(w, 100, 50, textColor, s, (int)strlen(s), W_BoldFont);
+    W_WriteText(w, 100, 50, textColor, s, strlen(s), W_BoldFont);
     if (state == ST_GETPASS) {
 	t = "Enter password: ";
-	W_WriteText(w, 100, 60, textColor, t, (int)strlen(t), W_BoldFont);
+	W_WriteText(w, 100, 60, textColor, t, strlen(t), W_BoldFont);
     }
     if (state > ST_GETPASS) {
 	t = "You need to make a password.";
-	W_WriteText(w, 100, 70, textColor, t, (int)strlen(t), W_BoldFont);
+	W_WriteText(w, 100, 70, textColor, t, strlen(t), W_BoldFont);
 	t = "So think of a password you can remember, and enter it.";
-	W_WriteText(w, 100, 80, textColor, t, (int)strlen(t), W_BoldFont);
+	W_WriteText(w, 100, 80, textColor, t, strlen(t), W_BoldFont);
 	t = "What is your password? :";
-	W_WriteText(w, 100, 90, textColor, t, (int)strlen(t), W_BoldFont);
+	W_WriteText(w, 100, 90, textColor, t, strlen(t), W_BoldFont);
     }
     if (state == ST_MAKEPASS2) {
 	t = "Enter it again to make sure you typed it right.";
-	W_WriteText(w, 100, 100, textColor, t, (int)strlen(t), W_BoldFont);
+	W_WriteText(w, 100, 100, textColor, t, strlen(t), W_BoldFont);
 	t = "Your password? :";
-	W_WriteText(w, 100, 110, textColor, t, (int)strlen(t), W_BoldFont);
+	W_WriteText(w, 100, 110, textColor, t, strlen(t), W_BoldFont);
     }
-#ifdef BUFFERING
     /* flush buffer if one exists [BDyess] */
     if(W_IsBuffered(w)) W_DisplayBuffer(w);	
-#endif /*BUFFERING [BDyess]*/
 }

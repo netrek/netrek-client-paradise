@@ -1,52 +1,38 @@
 /* map.c, all the routines that use the map window [BDyess] */
 
-#include "defines.h"
+#include "config.h"
+
 #include <stdio.h>
 #include <signal.h>
 #include <ctype.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include <math.h>
-#include "config.h"
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
-#include "gameconf.h"
 #include "images.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif
-#ifdef HAVE_ASSERT_H
-#include <assert.h>
-#endif
 
 #define DRAWGRID		4
 
 PlanetImageNode *maphead = NULL;
 
-#ifdef ASTEROIDS
 /* data from planets.c [BDyess] */
 extern struct point *asteroid_footprints;
 extern int next_asteroid_footprint;
-#endif /* ASTEROIDS */
 
 int lockx, locky;
 
 /* creates a new PlanetImageNode (including the associated image) given the 
    planet [BDyess] */
 PlanetImageNode *
-createMapImageNode(p,bits)
-  struct planet *p;
-  bitstruct bits;
+createMapImageNode(struct planet *p, bitstruct bits)
 {
   int     offset;
   W_Image *image = NULL;
@@ -158,11 +144,8 @@ createMapImageNode(p,bits)
    the image.  If not, creates the image, adds it to the tree, and returns
    the fresh image. [BDyess] */
 W_Image *
-getPlanetImage(lhead,p,bits,createNode)
-  PlanetImageNode *lhead;
-  struct planet *p;
-  bitstruct bits;
-  PlanetImageNode* (*createNode) P((struct planet *p, bitstruct bits));
+getPlanetImage(PlanetImageNode *lhead, struct planet *p, bitstruct bits,
+          PlanetImageNode * (*createNode) P((struct planet *p, bitstruct bits)))
 {
   while(memcmp(&lhead->bits,&bits,sizeof(bits)) != 0) {
     if(memcmp(&bits,&lhead->bits,sizeof(bits))) {		/* go left */
@@ -186,10 +169,7 @@ getPlanetImage(lhead,p,bits,createNode)
 /* s is showgalactic/showlocal */
 /* l is showGalacticLen/showLocalLen */
 bitstruct
-createPlanetBits(p,s,l)
-    struct planet *p;
-    char *s;
-    int l;
+createPlanetBits(struct planet *p, char *s, int l)
 {
     int F = 0, R = 0, S = 0, T = 0, A = 0;
     bitstruct bits;
@@ -311,9 +291,7 @@ createPlanetBits(p,s,l)
 }
 
 void
-drawMapPlanet(p,x,y)
-    struct planet *p;
-    int x,y;
+drawMapPlanet(struct planet *p, int x, int y)
 {
     W_Image *image = NULL;
     int     bigx = 0, bigy = 0;
@@ -376,7 +354,6 @@ drawMapPlanet(p,x,y)
 			udcounter + p->pl_no,
 			image,
 			planetColor(p));
-#ifdef BEEPLITE
     if (UseLite && emph_planet_seq_n[p->pl_no] > 0 &&
 	(F_beeplite_flags & LITE_PLANETS)) {
 	int     seq_n;
@@ -397,10 +374,8 @@ drawMapPlanet(p,x,y)
 				       highlighting */
 	pl_update[p->pl_no].plu_update = 1;
     }
-#endif
     W_WriteText(mapw, x - (bigx / 2), y + (bigy / 2),
 		planetColor(p), buf, len, planetFont(p));
-#ifdef SHOW_IND
     if (showIND && (p->pl_info & idx_to_mask(me->p_teami)) && 
        (p->pl_owner == NOBODY) && (PL_TYPE(*p) == PLPLANET)) {
 	W_MakeLine (mapw, x + (bigx / 2 - 1), y + (bigy / 2 - 1),
@@ -408,7 +383,6 @@ drawMapPlanet(p,x,y)
 	W_MakeLine (mapw, x - (bigx / 2), y + (bigy / 2 - 1),
 		    x + (bigx / 2 - 1), y - (bigy / 2), W_White);
     }
-#endif
     if(me->p_flags & PFPLLOCK && me->p_planet == p->pl_no) {
       if(clearlmcount) {
         /* already a triangle somewhere */
@@ -422,7 +396,7 @@ drawMapPlanet(p,x,y)
 }
 
 void
-map()
+map(void)
 {
     int     nplan;
     register int i;
@@ -471,7 +445,6 @@ map()
 	W_ClearWindow(mapw);
     }
 
-#ifdef ASTEROIDS
     /* draw stepped-on asteroids [BDyess] */
     if(received_terrain_info) {
       int j,k,minj,mink,conv;
@@ -507,7 +480,6 @@ map()
       }
       next_asteroid_footprint = 0;
     }
-#endif /* ASTEROIDS */
 
     /* update the entire map fairly frequently if the plotter line is
        on [BDyess] */
@@ -517,15 +489,11 @@ map()
     if (reinitPlanets) {
 	initPlanets();
 	reinitPlanets = 0;
-#ifdef HOCKEY
 	/* planets moved so the lines need updating [BDyess] */
 	if(hockey) hockeyInit();
-#endif /*HOCKEY*/
     }
 
-#ifdef HOCKEY
     galactic_hockey();
-#endif /*HOCKEY*/
 
     me_galx = scaleMapX(me->p_x);
     me_galy = scaleMapY(me->p_y);
@@ -653,9 +621,7 @@ map()
 	}
     }
     /* Draw Planets */
-#ifdef HOCKEY
     if(! (hockey && cleanHockeyGalactic)) 
-#endif /*HOCKEY*/
     {
       for (i = 0, l = &planets[i]; i < nplan; i++, l++) {
 	  if (!(l->pl_flags & PLREDRAW) && (!redrawall))
@@ -791,7 +757,6 @@ map()
 	    }
 	}
 
-#ifdef BEEPLITE
 	if (UseLite && emph_player_seq_n[i] > 0 &&
 	    (F_beeplite_flags & LITE_PLAYERS_MAP)) {
 	    image = getImage(I_EMPH_PLAYER_SEQ);
@@ -814,7 +779,6 @@ map()
 	    /* Leave redraw on until done highlighting */
 	    redrawPlayer[i] = 1;
 	} else
-#endif
 	{
 	    if (j->p_flags & PFCLOAK) {
 		mclearzone[0][i] = dx - W_Textwidth * cloakcharslen / 2;

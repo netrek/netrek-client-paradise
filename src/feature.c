@@ -23,29 +23,26 @@ struct feature_cpacket {
 
  *  type is CP_FEATURE, which is 60.  feature_spacket is identical.
  */
-/*#define FEAT_DEBUG*/
 
-
-#include "config.h"
-#include "defines.h"
-#ifdef FEATURE
 #include "copyright.h"
 
+#include "config.h"
 #include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#include <netinet/in.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
 #endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
 #include "packets.h"
-
+#include "gppackets.h"
 
 void    sendFeature P((char *name, int feature_type,
 		       int value, int arg1, int arg2));
@@ -70,36 +67,27 @@ struct feature {
     {"VIEW_BOX", &allowViewBox, 'C', 1, 0, 0},
     {"SHOW_ALL_TRACTORS", &allowShowAllTractorPressor, 'S', 1, 0, 0},
     {"SHOW_NUM_ARMIES_ON_LOCAL", &allowShowArmiesOnLocal, 'C', 1, 0, 0},
-#ifdef CONTINUOUS_MOUSE
     {"CONTINUOUS_MOUSE", &allowContinuousMouse, 'C', 1, 0, 0},
-#endif
     {"NEWMACRO", &F_UseNewMacro, 'C', 1, 0, 0},
     /* {"SMARTMACRO",&UseSmartMacro, 'C', 1, 0, 0}, */
     {"MULTIMACROS", &F_multiline_enabled, 'S', 1, 0, 0},
     {"WHY_DEAD", &why_dead, 'S', 1, 0, 0},
     {"CLOAK_MAXWARP", &cloakerMaxWarp, 'S', 1, 0, 0},
 /*{"DEAD_WARP", &F_dead_warp, 'S', 1, 0, 0},*/
-#ifdef RC_DISTRESS
     {"RC_DISTRESS", &F_gen_distress, 'S', 1, 0, 0},
-#ifdef BEEPLITE
     {"BEEPLITE", &F_allow_beeplite, 'C', 1, (char*)&F_beeplite_flags, 0},
-#endif
-#endif
-#ifdef ASTEROIDS
 /* terrain features */
     {"TERRAIN", &F_terrain, 'S', 1, (char*)&F_terrain_major, (char*)&F_terrain_minor},
 /* Gzipped MOTD */
     {"GZ_MOTD", &F_gz_motd, 'S', 1, (char*)&F_gz_motd_major, (char*)&F_gz_motd_minor},
-#endif /* ASTEROIDS */
     {0, 0, 0, 0, 0, 0}
 };
 
 static void
-checkFeature(packet)
-    struct feature_spacket *packet;
+checkFeature(struct feature_spacket *packet)
 {
     int     i;
-    int     value = ntohl((unsigned)packet->value);
+    int     value = ntohl(packet->value);
 
 #ifdef FEAT_DEBUG
     if (packet->type != SP_FEATURE) {
@@ -112,7 +100,7 @@ checkFeature(packet)
 	   value);
 
     for (i = 0; features[i].name != 0; i++) {
-	if (strcmpi(packet->name, features[i].name) == 0) {
+	if (strcasecmp(packet->name, features[i].name) == 0) {
 	    /*
 	       if server returns unknown, set to off for server mods, desired
 	       value for client mods. Otherwise,  set to value from server.
@@ -131,11 +119,11 @@ checkFeature(packet)
 	printf("Feature %s from server unknown to client!\n", packet->name);
     }
 /* special cases: */
-    if ((strcmpi(packet->name, "FEATURE_PACKETS")==0))
+    if ((strcasecmp(packet->name, "FEATURE_PACKETS")==0))
 	reportFeatures();
-    else if ((strcmpi(packet->name, "RC_DISTRESS") == 0) && F_gen_distress)
+    else if ((strcasecmp(packet->name, "RC_DISTRESS") == 0) && F_gen_distress)
 	distmacro = dist_prefered;
-    else if ((strcmpi(packet->name, "BEEPLITE") == 0)) {
+    else if ((strcasecmp(packet->name, "BEEPLITE") == 0)) {
 	switch (value) {
 	case -1:		/* Unknown, we can use all of the features! */
 	    F_beeplite_flags = LITE_PLAYERS_MAP |
@@ -178,7 +166,7 @@ checkFeature(packet)
 
 /* call this from handleReserved */
 void
-reportFeatures()
+reportFeatures(void)
 {
     struct feature *f;
 
@@ -199,11 +187,7 @@ reportFeatures()
 }
 
 void
-sendFeature(name, feature_type, value, arg1, arg2)
-    char   *name;
-    int     feature_type;
-    int     value;
-    int     arg1, arg2;
+sendFeature(char *name, int feature_type, int value, int arg1, int arg2)
 {
     struct feature_cpacket packet;
 
@@ -214,21 +198,17 @@ sendFeature(name, feature_type, value, arg1, arg2)
     packet.type = CP_FEATURE;
     packet.name[sizeof(packet.name) - 1] = 0;
     packet.feature_type = feature_type;
-    packet.value = htonl((unsigned)value);
+    packet.value = htonl(value);
     packet.arg1 = arg1;
     packet.arg2 = arg2;
     sendServerPacket((struct player_spacket *) & packet);
 }
 
-#ifndef __CEXTRACT__
 void
-handleFeature(packet)
-    struct feature_spacket *packet;
+handleFeature(struct feature_spacket *packet)
 {
 #ifdef FEAT_DEBUG
     printf( "Handling Feature packet\n" );
 #endif
     checkFeature(packet);
 }
-#endif /*__CEXTRACT__*/
-#endif				/* FEATURE */

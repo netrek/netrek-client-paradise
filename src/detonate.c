@@ -3,10 +3,8 @@
  */
 #include "copyright.h"
 
-#include <stdio.h>
-#include <sys/types.h>
 #include "config.h"
-#include "Wlib.h"
+
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
@@ -15,7 +13,7 @@
 /* Detonate torp */
 
 void
-detmine()
+detmine(void)
 {
     if (paradise) {
 	sendDetMineReq(-1);

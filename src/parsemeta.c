@@ -2,83 +2,37 @@
  * meta.c     - Nick Trown    May 1993
  */
 
-/* 8-Feb-95 Brandon: Added metaserver history list, ANSI-ized things */
-/* 14-Feb-95 Brandon: Made my changes actually work */
-
-#include "config.h"
-
-#ifdef METASERVER
-
 #include "copyright.h"
-#include "defines.h"
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#endif
-
-#include <stdio.h>
+#include "config.h"
 #include <ctype.h>
-#include <sys/types.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#if defined(HAVE_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <time.h>
-#endif
-#else
-#include <time.h>
-#endif
-
-#ifdef STDC_HEADERS
+#include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
-
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-
-#ifndef DNET
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#endif
-#include <netdb.h>
-#include <errno.h>
+#include "str.h"
+#include "conftime.h"
 
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "strfuncs.h"
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-
-/* 
-   This should be fixed by the strfuncs.c file and the -DHAVE_STRDUP
-   In proto.h:
-   #ifndef HAVE_STRDUP
-   char *strdup( char * );
-   #endif
-*/
-#if 0
-#ifdef NO_STRDUP /* this should go somewhere better... *shrug* */
-extern char *strdup(char *str);
-#endif
-#endif
 
 #define BUF	4096
 
@@ -113,14 +67,6 @@ struct  servers *serverlist = NULL;
 time_t  last_read;       /* 14-Feb-95: Brandon */
 int     failed_conn = 0; /* 14-Feb-95: Brandon */
 
-#if 0
-#define KEY 3
-char    *keystrings[] = {
-           "OPEN:",
-           "Wait queue:",
-           "Nobody"
-         };
-#else
 #define KEY 6
 char    *keystrings[] = {
            "OPEN:",
@@ -130,7 +76,6 @@ char    *keystrings[] = {
            "* Garbaged read",
            "* Timed out   "
          };
-#endif
 
 #define KEY_OPEN	0
 #define KEY_QUEUE	1
@@ -164,7 +109,9 @@ void metainput(void);
 
 /* --------------------------------------------------------------- */
 /* This function finds the next integer after index 'start'.  */
-static int getnumber(char *string, int start) {
+static int
+getnumber(char *string, int start)
+{
     string += start;
     while(!isdigit(*string) && *string) string++;
     return atoi(string);
@@ -173,10 +120,9 @@ static int getnumber(char *string, int start) {
 /* --------------------------------------------------------------- */
 /* The connection to the metaserver is by Andy McFadden.
    This calls the metaserver and returns the socket or -1 if failed */
-static int open_port(char *host, int port, int verbose) {
-#ifdef DNET
-    return DNetOpenMeta(host, port);
-#else
+static int
+open_port(char *host, int port, int verbose)
+{
     struct sockaddr_in addr;
     struct hostent *hp;
     int     s;
@@ -206,12 +152,13 @@ static int open_port(char *host, int port, int verbose) {
 	return (-1);
     }
     return (s);
-#endif				/* DNET */
 }
 
 /* --------------------------------------------------------------- */
 /* Adds a line to the list, if it is acceptable */
-static void add_line(list_t *list, char *str) {
+static void
+add_line(list_t *list, char *str)
+{
     line_t *line;
 
     /* if there is no string, or it doesn't begin with "-h" */
@@ -240,7 +187,9 @@ static void add_line(list_t *list, char *str) {
 
 /* --------------------------------------------------------------- */
 /* free up memory used by the list */
-static void toss_list(list_t *list) {
+static void
+toss_list(list_t *list)
+{
     while (list->top != NULL) {
         list->curr = list->top->prev;
         free(list->top);
@@ -251,7 +200,9 @@ static void toss_list(list_t *list) {
 
 /* --------------------------------------------------------------- */
 /* allocate memory for a list */
-static list_t *new_list(void) {
+static list_t *
+new_list(void)
+{
     list_t *newl;
     newl = (list_t *) malloc(sizeof(list_t));
     newl->top = newl->bot = newl->curr = NULL;
@@ -260,7 +211,9 @@ static list_t *new_list(void) {
 
 /* --------------------------------------------------------------- */
 /* write list to file (Pretty self explanatory...) */
-static void write_list_to_file(list_t *list) {
+static void
+write_list_to_file(list_t *list)
+{
     FILE *fptr;
 
     fptr = fopen(list->fname, "w");
@@ -280,7 +233,9 @@ static void write_list_to_file(list_t *list) {
 
 /* --------------------------------------------------------------- */
 /* read the file into the list */
-static void read_file_to_list(list_t *list, FILE *fptr) {
+static void
+read_file_to_list(list_t *list, FILE *fptr)
+{
     char    line[BUF];
 
     if (fptr == NULL) {
@@ -299,7 +254,9 @@ static void read_file_to_list(list_t *list, FILE *fptr) {
 
 /* --------------------------------------------------------------- */
 /* read from socket into list */
-static void read_socket_to_list(list_t *list, int socket) {
+static void
+read_socket_to_list(list_t *list, int socket)
+{
     int     c, cc, lc;
     char    buf[BUF + 1];
     char    line[80];
@@ -307,13 +264,9 @@ static void read_socket_to_list(list_t *list, int socket) {
     /* loop indefinitely, until we cannot read off the socket */
     while (1) {
 
-#ifdef DNET
-        if ((cc = sock_read(socket, buf, BUF)) < 0) {
-#else
         if ((cc = sock_read(socket, buf, BUF)) <= 0) {
             if (cc < 0)
                 perror("read");
-#endif				/* DNET */
             sock_close(socket);
             break;
         }
@@ -337,7 +290,9 @@ static void read_socket_to_list(list_t *list, int socket) {
 
 /* --------------------------------------------------------------- */
 /* parses the list into the server struct */
-static void parse_list_to_serverlist(list_t *list) {
+static void
+parse_list_to_serverlist(list_t *list)
+{
     int          tc;
     static char *numstr;
 
@@ -401,7 +356,9 @@ static void parse_list_to_serverlist(list_t *list) {
 
 /* --------------------------------------------------------------- */
 /* gets output from either the metaserver or file */
-static list_t *read_metaserver(int s) {
+static list_t *
+read_metaserver(int s)
+{
     char   *home;                     /* defaults filename */
     list_t *list;
     FILE   *fptr;
@@ -433,7 +390,9 @@ static list_t *read_metaserver(int s) {
 
 /* --------------------------------------------------------------- */
 /* central function, calls all others */
-void openmeta(void) {
+void
+openmeta(void)
+{
     int     s;
     list_t *list;
 
@@ -479,7 +438,9 @@ void openmeta(void) {
 
 /* --------------------------------------------------------------- */
 /* Show the meta server menu window */
-void metawindow(void) {
+void
+metawindow(void)
+{
     register int i;
     static int old_num_servers = -1;
     char   buf[255];
@@ -493,7 +454,7 @@ void metawindow(void) {
 
     /* Print the date of the list */
     sprintf(buf, "             ** List is from %s **", ctime(&last_read));
-    W_WriteText(metaWin, 0, 0, W_Yellow, buf, (int) strlen(buf),
+    W_WriteText(metaWin, 0, 0, W_Yellow, buf, strlen(buf),
                 W_HighlightFont);
 
     /* loop the serverlist and print each element */
@@ -513,7 +474,9 @@ void metawindow(void) {
 }
 
 /* --------------------------------------------------------------- */
-static char *get_servertype(char type) {
+static char *
+get_servertype(char type)
+{
     switch (type) {
         case 'P':
             return strdup("Paradise");
@@ -535,7 +498,9 @@ static char *get_servertype(char type) {
 
 /* --------------------------------------------------------------- */
 /* Refresh item i */
-static void metarefresh(int i) {
+static void
+metarefresh(int i)
+{
     char    buf[BUFSIZ];
     W_Color color = textColor;
 
@@ -592,14 +557,16 @@ static void metarefresh(int i) {
 
     W_WriteText(metaWin, 0, i + 1,
 		serverlist[i].hilited ? W_Yellow : color,
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		serverlist[i].hilited ? W_HighlightFont : W_RegularFont);
 }
 
 
 /* --------------------------------------------------------------- */
 /* Check selection to see if was valid. If it was then we have a winner! */
-static void metaaction(W_Event *data) {
+static void
+metaaction(W_Event *data)
+{
     int     s;
     static time_t lastRefresh = 0;
     static time_t t;
@@ -623,7 +590,6 @@ static void metaaction(W_Event *data) {
 	    metarefresh(place);
 	} else {
 	    sock_close(s);
-#ifndef AMIGA
 	    /* allow spawning off multiple clients [BDyess] */
 	    if (metaFork) {
 		/* just blink yellow [BDyess] */
@@ -631,35 +597,6 @@ static void metaaction(W_Event *data) {
 		metarefresh(place);
 		pid = fork();
 	    } else
-#else
-	    /*
-	       OUCH. fork() sucks ;-) Using "run" is equivalent to appending
-	       a & to a command in Unix.  (my shell allows &, but it's not
-	       built in to AmigaDOS.)  This is a stupid kludge.  I
-	       should write a silly shell or rexx script to do all the
-	       metaserver stuff instead, and not compile PARSEMETA at all.
-	    */
-	    if (metaFork) {
-		extern char *command_line; /* main.c, argv */
-		extern int global_argc;
-		int ac;
-		char buf2[256];
-		char    buf[80];
-
-		sprintf(buf,"run %s ",command_line[0]);
-		for(ac=1;ac<global_argc;ac++) {
-		    if(strcmp(command_line[ac], "-m") == 0)
-			ac++;
-		    else {
-			strcat(buf,command_line[ac]);
-			strcat(buf," ");
-		    }
-		}
-		printf(buf2,"-h %s -p %d", command_line[0], serverName, xtrekPort);
-		strcat(buf, buf2);
-		Execute(buf, Input(), Output());
-	    } else
-#endif				/* AMIGA */
 	    {
 		pid = 1;
 		metadone();
@@ -685,7 +622,9 @@ static void metaaction(W_Event *data) {
 /* --------------------------------------------------------------- */
 /* Unmap the metaWindow */
 
-static void metadone(void) {
+static void
+metadone(void)
+{
     /* Unmap window */
     W_UnmapWindow(metaWin);
 }
@@ -697,7 +636,9 @@ static void metadone(void) {
    to call mapAll() first and the client would read in the default
    server and then call it up before I can select a server.  */
 
-void metainput(void) {
+void
+metainput(void)
+{
     W_Event data;
 
     while (W_IsMapped(metaWin) && pid != 0) {
@@ -718,5 +659,3 @@ void metainput(void) {
 	}
     }
 }
-
-#endif				/* METASERVER */

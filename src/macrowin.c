@@ -12,25 +12,11 @@
  */
 /* Modified for Paradise, 4/94  -JR */
 
-#include "defines.h"
-#include <stdio.h>
-#include <signal.h>
-#include <sys/types.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <math.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#endif
-
 #include "config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
@@ -58,8 +44,7 @@ int     macrocnt = 0;		/* a global from COW-lite, only needed here
 				   for Paradise. */
 
 int
-formatline(line)
-    char   *line;
+formatline(char *line)
 {
     register int end;
     char   *temp;
@@ -83,7 +68,7 @@ formatline(line)
 	    for (; temp[end] != '%'; end--);
 
 	lineno++;
-	strncpy(maclines[num++], temp, (unsigned)end);
+	strncpy(maclines[num++], temp, end);
 
 	temp = temp + end;
     }
@@ -91,8 +76,7 @@ formatline(line)
 
 
 void
-filldist(fill)
-    int     fill;
+filldist(int fill)
 {
     register int i;
     register int row;
@@ -111,14 +95,14 @@ filldist(fill)
 		    key,
 		    distmacro[i].name);
 	    W_WriteText(macroWin, 2, row++, W_Yellow, maclines[0],
-			(int)strlen(maclines[0]), W_RegularFont);
+			strlen(maclines[0]), W_RegularFont);
 	}
 	lineno++;
 	num = formatline(distmacro[i].macro);
 	if (fill) {
 	    for (c = 0; c < num; c++) {
 		W_WriteText(macroWin, 8, row++, textColor, maclines[c],
-			    (int)strlen(maclines[c]), W_RegularFont);
+			    strlen(maclines[c]), W_RegularFont);
 	    }
 	}
 	if (lineno > NUMLINES)
@@ -129,7 +113,7 @@ filldist(fill)
 
 
 void
-fillmacro()
+fillmacro(void)
 {
     register int row, i;
     char    macromessage[MACROLEN];
@@ -142,13 +126,13 @@ fillmacro()
     /* (UseSmartMacro ? ", SMARTMACRO" : "")); */
 
     W_WriteText(macroWin, 2, 1, textColor,
-		macromessage, (int)strlen(macromessage), W_RegularFont);
+		macromessage, strlen(macromessage), W_RegularFont);
 
     sprintf(macromessage, "Currently showing: %s",
 	    (maclevel ? "Macros" : "RCDS"));
 
     W_WriteText(macroWin, 2, 2, textColor,
-		macromessage, (int)strlen(macromessage), W_RegularFont);
+		macromessage, strlen(macromessage), W_RegularFont);
 
 
     if (maclevel == 0) {
@@ -200,21 +184,15 @@ fillmacro()
 		case 'O':
 		    strcat(macromessage, " ORI   ");
 		    break;
-#ifdef MOO
 		case 'M':
 		    strcat(macromessage, " MOO   ");
 		    break;
-#endif
-#ifdef TOOLS
 		case '!':
 		    strcat(macromessage, " SHELL ");
 		    break;
-#endif
-#ifdef NEWMACRO
 		case '\0':
 		    strcat(macromessage, " SPEC  ");
 		    break;
-#endif
 		case -1:
 		    switch (m->specialto) {
 		    case 'I':
@@ -251,13 +229,13 @@ fillmacro()
 	    strcat(macromessage, m->string);
 	    macromessage[MAXMACRO] = '\0';
 	    W_WriteText(macroWin, 2, row, textColor,
-			macromessage, (int)strlen(macromessage), W_RegularFont);
+			macromessage, strlen(macromessage), W_RegularFont);
 	}
     }
 }
 
 void
-switchmacros()
+switchmacros(void)
 {
     int     num, i;
     struct macro *m;
@@ -277,28 +255,18 @@ switchmacros()
 		if (m->flags & MACRCD)
 		    break;
 		macrocnt++;
-#if 0
-		len = strlen(m->string);
-		while (len > 0) {
-		    totmacros++;
-		    len -= 70;
-		}
-#endif
 	    }
 	}
 	num = macrocnt + 5;
     }
     W_ResizeText(macroWin, 80, num);
-#if 0
-    W_SetWindowExposeHandler(macroWin, fillmacro);
-    W_SetWindowButtonHandler(macroWin, switchmacros);
-#endif
     W_MapWindow(macroWin);
 }
 
 
 
-void showMacroWin()
+void
+showMacroWin(void)
 {
     int     num, i;
     struct macro *m;
@@ -314,13 +282,6 @@ void showMacroWin()
 		    if (m->flags & MACRCD)
 			break;
 		    macrocnt++;
-#if 0
-		    len = strlen(m->string);
-		    while (len > 0) {
-			totmacros++;
-			len -= 70;
-		    }
-#endif
 		}
 	    }
 	    num = macrocnt + 5;
@@ -330,11 +291,6 @@ void showMacroWin()
 				    80, num, NULL, (char*)0, BORDER);
 
 	W_ResizeText(macroWin, 80, num);
-#if 0
-	W_DefineTrekCursor(macroWin);
-	W_SetWindowExposeHandler(macroWin, fillmacro);
-	W_SetWindowButtonHandler(macroWin, switchmacros);
-#endif
 	W_MapWindow(macroWin);
     } else if (W_IsMapped(macroWin)) {
 	W_DestroyWindow(macroWin);

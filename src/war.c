@@ -3,15 +3,14 @@
  */
 #include "copyright.h"
 
-#include <stdio.h>
-#include <signal.h>
-#include <math.h>
 #include "config.h"
+#include <stdio.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
 
 static int newhostile;
@@ -32,7 +31,7 @@ static void fillwin P((int menunum, char *string, int hostile, int warbits, int 
 static void warrefresh P((void));
 
 void
-warwindow()
+warwindow(void)
 {
     W_MapWindow(war);
     newhostile = me->p_hostile;
@@ -40,40 +39,35 @@ warwindow()
 }
 
 static void
-warrefresh()
+warrefresh(void)
 {
     fillwin(0, feds, newhostile, me->p_swar, FEDm);
     fillwin(1, roms, newhostile, me->p_swar, ROMm);
     fillwin(2, klis, newhostile, me->p_swar, KLIm);
     fillwin(3, oris, newhostile, me->p_swar, ORIm);
-    W_WriteText(war, 0, 4, textColor, gos, (int)strlen(gos), 0);
-    W_WriteText(war, 0, 5, textColor, exs, (int)strlen(exs), 0);
+    W_WriteText(war, 0, 4, textColor, gos, strlen(gos), 0);
+    W_WriteText(war, 0, 5, textColor, exs, strlen(exs), 0);
 }
 
 static void
-fillwin(menunum, string, hostile, warbits, teammask)
-    int     menunum;
-    char   *string;
-    int     hostile, warbits;
-    int     teammask;
+fillwin(int menunum, char *string, int hostile, int warbits, int teammask)
 {
     char    buf[80];
 
     if (teammask & warbits) {
 	(void) sprintf(buf, "  %s%s", string, wars);
-	W_WriteText(war, 0, menunum, rColor, buf, (int)strlen(buf), 0);
+	W_WriteText(war, 0, menunum, rColor, buf, strlen(buf), 0);
     } else if (teammask & hostile) {
 	(void) sprintf(buf, "  %s%s", string, hostiles);
-	W_WriteText(war, 0, menunum, yColor, buf, (int)strlen(buf), 0);
+	W_WriteText(war, 0, menunum, yColor, buf, strlen(buf), 0);
     } else {
 	(void) sprintf(buf, "  %s%s", string, peaces);
-	W_WriteText(war, 0, menunum, gColor, buf, (int)strlen(buf), 0);
+	W_WriteText(war, 0, menunum, gColor, buf, strlen(buf), 0);
     }
 }
 
 void
-waraction(data)
-    W_Event *data;
+waraction(W_Event *data)
 {
     int     enemymask;
 

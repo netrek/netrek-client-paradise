@@ -3,24 +3,18 @@
  */
 #include "copyright.h"
 
-#include <stdio.h>
-#include <signal.h>
-#include <math.h>
 #include "config.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "packets.h"
 #include "proto.h"
-#include "gameconf.h"
 #include "images.h"
 
 void
-doShields(dx, dy, ship_bits, j)
-    int     dx, dy;
-    W_Image *ship_bits;
-    struct player *j;
+doShields(int dx, int dy, W_Image *ship_bits, struct player *j)
 {
     if (showShields && (j->p_flags & PFSHIELD)) {
 	/*-----------Colored shields by shield damage--------*/
@@ -39,30 +33,12 @@ doShields(dx, dy, ship_bits, j)
 	    else
 		color = unColor;
 	}
-#if 0				/* shields the alert color, ick */
-	switch (me->p_flags & (PFGREEN | PFYELLOW | PFRED)) {
-	case PFGREEN:
-	    color = gColor;
-	    break;
-	case PFYELLOW:
-	    color = yColor;
-	    break;
-	    /* red shield tough to see */
-	case PFRED:
-	    color = playerColor(j);
-	    break;
-	}
-#endif
 	W_DrawShield(w, dx, dy, ship_bits->width, color);
     }
 }
 
-#ifdef VARY_HULL
 void
-doHull(dx, dy, ship_bits, j)
-    int     dx, dy;
-    W_Image *ship_bits;
-    struct player *j;
+doHull(int dx, int dy, W_Image *ship_bits, struct player *j)
 {
     W_Image *image;
     
@@ -103,4 +79,3 @@ doHull(dx, dy, ship_bits, j)
 		       hull_color);
     }
 }
-#endif				/* VARY_HULL */

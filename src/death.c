@@ -2,27 +2,17 @@
  * death.c
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <sys/types.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
 #include "config.h"
+#include <stdio.h>
+#include <setjmp.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
 
 extern jmp_buf env;
 
@@ -32,7 +22,7 @@ static char *teamstring[4] = { /* "", */ "and the Federation",
 "and the Orions"};
 
 void
-redraw_death_messages()
+redraw_death_messages(void)
 {
     char    buf[256];
     int     len;
@@ -118,10 +108,10 @@ redraw_death_messages()
 	break;
     case KBADBIN:
 	sprintf(buf, "Your netrek executable didn't verify correctly.");
-	W_WriteText(mapw, 50, 70, textColor, buf, (int)strlen(buf), 
+	W_WriteText(mapw, 50, 70, textColor, buf, strlen(buf), 
 		    W_RegularFont);
 	sprintf(buf, "(could be an old copy or illegal cyborg)");
-	W_WriteText(mapw, 50, 110, W_Yellow, buf, (int)strlen(buf), 
+	W_WriteText(mapw, 50, 110, W_Yellow, buf, strlen(buf), 
 		    W_RegularFont);
 	*buf = 0;
 	break;
@@ -149,27 +139,21 @@ redraw_death_messages()
 	    sprintf(buf, "Congratulations!  You have been promoted to %s",
 		    ranks[mystats->st_rank].name);
 	    W_WriteText(mapw, 150, 23 * W_Textheight, W_Yellow, buf, 
-	    	        (int)strlen(buf), W_BoldFont);
+	    	        strlen(buf), W_BoldFont);
 	} else {
 	    sprintf(buf, "Congratulations!  You have been promoted to %s",
 		    ranks2[mystats->st_rank].name);
 	    W_WriteText(mapw, 150, 23 * W_Textheight, W_Yellow, buf, 
-	                (int)strlen(buf), W_BoldFont);
+	                strlen(buf), W_BoldFont);
 	}
 	promoted = 0;
     }
 }
 
 void
-death()
+death(void)
 {
     W_Event event;
-
-#ifdef AUTOKEY
-    if (autoKey)
-	autoKeyAllOff();
-#endif				/* AUTOKEY */
-
 
     W_ClearWindow(mapw);
     W_ClearWindow(iconWin);

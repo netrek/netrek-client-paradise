@@ -3,25 +3,17 @@
  * modified to sort by teams by Bill Dyess on 9/23/93
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include "config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
-#include "packets.h"
 
 /* Prototypes */
 static void dofulllist P((struct player * pptr, int vpos));
@@ -39,7 +31,7 @@ struct teamstruct {
 int     lastsortPlayers, lasthnk, lastspl, lastshowDead;
 
 void
-playerlist()
+playerlist(void)
 {
     int     i;
     char    buf[100];
@@ -65,14 +57,14 @@ playerlist()
     W_ClearWindow(playerw);
 
     (void) strcpy(buf, "  Type Rank      Name            Kills        Type Rank      Name            Kills");
-    W_WriteText(playerw, 0, 1, textColor, buf, (int)strlen(buf), W_RegularFont);
+    W_WriteText(playerw, 0, 1, textColor, buf, strlen(buf), W_RegularFont);
 
     if (!paradise)
 	(void) strcpy(buf, "  Type Rank      Name            Kills   Win  Loss  Ratio Offense Defense     DI");
     else
 	(void) strcpy(buf, "  Type Rank      Name            Kills   Win  Loss  Ratio  Battle Strategy     DI");
 
-    W_WriteText(playerw, 0, 20, textColor, buf, (int)strlen(buf), W_RegularFont);
+    W_WriteText(playerw, 0, 20, textColor, buf, strlen(buf), W_RegularFont);
 
     for (i = 0; i < nplayers; i++)
 	updatePlayer[i] |= ALL_UPDATE;
@@ -82,7 +74,7 @@ playerlist()
 
 
 void
-playerlist2()
+playerlist2(void)
 {
     register int i, k, z;
     char    buf[100];
@@ -135,7 +127,7 @@ playerlist2()
        largest in the bottom left, and everything else in the bottom right
     */
     if (sortPlayers) {
-	bzero(team, sizeof(team));
+	memset(team, 0, sizeof(team));
 	for (i = 0; i < 4; i++)
 	    team[i].teamnum = i;
 	/* figure out how many players on each team */
@@ -283,12 +275,9 @@ playerlist2()
 	else
 	    sprintf(buf + strlen(buf), "%6.2f", j->p_kills);
 	if (!sortPlayers) {
-#ifdef PLPROF
-	    printf("Updating player %d\n", j->p_no);
-#endif				/* PLPROF */
 	    W_WriteText(playerw, (i > 15) ? 44 : 0,
 			(i > 15) ? i - 16 + 2 : i + 2, playerColor(j), buf,
-			(int)strlen(buf), shipFont(j));
+			strlen(buf), shipFont(j));
 	    slot[i] = j->p_no;
 	} else if (!sequentialSort) {
 	    /* find out which quadrant he should be in */
@@ -305,12 +294,8 @@ playerlist2()
 	    currentSlot = (z % 2) * 16 + quadrant[z]->row - 2 + k;
 	    if (slot[currentSlot] != j->p_no || updatePlayer[j->p_no] & SMALL_UPDATE) {
 		slot[currentSlot] = j->p_no;
-#ifdef PLPROF
-		printf("Updating %d, currentslot = %d, updatePlayer = %d\n",
-		       j->p_no, currentSlot, updatePlayer[j->p_no]);
-#endif				/* PLPROF */
 		W_WriteText(playerw, 44 * (z % 2), k + quadrant[z]->row,
-			    playerColor(j), buf, (int)strlen(buf), shipFont(j));
+			    playerColor(j), buf, strlen(buf), shipFont(j));
 	    }
 	    if (!k)
 		quadrant[z]->row++;
@@ -321,47 +306,25 @@ playerlist2()
 	    if (slot[currentSlot] != j->p_no || updatePlayer[j->p_no] & SMALL_UPDATE) {
 		if (currentSlot >= 16) {
 		    W_WriteText(playerw, 44, currentSlot - 16 + 2, playerColor(j),
-				buf, (int)strlen(buf), shipFont(j));
+				buf, strlen(buf), shipFont(j));
 		} else {
 		    W_WriteText(playerw, 0, currentSlot + 2, playerColor(j), buf,
-				(int)strlen(buf), shipFont(j));
+				strlen(buf), shipFont(j));
 		}
 	    }
 	}
 
-#if 0
-	if (slot[currentSlot] != j->p_no || updatePlayer[j->p_no] & SMALL_UPDATE) {
-	    slot[currentSlot] = j->p_no;
-#ifdef PLPROF
-	    printf("Updating %d\n", j->p_no);
-#endif				/* PLPROF */
-	    W_WriteText(playerw, currentSlot >= 16 ? 44 : 0,
-		 currentSlot >= 16 ? currentSlot + 2 - 16 : currentSlot + 2,
-			playerColor(j), buf, (int)strlen(buf), shipFont(j));
-	}
-    }
-#endif				/* 0 */
     updatePlayer[j->p_no] = NO_UPDATE;
-}
+  }
 }
 
 void
-getdesig(j, desig)
-    struct player *j;
-    char   *desig;
+getdesig(struct player *j, char *desig)
 {
     switch (j->p_status) {
     case PALIVE:
 	strncpy(desig, j->p_ship->s_desig, 2);
-
-/*	the 2.4p1a client has this statement, but it is a bug
-        because s_desig is a length 2 char array. what we really
-        want to do is NULL terminate desig. -dka
-        
-        j->p_ship->s_desig[2] = 0;
- */
-        desig[2] = NULL;
-
+        desig[2] = 0;
 	break;
     case PTQUEUE:
 	strcpy(desig, "tq");
@@ -394,9 +357,7 @@ getdesig(j, desig)
 }
 
 static void
-dofulllist(pptr, vpos)
-    struct player *pptr;
-    int     vpos;
+dofulllist(struct player *pptr, int vpos)
 {
     char    buf[100];
     char   *rname;
@@ -445,16 +406,12 @@ dofulllist(pptr, vpos)
 		r.r_stratrat,
 		r.r_di);
 
-#ifdef PLPROF
-    printf("Updating %d\n", pptr->p_no);
-#endif				/* PLPROF */
-    W_WriteText(playerw, 0, vpos, playerColor(pptr), buf, (int)strlen(buf),
+    W_WriteText(playerw, 0, vpos, playerColor(pptr), buf, strlen(buf),
 		shipFont(pptr));
 }
 
-char   *
-get_players_rank_name(j)
-    struct player *j;
+char *
+get_players_rank_name(struct player *j)
 {
     char   *r;
     if (j->p_stats.st_rank < 0)
@@ -471,8 +428,7 @@ get_players_rank_name(j)
 }
 
 void
-playerwEvent(data)
-    W_Event *data;
+playerwEvent(W_Event *data)
 {
     int     key;
     struct obtype *target;
@@ -506,8 +462,7 @@ playerwEvent(data)
 }
 
 void
-selectblkbozo(data)
-    W_Event *data;
+selectblkbozo(W_Event *data)
 {
     int     width, slotnum;
 

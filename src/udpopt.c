@@ -2,16 +2,11 @@
  * udpopt.c - present UDP control window
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <ctype.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include "config.h"
+#include <stdio.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
@@ -23,7 +18,7 @@
 
 /* Set up the UDP control window */
 void
-udpwindow()
+udpwindow(void)
 {
     register int i;
 
@@ -38,8 +33,7 @@ udpwindow()
  * Refresh item i
  */
 void
-udprefresh(i)
-    int     i;
+udprefresh(int i)
 {
     char    buf[BUFSIZ];
 
@@ -120,11 +114,6 @@ udprefresh(i)
 	case MODE_FAT:
 	    strcat(buf, "fat UDP");
 	    break;
-#ifdef DOUBLE_UDP
-	case MODE_DOUBLE:
-	    strcat(buf, "double UDP");
-	    break;
-#endif				/* DOUBLE_UDP */
 	}
 	break;
     case UDP_FORCE_RESET:
@@ -133,12 +122,6 @@ udprefresh(i)
     case UDP_UPDATE_ALL:
 	sprintf(buf, "Request full update (=)");
 	break;
-#ifdef GATEWAY
-    case UDP_GW:
-	sprintf(buf, "gw: %s %d/%d/%d", gw_mach, gw_serv_port, gw_port,
-		gw_local_port);
-	break;
-#endif
     case UDP_DONE:
 	strcpy(buf, "Done");
 	break;
@@ -146,12 +129,11 @@ udprefresh(i)
 	fprintf(stderr, "netrek: UDP error: bad udprefresh(%d) call\n", i);
     }
 
-    W_WriteText(udpWin, 0, i, textColor, buf, (int)strlen(buf), 0);
+    W_WriteText(udpWin, 0, i, textColor, buf, strlen(buf), 0);
 }
 
 void
-udpaction(data)
-    W_Event *data;
+udpaction(W_Event *data)
 {
     register int i;
 
@@ -179,13 +161,8 @@ udpaction(data)
 	break;
     case UDP_RECV:
 	udpClientRecv++;
-#ifdef DOUBLE_UDP
-	if (udpClientRecv > MODE_DOUBLE)
-	    udpClientRecv = 0;
-#else
 	if (udpClientRecv >= MODE_DOUBLE)
 	    udpClientRecv = 0;
-#endif
 	udprefresh(UDP_RECV);
 	sendUdpReq(COMM_MODE + udpClientRecv);
 	break;
@@ -212,11 +189,6 @@ udpaction(data)
     case UDP_UPDATE_ALL:
 	sendUdpReq(COMM_UPDATE);
 	break;
-#ifdef GATEWAY
-    case UDP_GW:
-	W_Beep();
-	break;
-#endif
     case UDP_DONE:
 	udpdone();
 	break;
@@ -224,7 +196,7 @@ udpaction(data)
 }
 
 void
-udpdone()
+udpdone(void)
 {
     /* Unmap window */
     W_UnmapWindow(udpWin);

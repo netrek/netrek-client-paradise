@@ -1,59 +1,28 @@
 /* This file implements all SHORT_PACKETS functions */
 /*  HW 19.07.93 */
-
 #include "config.h"
-#ifdef SHORT_PACKETS
-
-#include "defines.h"
-#ifdef HAVE_MACHINE_ENDIAN_H
-#include <machine/endian.h>
-#endif
-#include "sound.h"
-
 #include <stdio.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
-#endif
-#ifdef STDC_HEADERS
 #include <stdlib.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
 #endif
-#include <netdb.h>
-#include <errno.h>
-#include <math.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
-#include "gameconf.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif
 #include "proto.h"
 
-/* prototypes */
-void sendServerPacket P((struct player_spacket * packet));
-void handleMessage P((struct mesg_spacket * packet));
+#ifdef UNIX_SOUND
+#include "sound.h"
+#endif
 
-#ifndef MAXINT
-#define MAXINT ~(unsigned int)0;
-#endif /*MAXINT*/
-
-#if 1
-
-char   *
-ship_type(shp)
-    struct ship *shp;
+char *
+ship_type(struct ship *shp)
 {
     static char ring[4][3];
     static int ri;
@@ -75,16 +44,6 @@ ship_type(shp)
 #define MAXTORP	ntorps
 #define MAXPLANETS	nplanets
 #define MAXPLASMA	nplasmas
-
-#else
-
-#define ship_type(shp)	shiptype[(shp).s_type]
-#define TEAM_LETTER(p) ( teamlet[(p).p_team] )
-#define TEAM_SHORT(p) ( teamshort[(p).p_team] )
-#define TEAM_LETTERP(pl) ( teamlet[(pl).pl_owner] )
-#define TEAM_SHORTP(pl) ( teamshort[(pl).pl_owner] )
-
-#endif
 
 /* from here on all SHORT_PACKETS */
 #include "wtext.h"		/* here are all warningdefines */
@@ -267,14 +226,10 @@ char   *w_texts[] =
 #define NUMDAEMONTEXTS ( sizeof daemon_texts / sizeof daemon_texts[0])
 
 
-void    add_whydead();
+void    add_whydead P((char *, int));
 
 extern int vtisize[];
 extern unsigned char numofbits[];
-#if 0
-int     Plx[MAX_PLAYER], Ply[MAX_PLAYER], Pgx[MAX_PLAYER], Pgy[MAX_PLAYER];
-unsigned char Pdir[MAX_PLAYER];
-#endif
 int     my_x, my_y;		/* for rotation we need to keep track of our
 				   real coordinates */
 /* SP_S_WARNING vari texte */
@@ -282,18 +237,12 @@ char   *s_texte[256];		/* Better with a malloc scheme */
 char    no_memory[] =
 {"Not enough memory for warning string!"};
 
-#if 0
-/* For INL Server */
-char   *shiptype[NUM_TYPES] =
-{"SC", "DD", "CA", "BB", "AS", "SB", "??"};
-#endif
 int     spwinside = 500;	/* WINSIDE from Server */
 long    spgwidth = 100000;
 
 
 void
-sendThreshold(v)
-    int v;
+sendThreshold(int v)
 {
     struct threshold_cpacket p;
 
@@ -303,8 +252,7 @@ sendThreshold(v)
 }
 
 void
-handleVTorp(sbuf)
-    unsigned char *sbuf;
+handleVTorp(unsigned char *sbuf)
 {
     unsigned char *which, *data;
     unsigned char bitset;
@@ -327,17 +275,9 @@ handleVTorp(sbuf)
 	data = &sbuf[3];
     }
 
-#ifdef CORRUPTED_PACKETS
-/* we probably should do something clever here - jmn */
-#endif
-
     thetorp = &torps[((unsigned char) *which * 8)];
     for (shift = 0, i = 0; i < 8;
-#if defined(_IBMR2) || defined(__SABER__)
-	 i++, thetorp++, bitset >>= 1) {
-#else
-	 i++, thetorp++, bitset = ((unsigned char)bitset) >> 1) {
-#endif
+         i++, thetorp++, bitset >>= 1) {
 	if (bitset & 01) {
 	    dx = (*data >> shift);
 	    data++;
@@ -375,12 +315,10 @@ handleVTorp(sbuf)
 	    thetorp->t_y = me->p_y + ((dy - spwinside / 2) * SCALE); */
 		thetorp->t_x = my_x + ((dx - spwinside / 2) * SCALE);
 		thetorp->t_y = my_y + ((dy - spwinside / 2) * SCALE);
-#ifdef ROTATERACE
 		if (rotate) {
 		    rotate_coord(&thetorp->t_x, &thetorp->t_y, rotate_deg,
 				 spgwidth / 2, spgwidth / 2);
 		}
-#endif
 	    }
 	}
 	/* if */
@@ -393,10 +331,8 @@ handleVTorp(sbuf)
     }				/* for */
 }
 
-#ifndef __CEXTRACT__
 void
-handleSelfShort(packet)
-    struct youshort_spacket *packet;
+handleSelfShort(struct youshort_spacket *packet)
 {
     me = (ghoststart ? &players[ghost_pno] : &players[packet->pnum]);
     myship = me->p_ship;
@@ -404,17 +340,13 @@ handleSelfShort(packet)
     me->p_hostile = packet->hostile;
     me->p_swar = packet->swar;
     me->p_armies = packet->armies;
-    me->p_flags = ntohl((unsigned)packet->flags);
+    me->p_flags = ntohl(packet->flags);
     me->p_whydead = packet->whydead;
     me->p_whodead = packet->whodead;
-#ifdef SOUND
-    S_HandlePFlags();
-#endif
 }
 
 void
-handleSelfShip(packet)
-    struct youss_spacket *packet;
+handleSelfShip(struct youss_spacket *packet)
 {
     if (!me)
 	return;			/* wait.. */
@@ -424,15 +356,10 @@ handleSelfShip(packet)
     me->p_fuel = ntohs(packet->fuel);
     me->p_etemp = ntohs(packet->etemp);
     me->p_wtemp = ntohs(packet->wtemp);
-#ifdef SOUND
-    S_HandlePFlags();
-#endif
 }
-#endif /*__CEXTRACT__*/
 
 void
-handleVPlayer(sbuf)
-    unsigned char *sbuf;
+handleVPlayer(unsigned char *sbuf)
 {
     register int x, y, i, numofplayers, pl_no, save;
     register struct player *pl;
@@ -451,34 +378,21 @@ handleVPlayer(sbuf)
 	struct player_s_spacket *packet = (struct player_s_spacket *) sbuf;
 	pl = &players[me->p_no];
 	pl->p_dir = (unsigned char) packet->dir;
-#if 0
-	Pdir[me->p_no] = (unsigned char) rosette(pl->p_dir, 16);
-#endif
 	pl->p_speed = packet->speed;
-#ifdef FEATURE
 	if (F_dead_warp && (pl->p_speed == 14)) {
 	    if (pl->p_status == PALIVE) {
 		pl->p_status = PEXPLODE;
 		pl->p_explode = 0;
 	    }
 	} else
-#endif
 	{
-	    pl->p_x = my_x = ntohl((unsigned)packet->x);
-	    pl->p_y = my_y = ntohl((unsigned)packet->y);
-#ifdef ROTATERACE
+	    pl->p_x = my_x = ntohl(packet->x);
+	    pl->p_y = my_y = ntohl(packet->y);
 	    if (rotate) {
 		rotate_coord(&pl->p_x, &pl->p_y,
 			     rotate_deg, spgwidth / 2, spgwidth / 2);
 		rotate_dir(&pl->p_dir, rotate_deg);
 	    }
-#endif
-#if 0
-	    Plx[me->p_no] = WINSIDE / 2;
-	    Ply[me->p_no] = WINSIDE / 2;
-	    Pgx[me->p_no] = pl->p_x * WINSIDE / spgwidth;
-	    Pgy[me->p_no] = pl->p_y * WINSIDE / spgwidth;
-#endif
 	}
 	redrawPlayer[me->p_no] = 1;
 	sbuf += 12;		/* Now the small packets */
@@ -492,53 +406,15 @@ handleVPlayer(sbuf)
 	sbuf++;
 	pl = &players[pl_no];
 	pl->p_speed = (unsigned char) *sbuf & 15;	/* SPEED */
-#if 0
-	Pdir[pl_no] = (unsigned char) *sbuf >> 4;	/* DIR */
-#endif
 	newdir = (unsigned char) *sbuf & 0xf0;	/* realDIR */
 
-#ifdef ROTATERACE
 	if (rotate)
 	    rotate_dir(&newdir, rotate_deg);
-#endif
-#ifdef FEATURE
 	if (cloakerMaxWarp) {
 	    if (pl->p_speed == 15)
 		pl->p_flags |= PFCLOAK;
 	    else
 		pl->p_flags &= ~(PFCLOAK);
-	} else
-#endif
-	{
-#ifdef CHECK_DROPPED
-	    /*
-	       this is a mess.  Too many exceptions.  I don't use it any
-	       more.  cloakerMaxWarp is much much better, but requires server
-	       support.
-	    */
-	    /*
-	       Kludge to fix lost uncloak packets! [3/94] -JR may be a
-	       problem with server sending directions after cloakphase is at
-	       CLOAK_PHASES-1, since cloakphase is strictly a client variable
-	       :(
-	    */
-	    if (pl->p_flags & PFCLOAK && pl->p_cloakphase >= (CLOAK_PHASES - 1) &&
-		(pl->p_dir & 0xf0 != newdir & 0xf0) && !(pl->p_flags & PFORBIT)) {
-		int     i, plocked = 0;
-		for (i = 0; i < nplayers; i++) {
-		    if ((phasers[i].ph_status & PHHIT) && (phasers[i].ph_target == pl_no)) {
-			plocked = 1;
-			break;
-		    }
-		}
-		if (!plocked)
-		    /*
-		       if all of the above, the guy is *probably* uncloaked.
-		       Ask the server.
-		    */
-		    sendShortReq(SPK_SALL);
-	    }
-#endif
 	}
 	pl->p_dir = newdir;	/* realDIR */
 
@@ -551,7 +427,6 @@ handleVPlayer(sbuf)
 	    x |= 256;
 	if ((unsigned char) save & 128)
 	    y |= 256;
-#ifdef FEATURE
 	/*
 	   MAY CHANGE!  dead_warp is still an experiment, some servers are
 	   also sending illegal co-ords for dead players, so we'll just
@@ -565,58 +440,31 @@ handleVPlayer(sbuf)
 	    redrawPlayer[pl->p_no] = 1;
 	    continue;
 	}
-#endif
 	/* Now test if it's galactic or local coord */
 	if (save & 32) {	/* It's galactic */
-#if 0
-	    if (x >= 501 || y >= 501) {
-		pl->p_x = -500 * spgwidth / spwinside;
-		pl->p_y = -500 * spgwidth / spwinside;
-	    } else
-#endif
 	    {
 		pl->p_x = x * spgwidth / spwinside;
 		pl->p_y = y * spgwidth / spwinside;
 	    }
-#if 0
-	    Pgx[pl_no] = x;
-	    Pgy[pl_no] = y;
-	    Plx[pl_no] = -1;	/* Not visible */
-	    Ply[pl_no] = -1;
-#endif
 	} else {		/* Local */
 	    pl->p_x = my_x + ((x - spwinside / 2) * SCALE);
 	    pl->p_y = my_y + ((y - spwinside / 2) * SCALE);
-#if 0
-	    Plx[pl_no] = x;
-	    Ply[pl_no] = y;
-	    Pgx[pl_no] = pl->p_x * spwinside / spgwidth;
-	    Pgy[pl_no] = pl->p_y * spwinside / spgwidth;
-#endif
 	}
 	redrawPlayer[pl->p_no] = 1;
-#ifdef ROTATERACE
 	if (rotate) {
 	    rotate_coord(&pl->p_x, &pl->p_y,
 			 rotate_deg, spgwidth / 2, spgwidth / 2);
 	}
-#endif
     }				/* for */
 }
 
-#ifndef __CEXTRACT__
 void
-handleSMessage(packet)
-    struct mesg_s_spacket *packet;
+handleSMessage(struct mesg_s_spacket *packet)
 {
     char    buf[100];
     char    addrbuf[9];
 
-#if 0
-    if (debug)
-	printf("Length of Message is: %d  total Size %d \n", strlen(&packet->mesg), (int) packet->length);
-#endif
-    if ((int)packet->m_from >= nplayers)
+    if (packet->m_from >= nplayers)
 	packet->m_from = 255;
 
     if (packet->m_from == 255)
@@ -647,8 +495,7 @@ handleSMessage(packet)
 }
 
 void
-handleShortReply(packet)
-    struct shortreply_spacket *packet;
+handleShortReply(struct shortreply_spacket *packet)
 {
     switch (packet->repl) {
     case SPK_VOFF:
@@ -668,7 +515,7 @@ handleShortReply(packet)
 	    spwinside = 0x01f4;
 
 	if (paradise) {
-	    spgwidth = (INT32) ntohl((unsigned)packet->gwidth);
+	    spgwidth = (INT32) ntohl(packet->gwidth);
             blk_gwidth= spgwidth;
             blk_windgwidth = (float)spwinside;
             redrawall = 1;	/* force redrawing of galactic map */
@@ -717,11 +564,9 @@ handleShortReply(packet)
 		"netrek", packet->repl);
     }
 }
-#endif /*__CEXTRACT__*/
 
 void
-handleVTorpInfo(sbuf)
-    unsigned char *sbuf;
+handleVTorpInfo(unsigned char *sbuf)
 {
     unsigned char *bitset, *which, *data, *infobitset, *infodata;
     struct torp *thetorp;
@@ -743,12 +588,7 @@ handleVTorpInfo(sbuf)
     thetorp = &torps[(unsigned char) (*which * 8)];
 
     for (shift = 0, i = 0; i < 8;
-#if defined(_IBMR2) || defined(__SABER__)
 	 thetorp++, *bitset >>= 1, *infobitset >>= 1, i++) {
-#else
-	 thetorp++, *bitset = ((unsigned char)*bitset)  >> 1, *infobitset = ((unsigned char) *infobitset) >> 1, i++) {
-#endif
-
 	if (*bitset & 01) {
 	    dx = (*data >> shift);
 	    data++;
@@ -790,12 +630,10 @@ handleVTorpInfo(sbuf)
 		thetorp->t_y = my_y + ((dy - spwinside / 2) *
 				       SCALE);
 
-#ifdef ROTATERACE
 		if (rotate) {
 		    rotate_coord(&thetorp->t_x, &thetorp->t_y, rotate_deg,
 				 spgwidth / 2, spgwidth / 2);
 		}
-#endif
 	    }
 	}
 	/* if */
@@ -838,8 +676,7 @@ handleVTorpInfo(sbuf)
 }
 
 void
-handleVPlanet(sbuf)
-    unsigned char *sbuf;
+handleVPlanet(unsigned char *sbuf)
 {
     register int i;
     register int numofplanets;	/* How many Planets are in the packet */
@@ -873,7 +710,6 @@ handleVPlanet(sbuf)
 	plan->pl_flags = (int) ntohs(packet->flags);
 
 	if (plan->pl_armies != (unsigned char) packet->armies) {
-/*#ifdef EM*/
 	    /*
 	       don't redraw when armies change unless it crosses the '4' *
 	       army limit. Keeps people from watching for planet 'flicker' *
@@ -882,7 +718,6 @@ handleVPlanet(sbuf)
 	    int     planetarmies = (unsigned char) packet->armies;
 	    if ((plan->pl_armies < 5 && planetarmies > 4) ||
 		(plan->pl_armies > 4 && planetarmies < 5))
-/*#endif*/
 		redraw = 1;
 	}
 
@@ -902,8 +737,7 @@ handleVPlanet(sbuf)
 }
 
 void
-sendShortReq(state)
-    int    state;
+sendShortReq(int state)
 {
     struct shortreq_cpacket shortReq;
 
@@ -951,10 +785,8 @@ char   *whydeadmess[] =
 "[TEAM]", "", "[team det]", "[team explosion]"};
 
 
-#ifndef __CEXTRACT__
 void
-handleSWarning(packet)
-    struct warning_s_spacket *packet;
+handleSWarning(struct warning_s_spacket *packet)
 {
     char    buf[80];
     register struct player *target;
@@ -1112,10 +944,6 @@ handleSWarning(packet)
 			       players[killer].p_ship->s_desig[1]);
 		msg.m_flags = MALL | MVALID | MKILL;
 	    } else {
-#ifdef SOUND			/* was feeling a little silly :-) */
-		if (killer == me->p_no || alwaysSoundDoosh)
-		    S_PlaySound(S_DOOSH);
-#endif
 		(void) sprintf(msg.mesg, "%s%s (%c%c+%d armies) [%c%c]: kill %s for %s (%c%c) [%c%c]",
 			       (godToAllOnKills ? "GOD->ALL " : ""),
 			       players[victim].p_name,
@@ -1258,10 +1086,6 @@ handleSWarning(packet)
 	    *buf = 0;
 	    if (arg3) {		/* Armies */
 		sprintf(buf, "+%d", arg3);
-#ifdef SOUND
-		if(alwaysSoundDoosh)
-		    S_PlaySound(S_DOOSH);
-#endif
 	    }
 	    (void) sprintf(msg.mesg, "%s%s[%s] (%c%c%s) killed by %s (%c)",
 			   (godToAllOnKills ? "GOD->ALL " : ""),
@@ -1312,10 +1136,6 @@ handleSWarning(packet)
 			       shipnos[killer]);
 		msg.m_flags = MALL | MVALID | MKILL;
 	    } else {
-#ifdef SOUND
-		if(killer == me->p_no || alwaysSoundDoosh)
-		    S_PlaySound(S_DOOSH);
-#endif
 		(void) sprintf(msg.mesg, "%s%s[%s] (%c%c+%d armies) was kill %0.2f for %s[%s] (%c%c)",
 			       (godToAllOnKills ? "GOD->ALL " : ""),
 			       players[victim].p_name,
@@ -1379,7 +1199,7 @@ handleSWarning(packet)
 	    struct warning_spacket *warn = (struct warning_spacket *) packet;
 	    warning(warn->mesg);
 	    s_texte[(unsigned char) warn->pad2] = (char *) 
-	    				     malloc((unsigned)(warn->pad3 - 4));
+	    				     malloc(warn->pad3 - 4);
 	    if (s_texte[(unsigned char) warn->pad2] == NULL) {
 		s_texte[(unsigned char) warn->pad2] = no_memory;
 		warning("Could not add warning! (No memory!)");
@@ -1392,14 +1212,11 @@ handleSWarning(packet)
 	break;
     }
 }
-#endif /*__CEXTRACT__*/
 
 #define MY_SIZEOF(a) (sizeof(a) / sizeof(*(a)))
 
 void
-add_whydead(s, m)		/* 7/22/93 LAB */
-    char   *s;
-    int     m;
+add_whydead(char *s, int m)		/* 7/22/93 LAB */
 {
     char    b[256];
 
@@ -1409,7 +1226,3 @@ add_whydead(s, m)		/* 7/22/93 LAB */
 	strcpy(s, b);
     }
 }
-
-#endif
-
-/* END SHORT_PACKETS */

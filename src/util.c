@@ -3,51 +3,16 @@
  * added functionality to gettarget() - Bill Dyess 10/6/93
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <signal.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <math.h>
-#include <ctype.h>
 #include "config.h"
+#include <math.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
-#include "strfuncs.h"
-
-#if 0
-/*
-** Provide the angular distance between two angles.
-*/
-angdist(x, y)
-    unsigned char x, y;
-{
-    register unsigned char res;
-
-    if (x > y)
-	res = x - y;
-    else
-	res = y - x;
-    if (res > 128)
-	return (256 - (int) res);
-    return ((int) res);
-}
-#endif
-
-double
-hypot2(x, y)
-    double  x, y;
-{
-    return sqrt(x * x + y * y);
-}
 
 /*
  * * Find the object nearest mouse.  Returns a pointer to an * obtype
@@ -62,10 +27,7 @@ hypot2(x, y)
 static struct obtype _target;
 
 struct obtype *
-gettarget(ww, x, y, targtype)
-    W_Window ww;
-    int     x, y;
-    int     targtype;
+gettarget(W_Window ww, int x, int y, int targtype)
 {
 /* now can get the closest friendly/enemy player or planet.  Use
    TARG_FRIENDLY or TARG_ENEMY or'd with TARG_PLAYER or TARG_PLANET */
@@ -77,17 +39,6 @@ gettarget(ww, x, y, targtype)
     int     slotnum, width;
 
     if (ww == mapw) {
-#if 0
-	if (blk_zoom) {
-	    gwidth = blk_gwidth / 2;
-	    offsetx = zoom_offset(me->p_x);
-	    offsety = zoom_offset(me->p_y);
-	} else {
-	    gwidth = blk_gwidth;
-	    offsetx = 0;
-	    offsety = 0;
-	}
-#endif /*0*/
 	g_x = unScaleMapX(x);
 	g_y = unScaleMapY(y);
 
@@ -169,11 +120,6 @@ gettarget(ww, x, y, targtype)
 	}
     }
     if (targtype & TARG_PLAYER) {
-#ifdef TARGET_LOGGING
-	struct { double dist;
-	         int num; } closest = {blk_gwidth,0}, 
-		            next_closest = {blk_gwidth,0};
-#endif /*TARGET_LOGGING*/
 	for (i = 0, j = &players[i]; i < nplayers; i++, j++) {
 	    if (j->p_status != PALIVE)
 		continue;
@@ -193,42 +139,12 @@ gettarget(ww, x, y, targtype)
 			      : TARG_SHIP)))
 		continue;
 	    dist = hypot((double) (g_x - j->p_x), (double) (g_y - j->p_y));
-#ifdef TARGET_LOGGING
-	      /* code to log possible targets.  This is to test the claims
-		 of the anti-tiebreaker group [BDyess] */
-            if (dist < next_closest.dist) {
-	      if(dist < closest.dist) {
-		next_closest = closest;
-		closest.dist = dist;
-		closest.num = i;
-	      } else {
-	        next_closest.dist = dist;
-		next_closest.num = i;
-	      }
-	    }
-#else
 	    if (dist <= closedist) {
 		_target.o_type = PLAYERTYPE;
 		_target.o_num = i;
 		closedist = dist;
 	    }
-#endif /*TARGET_LOGGING*/
 	}
-#ifdef TARGET_LOGGING
-	if(closest.dist < closedist) {
-	  _target.o_type = PLAYERTYPE;
-	  _target.o_num = closest.num;
-	  closedist = closest.dist;
-	  printf("Delta: %.2f, Closest: %c%c @ %.2f, Next Closest: %c%c @ %.2f.\n",
-	    next_closest.dist - closest.dist,
-	    teaminfo[players[closest.num].p_teami].letter,
-	    shipnos[closest.num],
-	    closest.dist,
-	    teaminfo[players[next_closest.num].p_teami].letter,
-	    shipnos[next_closest.num],
-	    next_closest.dist); 
-	}
-#endif /*TARGET_LOGGING*/
     }
     if (closedist == blk_gwidth) {	/* Didn't get one.  bad news */
 	_target.o_type = PLAYERTYPE;
@@ -239,44 +155,8 @@ gettarget(ww, x, y, targtype)
     }
 }
 
-#if !defined(HAVE_SRANDOM) && !defined(HAVE_SRAND48)
-srandom(foo)
-    int     foo;
-{
-    rand(foo);
-}
-#endif
-
-#if !defined(HAVE_RANDOM) && !defined(HAVE_LRAND48)
-random()
-{
-    return (rand());
-}
-#endif
-
-#ifndef HAVE_SIGNAL
-
-#include <time.h>
-#include <sys/resource.h>
-#include <sys/signal.h>
-
-void    (*
-	 signal(sig, funct)) ()
-    int     sig;
-    void    (*funct) ();
-{
-    struct sigvec vec, oldvec;
-
-    sigvector(sig, 0, &vec);
-    vec.sv_handler = funct;
-    sigvector(sig, &vec, (struct sigvec *) 0);
-}
-#endif
-
-
-char   *
-team_bit_string(mask)
-    int     mask;
+char *
+team_bit_string(int mask)
 {
     static char visitorstring[16];	/* better not have more than 16 teams */
     int     i;
@@ -294,10 +174,7 @@ team_bit_string(mask)
    [BDyess] */
 
 struct id *
-getTargetID(ww, x, y, targtype)
-    W_Window ww;
-    int     x, y;
-    int     targtype;
+getTargetID(W_Window ww, int x, int y, int targtype)
 {
     struct obtype *target;
     static struct id buf;
@@ -332,13 +209,3 @@ getTargetID(ww, x, y, targtype)
     }
     return &buf;
 }
-
-#ifdef DEBUGMALLOC
-#undef malloc
-/* for debugging [BDyess] */
-void *
-debugmalloc(char *function,int x) {
-  printf("%s: mallocing %d bytes\n",function,x);
-  return malloc(x);
-}
-#endif /*DEBUGMALLOC*/

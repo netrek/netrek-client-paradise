@@ -1,7 +1,3 @@
-#include "config.h"
-#ifdef WIDE_PLIST
-#define PLIST1
-#define PLIST
 /*
  * playerlist.c
  *
@@ -9,22 +5,16 @@
  *   Paradise shoehorning:  2/13/94  [BDyess]
  */
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
 #include <stdio.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "gameconf.h"
 #include "proto.h"
 
 static char header[BUFSIZ];
@@ -39,7 +29,7 @@ int     slottext_size=0;		/* keep track of the size in case nplayers
 /*===========================================================================*/
 
 int
-playerlistnum()
+playerlistnum(void)
 {
     int     num = 0;
     char   *ptr;
@@ -104,7 +94,10 @@ playerlistnum()
 	    strcat(header, " ");
 	    num += 1;
 	    break;
-#ifdef PLIST1
+	case 'h':		/* Hockey stats */
+	    strcat(header, " Goals  Assists  Points");
+	    num += 23;
+	    break;
 	case 'B':		/* Bombing */
 	    strcat(header, " Bmbng");
 	    num += 6;
@@ -183,17 +176,23 @@ playerlistnum()
 	    strcat(header, "   DPH");
 	    num += 6;
 	    break;
-#endif
-#ifdef PLIST2
 	case 'w':		/* War staus */
-	    strcat(header, " War Stat");
-	    num += 9;
+	    if(ptr[1] == '-')
+	    {
+	      strcat(header, " War");
+	      num += 4;
+	      ptr++;
+	    }
+	    else
+	    {
+	      strcat(header, " War Stat");
+	      num += 9;
+	    }
 	    break;
 	case 's':		/* Speed */
 	    strcat(header, " Sp");
 	    num += 3;
 	    break;
-#endif
 	default:
 	    fprintf(stderr, "%c is not an option for the playerlist\n", ptr[0]);
 	    break;
@@ -209,7 +208,7 @@ playerlistnum()
 /*===========================================================================*/
 
 void
-wideplayerlist()
+wideplayerlist(void)
 {
     int     i;
     int     old_len=header_len;
@@ -255,16 +254,12 @@ wideplayerlist()
 
 /*===========================================================================*/
 
-void
-writeDiffText(window, x, y, color, orig, new, font)
-    W_Window window;
-    int     x, y;
-    W_Color color;
-    char   *orig, *new;
-    W_Font  font;
-{
 /* little routine to print just the chars that are different between orig and
    new.  [BDyess] */
+void
+writeDiffText(W_Window window, int x, int y, W_Color color, 
+              char *orig, char *new, W_Font font)
+{
     int     i;
     char   *start;
 
@@ -285,7 +280,7 @@ writeDiffText(window, x, y, color, orig, new, font)
     }
     if (new[i]) {
 	/* write any text that extends past the old one */
-	W_WriteText(window, x + i, y, color, new + i, (int)strlen(new + i), font);
+	W_WriteText(window, x + i, y, color, new + i, strlen(new + i), font);
     } else if (orig[i]) {
 	/* print spaces to clear to EOL */
 	char   *freeme;
@@ -301,9 +296,7 @@ writeDiffText(window, x, y, color, orig, new, font)
 /*===========================================================================*/
 
 void
-plist_line(j, pos)
-    struct player *j;
-    int     pos;
+plist_line(struct player *j, int pos)
 {
     char    buf[BUFSIZ];
     char   *ptr;
@@ -437,7 +430,11 @@ plist_line(j, pos)
 	case ' ':		/* White Space */
 	    strcat(buf, " ");
 	    break;
-#ifdef PLIST1
+	case 'h':		/* Hockey stats */
+	    sprintf(tmp, " %5d %8d %7d", r.r_planets, r.r_armies,
+	            r.r_planets + r.r_armies);
+	    strcat(buf, tmp);
+	    break;
 	case 'B':		/* Bombing */
 	    tmp[0] = ' ';
 	    sprintf(tmp + 1, "%5.2f", r.r_bombrat);
@@ -536,21 +533,26 @@ plist_line(j, pos)
 	    strcat(buf, tmp);
 	    break;
 	case 'w':		/* War staus */
-	    if (j->p_swar & idx_to_mask(me->p_teami))
-		strcat(buf, " WAR     ");
-	    else if (j->p_hostile & idx_to_mask(me->p_teami))
-		strcat(buf, " HOSTILE ");
-	    else
-		strcat(buf, " PEACEFUL");
+	    {
+	        int sh;
+		
+		sh = (ptr[1] == '-');
+
+	        if (j->p_swar & idx_to_mask(me->p_teami))
+	    	    strcat(buf, (sh ? " W  " : " WAR     "));
+	        else if (j->p_hostile & idx_to_mask(me->p_teami))
+	  	    strcat(buf, (sh ? " H  " : " HOSTILE "));
+	        else
+		    strcat(buf, (sh ? " P  " : " PEACEFUL"));
+
+                if(sh) ptr++;
+	    }
 	    break;
-#endif
-#ifdef PLIST2
 	case 's':		/* Speed */
 	    tmp[0] = ' ';
 	    sprintf(tmp + 1, "%2d", j->p_speed);
 	    strcat(buf, tmp);
 	    break;
-#endif
 	default:
 	    break;
 	}
@@ -563,7 +565,7 @@ plist_line(j, pos)
 	writeDiffText(playerw, 0, pos, color, slottext[pos - 2], buf,
 		      shipFont(j));
     } else {
-	W_WriteText(playerw, 0, pos, color, buf, (int)strlen(buf),
+	W_WriteText(playerw, 0, pos, color, buf, strlen(buf),
 		    shipFont(j));
     }
     strcpy(slottext[pos - 2], buf);
@@ -574,14 +576,10 @@ plist_line(j, pos)
 /*===========================================================================*/
 
 void
-Sorted_playerlist2()
+Sorted_playerlist2(void)
 {
     register int i, h, pos = 1;
     register struct player *j;
-#if 0
-    static int num;
-    int boolflag = 0, last;
-#endif /* 0 */
     int     numplayers;
 
   /* 20, not 16, is the max for non-paradise! Mostly the extra 4 are */
@@ -642,28 +640,6 @@ Sorted_playerlist2()
 	plist_line(j, pos);
     }
     }
-#if 0				/* this code displays the ind players from
-				   the bottom up. */
-    /* not everyone has a 32 line playerlist, so this tends to */
-    /* make iggy invisible */
-    last = numplayers + 2;
-
-    for (i = numplayers - 1, j = &players[i]; i >= 0; i--, j--) {
-	if (j->p_teami >=0 && j->p_teami<number_of_teams)
-	    continue;
-
-	if (j->p_status == PFREE)
-	    continue;
-
-	last--;
-
-	if (!updatePlayer[i] && (!boolflag))
-	    continue;
-
-	updatePlayer[i] = 0;
-	plist_line(j, last);
-    }
-#endif				/* 0 */
 
     for (i = 0, j = &players[0]; i < numplayers; i++, j++) {
 	if (j->p_teami >= 0 && j->p_teami < number_of_teams)
@@ -688,19 +664,12 @@ Sorted_playerlist2()
 	slottext[pos - 2][0] = 0;
 	pos++;
     }
-
-#if 0
-    if (boolflag && (last > (pos + 1))) {
-	W_ClearArea(playerw, 0, pos + 1, header_len, last - (pos + 1));
-	slot[pos - 2] = -1;
-    }
-#endif				/* 0 */
 }
 
 /*===========================================================================*/
 
 void
-wideplayerlist2()
+wideplayerlist2(void)
 {
     register int i;
     register struct player *j;
@@ -734,5 +703,3 @@ wideplayerlist2()
 	plist_line(j, i + 2);
     }
 }
-
-#endif				/* WIDE_PLIST */

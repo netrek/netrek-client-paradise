@@ -2,32 +2,21 @@
  * smessage.c
  */
 #include "copyright.h"
-#include "defines.h"
-
-#include <stdio.h>
-#include <signal.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <ctype.h>
-#include <math.h>
 #include "config.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <math.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
 
 #define ADDRLEN 10
 #define M_XOFF	5
-#ifndef AMIGA
 #define M_YOFF	5
-#else
-#define M_YOFF 1
-#endif
 
 /* XFIX */
 #define BLANKCHAR(col, n) W_ClearArea(messagew, M_XOFF+W_Textwidth*(col), \
@@ -43,26 +32,22 @@ char    addr, *addr_str;
 
 /* Prototypes */
 static void smessage_first P((int ichar));
- /*static*/ char *getaddr P((int who));
- /*static*/ char *getaddr2 P((int flags, int recip));
 
 void
-message_expose()
+message_expose(void)
 {
     if (!messpend)
 	return;
 
     W_WriteText(messagew, M_XOFF, M_YOFF, textColor, addr_str,
-		(int)strlen(addr_str), W_RegularFont);
+		strlen(addr_str), W_RegularFont);
     W_WriteText(messagew, M_XOFF + ADDRLEN * W_Textwidth, M_YOFF, textColor,
 		buf, lcount - ADDRLEN, W_RegularFont);
     DRAWCURSOR(lcount);
 }
 
 void
-smessage_ahead(head, ichar)
-    int    head;
-    int    ichar;
+smessage_ahead(char head, char ichar)
 {
     if (messpend == 0) {
 	smessage_first(head);
@@ -71,8 +56,7 @@ smessage_ahead(head, ichar)
 }
 
 static void
-smessage_first(ichar)
-    int    ichar;
+smessage_first(int ichar)
 {
     messpend = 1;
 
@@ -94,22 +78,17 @@ smessage_first(ichar)
     if (addr_str == 0) {
 	/* print error message */
 	messpend = 0;
-#ifdef NOWARP
 	message_off();
-#else
-	W_WarpPointer(NULL,0,0);
-#endif
     } else {
 	W_WriteText(messagew, M_XOFF, M_YOFF, textColor, addr_str,
-		    (int)strlen(addr_str), W_RegularFont);
+		    strlen(addr_str), W_RegularFont);
 	lcount = ADDRLEN;
 	DRAWCURSOR(ADDRLEN);
     }
 }
 
 void
-smessage(ichar)
-    int    ichar;
+smessage(int ichar)
 {
     register int i;
     char    twochar[2];
@@ -165,11 +144,7 @@ smessage(ichar)
 	BLANKCHAR(0, lcount + 1);
 	mdisplayed = 0;
 	messpend = 0;
-#ifdef NOWARP
 	message_off();
-#else
-	W_WarpPointer(NULL,0,0);
-#endif
 	break;
 
     case '\r':			/* send message */
@@ -198,10 +173,10 @@ smessage(ichar)
 }
 
 void
-sendCharMessage(buffer, ch)
-    char   *buffer;
-    int     ch;
+sendCharMessage(char *buffer, int ch)
 {
+    char tmp[MSGLEN], *delim;
+    int i, count;
 /* uses ch to find out what kind of message it is and then sends
    it there */
     switch ((char) ch) {
@@ -223,14 +198,24 @@ sendCharMessage(buffer, ch)
     case 'G':
 	pmessage(buffer, 0, MGOD);
 	break;
-#ifdef TOOLS
         case '!':
           pmessage(buffer, 0, MTOOLS);
           break;
-#endif
     case 'T':
 	pmessage(buffer, idx_to_mask(me->p_teami), MTEAM);
 	break;
+    case 'M':
+        /* mcast format; hit M and list of target addresses followed */
+	/* by greater than(>) and message. the entire mesg including */
+	/* addresses will be sent to each address */
+	if((delim = strchr(buf, '>')) != NULL) {
+	    count = delim - buf; /* number of addresses */
+	    strncpy(tmp, buf, count);
+	    if(strchr(tmp, ' ') == NULL)
+	        for(i = 0; i < count; i++) { /* dont do tmp[0] is M */
+		    sendCharMessage(buf, tmp[i]);
+		}
+	}
     case '0':
     case '1':
     case '2':
@@ -288,20 +273,15 @@ sendCharMessage(buffer, ch)
 }
 
 void
-pmessage(str, recip, group)
-    char   *str;
-    int     recip;
-    int     group;
+pmessage(char *str, int recip, int group)
 {
     char    newbuf[100];
 
     strcpy(lastMessage, str);
     switch(group) {
-#ifdef TOOLS
     case MTOOLS:
 	sendTools(str);
 	break;
-#endif
     default:
 	sendMessage(str, group, recip);
     }
@@ -314,17 +294,12 @@ pmessage(str, recip, group)
 	newbuf[79] = 0;
 	dmessage(newbuf, (unsigned)group, (unsigned)me->p_no, (unsigned)recip);
     }
-#ifdef NOWARP
     message_off();
-#else
-    W_WarpPointer(NULL,0,0);
-#endif
 }
 
 /*static */
-char   *
-getaddr(who)
-    int    who;
+char *
+getaddr(int who)
 {
     switch (who) {
     case 'A':
@@ -339,10 +314,10 @@ getaddr(who)
 	return (getaddr2(MTEAM, ORIi));
     case 'G':
 	return (getaddr2(MGOD, 0));
-#ifdef TOOLS
     case '!':
       return (getaddr2(MTOOLS, 0));
-#endif
+    case 'M':
+      return (getaddr2(MCAST, 0));
     case '0':
     case '1':
     case '2':
@@ -411,10 +386,8 @@ getaddr(who)
 }
 
 /*static*/
-char   *
-getaddr2(flags, recip)
-    int     flags;
-    int     recip;
+char *
+getaddr2(int flags, int recip)
 {
     static char addrmesg[ADDRLEN];
 
@@ -433,11 +406,11 @@ getaddr2(flags, recip)
     case MGOD:
 	(void) sprintf(&addrmesg[5], "GOD");
 	break;
-#ifdef TOOLS
     case MTOOLS:
 	(void) sprintf(addrmesg, "  Shell>");
 	break;
-#endif
+    case MCAST:
+        (void) sprintf(&addrmesg[5], "MCAS");
     }
 
     return (addrmesg);
@@ -445,9 +418,7 @@ getaddr2(flags, recip)
 
 /* Used in NEWMACRO, useful elsewhere also */
 int
-getgroup(address, recip)
-    int    address;
-    int    *recip;
+getgroup(int address, int *recip)
 {
     *recip = 0;
 
@@ -474,11 +445,9 @@ getgroup(address, recip)
     case 'G':
 	*recip = 0;
 	return (MGOD);
-#ifdef TOOLS
     case '!':
 	*recip = 0;
 	return (MTOOLS);
-#endif
     case 'M':
 	*recip = 0;
 	return (MMOO);
@@ -543,7 +512,7 @@ getgroup(address, recip)
 /*-------------------------------EMERGENCY--------------------------------*/
 /*  This function sends a distress message out to the player's team.  */
 void
-emergency()
+emergency(void)
 {
     char    ebuf[120];		/* to sprintf into */
     char    buf2[20];
@@ -610,7 +579,7 @@ emergency()
 
 
 void
-carry_report()
+carry_report(void)
 {
     char    ebuf[80], *pntr;
     double  dist, closedist;
@@ -626,7 +595,10 @@ carry_report()
 	    closedist = dist;
 	}
     }
-    sprintf(ebuf, "I am carrying %d armies.  ", me->p_armies);
+    if(myship->s_type == STARBASE)
+        sprintf(ebuf, "Your Starbase is carrying %d armies.  ", me->p_armies);
+    else
+        sprintf(ebuf, "I am carrying %d armies.  ", me->p_armies);
     for (pntr = ebuf; *pntr; pntr++);
     if (paradise) {
 	sprintf(pntr, "Sector: %d-%d  ", (me->p_x / GRIDSIZE) + 1,
@@ -638,31 +610,25 @@ carry_report()
     pmessage(ebuf, idx_to_mask(me->p_teami), MTEAM);
 }
 
-#ifdef NOWARP
 void
-message_on()
+message_on(void)
 {
     if (warp) {
 	W_WarpPointer(messagew,5,5);
     }
-#ifdef TCURSORS
     else {
 	messageon = 1;
 	W_DefineTextCursor(w);
 	W_DefineTextCursor(mapw);
     }
-#endif				/* TCURSORS */
 }
 
 void
-message_off()
+message_off(void)
 {
-#ifdef TCURSORS
     if (!warp) {
 	messageon = 0;
 	W_RevertCursor(w);
 	W_RevertCursor(mapw);
     }
-#endif				/* TCURSORS */
 }
-#endif				/* NOWARP */

@@ -2,26 +2,17 @@
  * inform.c
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <signal.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <math.h>
 #include "config.h"
+#include <stdio.h>
+#include <math.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "gameconf.h"
-#ifdef SOUND
-#include "slib.h"
-#endif
 
 /* Display information about the nearest objext to mouse */
 
@@ -48,22 +39,16 @@ static void inform_planet_normal P((struct planet * k));
 int     last_key = 0;
 
 void
-inform(ww, x, y, key)
-    W_Window ww;
-    int     x, y;
-    int     key;
+inform(W_Window ww, int x, int y, char key)
 {
     char    buf[BUFSIZ];
     int     line = 0;
     register struct player *j;
     register struct planet *k;
     int     mx, my;
-    struct obtype *gettarget(), *target;
+    struct obtype *target;
     int     windowWidth, windowHeight;
 
-#ifdef SOUND
-    S_PlaySound(S_SENSORS);
-#endif
     mx = x;
     my = y;
     last_key = key;
@@ -120,7 +105,7 @@ inform(ww, x, y, key)
 		(void) sprintf(buf, "%s (%c%c):", j->p_name,
 			     teaminfo[j->p_teami].letter, shipnos[j->p_no]);
 		W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-			    playerColor(j), buf, (int)strlen(buf), shipFont(j));
+			    playerColor(j), buf, strlen(buf), shipFont(j));
 		Info_list_normal(j);
 	    } else {		/* else if a paradise server */
 		if (mx + 50 * W_Textwidth + 2 > windowWidth)
@@ -135,7 +120,7 @@ inform(ww, x, y, key)
 		(void) sprintf(buf, "%s (%c%c):", j->p_name,
 			     teaminfo[j->p_teami].letter, shipnos[j->p_no]);
 		W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-			    playerColor(j), buf, (int)strlen(buf), shipFont(j));
+			    playerColor(j), buf, strlen(buf), shipFont(j));
 		Info_list_paradise(j);
 	    }
 	}
@@ -164,10 +149,6 @@ inform(ww, x, y, key)
 	W_MapWindow(infow);
 	k = &planets[target->o_num];
 	infothing = (void *) k;
-	/*
-	   dist = hypot((double) (me->p_x - k->pl_x), (double) (me->p_y -
-	   k->pl_y));
-	*/
 
 	if (!paradise) {	/* if not a paradise server */
 	    inform_planet_normal(k);
@@ -179,7 +160,7 @@ inform(ww, x, y, key)
 
 
 void
-destroyInfo()
+destroyInfo(void)
 {
     W_DestroyWindow(infow);
     infow = 0;
@@ -190,8 +171,7 @@ destroyInfo()
 
 
 static void
-Info_list_small(j)
-    struct player *j;
+Info_list_small(struct player *j)
 {
     char    buf[100];
     int     line = 0;
@@ -200,32 +180,33 @@ Info_list_small(j)
     (void) sprintf(buf, "%s (%c%c):", j->p_name, teaminfo[j->p_teami].letter,
 		   shipnos[j->p_no]);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), shipFont(j));
+		buf, strlen(buf), shipFont(j));
     (void) sprintf(buf, "Login   %-s", j->p_login);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		W_RegularFont);
     (void) sprintf(buf, "Display %-s", j->p_monitor);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		W_RegularFont);
     (void) sprintf(buf, "Speed   %-d", j->p_speed);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		W_RegularFont);
     (void) sprintf(buf, "kills   %-4.2f", j->p_kills);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		W_RegularFont);
     dist = hypot((double) (me->p_x - j->p_x),
 		 (double) (me->p_y - j->p_y)) / (double) GRIDSIZE;
     (void) sprintf(buf, "dist    %-1.2f sectors", dist);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		W_RegularFont);
-    (void) sprintf(buf, "S-Class %-2.2s", j->p_ship->s_desig);
+    (void) sprintf(buf, "S-Class %c%c", j->p_ship->s_desig[0],
+                                        j->p_ship->s_desig[1]);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf),
+		buf, strlen(buf),
 		W_RegularFont);
 
     if (j->p_swar & idx_to_mask(me->p_teami))
@@ -243,8 +224,7 @@ Info_list_small(j)
 }
 
 static void
-inform_planet_normal(k)
-    struct planet *k;
+inform_planet_normal(struct planet *k)
 {
     char    buf[100];
     int     line = 0;
@@ -253,24 +233,24 @@ inform_planet_normal(k)
 	(void) sprintf(buf, "%s (%c)", k->pl_name,
 		       teaminfo[mask_to_idx(k->pl_owner)].letter);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, planetColor(k),
-		    buf, (int)strlen(buf), planetFont(k));
+		    buf, strlen(buf), planetFont(k));
 	(void) sprintf(buf, "Armies %d", k->pl_armies);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    planetColor(k), buf, (int)strlen(buf), W_RegularFont);
+		    planetColor(k), buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "%s %s %s   %s",
 		       (k->pl_flags & PLREPAIR ? "RPR" : "      "),
 		       (k->pl_flags & PLFUEL ? "FUEL" : "    "),
 		       (k->pl_flags & PLAGRI ? "AGRI" : "    "),
 		       team_bit_string(k->pl_info));
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    planetColor(k), buf, (int)strlen(buf), W_RegularFont);
+		    planetColor(k), buf, strlen(buf), W_RegularFont);
     } else {			/* else player has no info on planet */
 	(void) sprintf(buf, "%s", k->pl_name);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, planetColor(k),
-		    buf, (int)strlen(buf), W_RegularFont);
+		    buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "No other info");
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, planetColor(k),
-		    buf, (int)strlen(buf), W_RegularFont);
+		    buf, strlen(buf), W_RegularFont);
     }
 }
 
@@ -279,8 +259,7 @@ inform_planet_normal(k)
 server.  */
 
 static void
-inform_planet_paradise(k)
-    struct planet *k;		/* the planet */
+inform_planet_paradise(struct planet *k)
 {
     char    buf[100];
     int     line = 0;
@@ -288,32 +267,32 @@ inform_planet_paradise(k)
     if (k->pl_flags & PLSTAR) {	/* test if planet is a star */
 	(void) sprintf(buf, "%s", k->pl_name);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, textColor,
-		    buf, (int)strlen(buf), W_RegularFont);
+		    buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "STAR  ");
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    textColor, buf, (int)strlen(buf), W_RegularFont);
+		    textColor, buf, strlen(buf), W_RegularFont);
     } else if (!(k->pl_info & idx_to_mask(me->p_teami))) {	/* else if no info */
 	(void) sprintf(buf, "%s", k->pl_name);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, planetColor(k),
-		    buf, (int)strlen(buf), W_RegularFont);
+		    buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "No other info");
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, planetColor(k),
-		    buf, (int)strlen(buf), W_RegularFont);
+		    buf, strlen(buf), W_RegularFont);
     } else {			/* else we have info */
 	(void) sprintf(buf, "%s (%c)", k->pl_name,
 		       teaminfo[mask_to_idx(k->pl_owner)].letter);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++, planetColor(k),
-		    buf, (int)strlen(buf), W_RegularFont);
+		    buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "Armies %d", k->pl_armies);
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    planetColor(k), buf, (int)strlen(buf), W_RegularFont);
+		    planetColor(k), buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "%s %s %s %s",
 		       (k->pl_flags & PLREPAIR ? "RPR" : "      "),
 		       (k->pl_flags & PLFUEL ? "FUEL" : "    "),
 		       (k->pl_flags & PLAGRI ? "AGRI" : "    "),
 		       (k->pl_flags & PLSHIPYARD ? "SHPYD" : "     "));
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    planetColor(k), buf, (int)strlen(buf), W_RegularFont);
+		    planetColor(k), buf, strlen(buf), W_RegularFont);
 	(void) sprintf(buf, "atmos: ");
 	switch (k->pl_flags & PLATMASK) {
 	case PLPOISON:
@@ -345,21 +324,20 @@ inform_planet_paradise(k)
 	else
 	    strcat(buf, " ");
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    planetColor(k), buf, (int)strlen(buf), W_RegularFont);
+		    planetColor(k), buf, strlen(buf), W_RegularFont);
 	sprintf(buf, "Time: %-5d Visit: %s",
 		((idx_to_mask(me->p_teami) == k->pl_owner) ? 0
 		 : (int) (status2->clock - k->pl_timestamp)),
 		team_bit_string(k->pl_info));
 	W_WriteText(infow, W_Textwidth, W_Textheight * line++,
-		    planetColor(k), buf, (int)strlen(buf), W_RegularFont);
+		    planetColor(k), buf, strlen(buf), W_RegularFont);
     }
 }
 
 
 
 static void
-Info_list_normal(j)
-    struct player *j;		/* player to do info on */
+Info_list_normal(struct player *j)
 {
     char    buf[80];
     int     line = 0;
@@ -369,33 +347,32 @@ Info_list_normal(j)
     sprintf(buf, "%s (%c%c):", j->p_name, teaminfo[j->p_teami].letter,
 	    shipnos[j->p_no]);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     strcpy(buf, "        Rating Total");
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Bombing: %5.2f  %5d", r.r_bombrat, r.r_armies);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Planets: %5.2f  %5d", r.r_planetrat, r.r_planets);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Offense: %5.2f  %5d", r.r_offrat, r.r_kills);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Defense: %5.2f  %5d", r.r_defrat, r.r_losses);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "  Maxkills: %6.2f", r.r_maxkills);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "  Hours:    %6.2f", (float) j->p_stats.st_tticks / 36000.0);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
 }
 
 static void
-Info_list_paradise(j)
-    struct player *j;		/* player to do info on */
+Info_list_paradise(struct player *j)
 {
     char    buf[80];
     int     line = 0;
@@ -405,139 +382,139 @@ Info_list_paradise(j)
 
     sprintf(buf, "Name: %s", j->p_name);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Rank: %s", ranks2[j->p_stats2.st_rank].name);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Royalty: %s", royal[j->p_stats2.st_royal].name);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Genocides: %4d", r.r_genocides);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "DI:     %7.2f", r.r_di);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Maxkills:%6.2f", j->p_stats2.st_tmaxkills);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Kills:     %4d", j->p_stats2.st_tkills);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Losses:    %4d", j->p_stats2.st_tlosses);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "T-hours: %6.2f", (float) j->p_stats2.st_tticks / 36000.0);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "   ");
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     strcpy(buf, "            Rating Total");
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Bombing:   %5.2f  %6d", r.r_bombrat, r.r_armies);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Planets:   %5.2f  %6d", r.r_planetrat, r.r_planets);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Resources: %5.2f  %6d", r.r_resrat, r.r_resources);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Dooshes:   %5.2f  %6d", r.r_dooshrat, r.r_dooshes);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Ratio:     %5.2f", j->p_stats2.st_tkills /
 	    ((j->p_stats2.st_tlosses) ? j->p_stats2.st_tlosses : 1.0));
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Offense:   %5.2f", r.r_offrat);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "   ");
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "RATINGS");
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Special ships: %7.2f", r.r_specrat);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Battle:        %7.2f", r.r_batrat);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Strategy:      %7.2f", r.r_stratrat);
     W_WriteText(infow, W_Textwidth, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
 
     line = 1;
     sprintf(buf, "   ");
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "JUMPSHIP STATS");
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Planets:    %7d", j->p_stats2.st_jsplanets);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Hours:      %7.2f", (float) j->p_stats2.st_jsticks / 36000.0);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "JS rating:  %7.2f", r.r_jsrat);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
 
     sprintf(buf, "   ");
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "STARBASE STATS");
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Kills:        %4d", j->p_stats2.st_sbkills);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Losses:       %4d", j->p_stats2.st_sblosses);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Hours:     %7.2f", (float) j->p_stats2.st_sbticks / 36000.0);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Maxkills:  %7.2f", j->p_stats2.st_sbmaxkills);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "SB rating: %7.2f", r.r_sbrat);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
 
     sprintf(buf, "   ");
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "WARBASE STATS");
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Kills:        %4d", j->p_stats2.st_wbkills);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Losses:       %4d", j->p_stats2.st_wblosses);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Hours:     %7.2f", (float) j->p_stats2.st_wbticks / 36000.0);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "Maxkills:  %7.2f", j->p_stats2.st_wbmaxkills);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
     sprintf(buf, "WB rating: %7.2f", r.r_wbrat);
     W_WriteText(infow, W_Textwidth * 28, W_Textheight * line++, playerColor(j),
-		buf, (int)strlen(buf), W_RegularFont);
+		buf, strlen(buf), W_RegularFont);
 }
 
 /*
    constantly updating info window code [BDyess]
 */
 void
-updateInform()
+updateInform(void)
 {
     if (!infomapped || !paradise)
 	return;			/* disabled for Bronco servers */

@@ -1,31 +1,12 @@
 /***  Pop-up motd window code.  [BDyess] 11/21/93  ***/
 
-#include "defines.h"
-#include <stdio.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <math.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include "config.h"
+#include <stdlib.h>
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "proto.h"
-
-void    showMotdWin();
 
 #define S_MOTD 0
 #define S_SYSDEF 1
@@ -34,8 +15,7 @@ void    showMotdWin();
 
 /* handles keystrokes in the motd window */
 void
-motdWinEvent(evt)
-  W_Event *evt;
+motdWinEvent(W_Event *evt)
 {
     static int state = S_MOTD;
     int key = evt->key;
@@ -105,7 +85,7 @@ motdWinEvent(evt)
 
 /* handles map/unmap requests */
 void
-showMotdWin()
+showMotdWin(void)
 {
     if (!motdWin) {
 	motdWin = W_MakeWindow(

@@ -4,45 +4,28 @@
  * Modified to work as client in socket based protocol
  */
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
 #include <stdio.h>
-#include <sys/types.h>
+#include <stdlib.h>
 #include <math.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
-#include <signal.h>
-#include <errno.h>
-#include <math.h>
-#include "config.h"
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif
+#include "packets.h"
+#include "gppackets.h"
 
 #define control(x) (x)+128
-
-/* This should be done by math.h.  It never hurts to include a header file
-   with the right prototypes.  If it does, let me know. */
-#if 0
-#ifndef __HAVE_68881__
-double  floor();
-#endif
-#endif
 
 /* Prototypes */
 static void buttonaction P((W_Event * data));
@@ -54,14 +37,13 @@ static int tmodeChange = 0;     /* handles first change of tmode; including */
 				/* when a play first joins a tmode game */
 
 void
-initinput()
+initinput(void)
 {
     /* Nothing doing... */
 }
 
 void
-dispatch_W_key_event(evt)
-    W_Event *evt;
+dispatch_W_key_event(W_Event *evt)
 {
     int     i;
 
@@ -79,9 +61,7 @@ dispatch_W_key_event(evt)
     if (evt->Window == optionWin)
 	optionaction(evt);
     else if (
-#ifdef NOWARP
 	     messageon ||
-#endif
 	     evt->Window == messagew ||
 	     evt->Window == tstatw ||
 	     evt->Window == warnw) {
@@ -97,25 +77,17 @@ dispatch_W_key_event(evt)
 		evt->key -= 0x40;
 	}
 	smessage(evt->key);
-#ifdef SHORT_PACKETS
     } else if (evt->Window == spWin) {
 	spaction(evt);
-#endif
     } else if (evt->Window == motdWin) {
 	motdWinEvent(evt);
     } else if (evt->Window == playerw) {
 	playerwEvent(evt);
     } else if (evt->Window == defWin && (evt->key == ' ' || evt->key == 27)) {
 	W_UnmapWindow(defWin);
-#ifdef SOUND
-    } else if (evt->Window == soundWin) {
-	soundaction(evt);
-#endif
-#ifdef TOOLS
     } else if (evt->Window == toolsWin) {
         if(evt->key == 27) W_UnmapWindow(toolsWin);  /* unmap on ESC [BDyess] */
 	smessage_ahead('!', evt->key);
-#endif
     /* unmap on space or escape [BDyess] */
     } else if (evt->Window == helpWin && (evt->key == ' ' || evt->key == 27)) {
         W_UnmapWindow(helpWin);
@@ -139,8 +111,7 @@ dispatch_W_key_event(evt)
 }
 
 void
-dispatch_W_button_event(evt)
-    W_Event *evt;
+dispatch_W_button_event(W_Event *evt)
 {
     int     i;
 
@@ -160,24 +131,14 @@ dispatch_W_button_event(evt)
 	optionaction(evt);
     else if (evt->Window == udpWin)
 	udpaction(evt);		/* UDP */
-#ifdef SHORT_PACKETS
     else if (evt->Window == spWin)
 	spaction(evt);
-#endif
-#ifdef SOUND
-    else if (evt->Window == soundWin)
-	soundaction(evt);
-#endif
     else if (evt->Window == playerw)
 	selectblkbozo(evt);
-#ifdef MACROS
     else if (evt->Window == macroWin)
 	switchmacros();
-#endif
-#ifdef XTREKRC_HELP
     else if (evt->Window == defWin)
 	def_action(evt);
-#endif
     else if (evt->Window == motdWin)
 	motdWinEvent(evt);
     else
@@ -185,8 +146,7 @@ dispatch_W_button_event(evt)
 }
 
 void
-dispatch_W_expose_event(evt)
-    W_Event *evt;
+dispatch_W_expose_event(W_Event *evt)
 {
     /*
        if anything but the iconWin is refreshed, turn off the iconified flag.
@@ -230,26 +190,17 @@ dispatch_W_expose_event(evt)
     */
     else if (evt->Window == pStats)
 	redrawPStats();
-#ifdef XTREKRC_HELP
     else if (defWin && (evt->Window == defWin))
 	showdef();
-#endif
 }
 
 void
-dispatch_W_event(evt)
-    W_Event *evt;
+dispatch_W_event(W_Event *evt)
 {
     switch ((int) evt->type) {
     case W_EV_KEY:
 	dispatch_W_key_event(evt);
 	break;
-#ifdef AUTOKEY
-    case W_EV_KEY_OFF:
-	if (autoKey)
-	    autoKeyOff(evt);
-	break;
-#endif				/* AUTOKEY */
     case W_EV_BUTTON:
 	dispatch_W_button_event(evt);
 	break;
@@ -268,8 +219,8 @@ dispatch_W_event(evt)
 }
 
 /* this figures out what to set war dec's */
-void autoWarDecl(scheme)
-     int scheme;
+void
+autoWarDecl(int scheme)
 {
      extern int number_of_teams;
      int i, j, k, *team, enemymask = 0;
@@ -318,7 +269,7 @@ void autoWarDecl(scheme)
 
 /* this new event loop allows more flexibility in state transitions */
 void
-input()
+input(void)
 {
     W_Event data;
     fd_set  readfds;
@@ -327,26 +278,14 @@ input()
     int     i;
     struct timeval timeout;
 
-#ifdef AUTOKEY
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100000;
-#endif				/* AUTOKEY */
-
-#ifdef RECORDER
     if (playback) {
 	pb_input(); /* recorder.c */
 	return;
     }
-#endif
     while (me->p_status == PALIVE ||
 	   me->p_status == PEXPLODE ||
 	   me->p_status == PDEAD ||
 	   me->p_status == POBSERVE) {
-
-#ifdef TIMELORD
-	/* we're playing.  Count the seconds */
-	update_timelord(0);
-#endif
 
 	if (keepInfo > 0) {
 	    if (infowin_up >= 0 &&
@@ -365,14 +304,6 @@ input()
 	    dispatch_W_event(&data);
 	}
 
-#ifndef AMIGA
-#ifdef AUTOKEY
-	    if (autoKey) {
-		doAutoKey();
-		if (select(32, &readfds, (fd_set *) 0, (fd_set *) 0, &timeout) == 0)	/* timeout */
-		    continue;
-	    } else
-#endif
 	    /* try to reduce the response time by handling input 
 	       earlier [BDyess] */
 	    FD_ZERO(&readfds);
@@ -393,28 +324,10 @@ input()
 	        break;
 	      }
 	    }
-#else				/* AMIGA */
-#ifdef DNET
-	sigsPending = Wait(wsock | sockMask | udpSockMask | SIGBREAKF_CTRL_C);
-#else
-/* insert code here for Amiga with TCP/IP... */
-#endif				/* DNET */
-	if (sigsPending & SIGBREAKF_CTRL_C) {
-	    printf("User break, Ctrl-C, exiting!\n");
-	    exit(0);
-	}
-/* note: for DNET, FD_ISSET is faked, see amigadefs.h -JR */
-#endif				/* AMIGA */
 	if (FD_ISSET(sock, &readfds) ||
 	    (udpSock >= 0 && FD_ISSET(udpSock, &readfds))) {
 	    
-#ifdef HANDLER_TIMES
-	    start_log();
-#endif
 	    intrupt();
-#ifdef HANDLER_TIMES
-	    stop_log(64);
-#endif
 	    if (isServerDead()) {
 		printf("Whoops!  We've been ghostbusted!\n");
 		printf("Pray for a miracle!\n");
@@ -445,11 +358,7 @@ input()
             }
 
 	    if (old_tourn != new_tourn) {
-#ifndef SOUND
 		W_Beep();
-#else
-		S_PlaySound(S_TMODE);
-#endif
 		old_tourn = new_tourn;
 	    }
 	    continue;
@@ -459,8 +368,7 @@ input()
 
 
 static void
-keyaction(data)
-    W_Event *data;
+keyaction(W_Event *data)
 {
     unsigned char course;
     struct obtype *target;
@@ -474,10 +382,8 @@ keyaction(data)
 	)
 	return;
 
-#ifdef RECORDER
     if (playback)
 	pb_dokey(data);
-#endif
     if (localflags & PFREFIT) {
 	temp = shiptypes;
 	while (temp) {
@@ -607,25 +513,11 @@ keyaction(data)
 	logmess = !logmess;
 	break;
     case '!':
-#if 1
 	showKitchenSink = !showKitchenSink;
 	warning(showKitchenSink ?
 		"Kitchen Sink activated.  Bad guys beware!" :
 		"Kitchen Sink deactivated.");
-#else
-	if (blk_altbits) {
-	    blk_altbits = 0;
-	    warning("Switching to old bitmaps.");
-	} else {
-	    blk_altbits = 1;
-	    warning("Switching to new bitmaps.");
-	}
-	localflags &= ~(PFREFIT);
-	if (optionWin)
-	    optionredrawoption(&blk_altbits);
-#endif
 	break;
-#ifdef TIMER
     case '@':
 	timeBank[T_USER] = time(NULL);
 	timerType = T_USER;
@@ -635,8 +527,6 @@ keyaction(data)
 	if (timerType >= T_TOTAL)
 	    timerType = 0;
 	break;
-#endif				/* TIMER */
-#ifdef WIDE_PLIST
     case 'K':			/* cycle playerlist [BDyess] */
 	while (*playerList && *playerList != ',')
 	    playerList++;
@@ -645,7 +535,6 @@ keyaction(data)
 	else if (*playerList == 0)
 	    playerList = playerListStart;
 	break;
-#endif				/* WIDE_PLIST */
     case 'a':
 	if (!W_IsMapped(scanwin)) {
 	    scan(data->Window, data->x, data->y);
@@ -657,11 +546,7 @@ keyaction(data)
 	break;
     case 'm':			/* new from galaxy -- works here too */
     case '\'':           /* ' starts message to 'T'eam */
-#ifdef NOWARP
 	message_on();
-#else
-	W_WarpPointer(messagew);
-#endif
 	if((key == '\'') && (messpend==0)) {
 	    smessage(lowercaset ? 't' : 'T');
 	}
@@ -673,61 +558,23 @@ keyaction(data)
 	localflags &= ~(PFREFIT);
 	break;
     case 'p':			/* p = fire phasers */
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyPhaserReqOn();
-	else {
-	    course = getcourse(data->Window, data->x, data->y);
-	    sendPhaserReq(course);
-	}
-#else
 	course = getcourse(data->Window, data->x, data->y);
 	sendPhaserReq(course);
-#endif				/* AUTOKEY */
 	break;
     case 't':			/* t = launch torps */
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyTorpReqOn();
-	else {
-	    course = getcourse(data->Window, data->x, data->y);
-	    sendTorpReq(course);
-	}
-#else
 	course = getcourse(data->Window, data->x, data->y);
 	sendTorpReq(course);
-#endif				/* AUTOKEY */
 	break;
     case 'f':
 	/* f = launch plasma torpedos */
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyPlasmaReqOn();
-	else {
-	    course = getcourse(data->Window, data->x, data->y);
-	    sendPlasmaReq(course);
-	}
-#else
 	course = getcourse(data->Window, data->x, data->y);
 	sendPlasmaReq(course);
-#endif				/* AUTOKEY */
 	break;
     case 'd':			/* d = detonate other torps */
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyDetReqOn();
-	else
-	    sendDetonateReq();
-#else
 	sendDetonateReq();
-#endif				/* AUTOKEY */
 	break;
     case 'D':			/* D = detonate my torps */
 	detmine();
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyAllOff();	/* xx */
-#endif
 	break;
     case '[':
 	shield_down();
@@ -742,29 +589,12 @@ keyaction(data)
 	shield_tog();
 	break;
     case 'b':			/* b = bomb planet */
-#ifdef AUTOKEY
-	if (autoKey && !(localflags & PFREFIT))
-	    autoKeyBombReqOn();
-	else
-	    bomb_planet();
-#else
 	bomb_planet();
-#endif				/* AUTOKEY */
 	break;
     case 'z':			/* z = beam up */
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyBeamUpReqOn();
-	else
-#endif
 	    beam_up();
 	break;
     case 'x':			/* x = beam down */
-#ifdef AUTOKEY
-	if (autoKey)
-	    autoKeyBeamDownReqOn();
-	else
-#endif
 	    beam_down();
 	break;
     case 'X':			/* X = enter macro mode */
@@ -805,14 +635,7 @@ keyaction(data)
 	break;
     case 'o':			/* o = dock at nearby starbase or orbit
 				   nearest planet */
-#ifdef AUTOKEY
-	if (autoKey && !(localflags & PFREFIT))
-	    autoKeyOrbitReqOn();
-	else
-	    sendOrbitReq(1);
-#else
 	sendOrbitReq(1);
-#endif				/* AUTOKEY */
 	break;
     case 'O':			/* O = options Window */
 	if (optionWin != NULL && W_IsMapped(optionWin))
@@ -846,11 +669,6 @@ keyaction(data)
 	                     showLocalLen,showlocal);
 	    warning(current);
 	}
-
-#if 0
-        if (optionWin)
-	  optionredrawoption(&showlocal);
-#endif /*0*/
 	break;
     case 'B':
 	{
@@ -873,11 +691,6 @@ keyaction(data)
 	                     showGalacticLen,showgalactic);
 	    warning(current);
 	}
-
-#if 0
-        if (optionWin)
-	  optionredrawoption(&showgalactic);
-#endif /*0*/
 	break;
     case '?':			/* ? = Redisplay all message windows */
 	if (!W_IsMapped(messWin[WREVIEW].window)) {
@@ -966,10 +779,8 @@ keyaction(data)
 	}
 	if (udpWin)
 	    udpdone();
-#ifdef XTREKRC_HELP
 	if (defWin)
 	    W_UnmapWindow(defWin);
-#endif
 	break;
     case 'E':			/* E = send emergency call */
 	if (F_gen_distress)
@@ -1020,14 +831,6 @@ keyaction(data)
             W_MapWindow(newstatwin);
         }
         break;
-#ifdef nodef			/* people hit this by accident and think the
-				   client crashed */
-    case 'M':			/* M = Toggle Map mode */
-	mapmode = !mapmode;
-	if (optionWin)
-	    optionredrawoption(&mapmode);
-	break;
-#endif
     case 'M':			/* map the motd window */
 	showMotdWin();
 	break;
@@ -1093,7 +896,6 @@ keyaction(data)
 		optionredrawoption(&blk_zoom);
 	}
 	break;
-#ifdef SHORT_PACKETS
     case '~':
 	if (spWin != NULL && W_IsMapped(spWin))
 	    spdone();
@@ -1108,7 +910,6 @@ keyaction(data)
     case '|':
 	sendShortReq(SPK_ALL);
 	break;
-#endif
     case ',':
 	if (W_IsMapped(pStats)) {
 	    W_UnmapWindow(pStats);
@@ -1131,7 +932,6 @@ keyaction(data)
 	    warning("No defaults file to read from!");
 	}
 	break;
-#ifdef ROTATERACE
     case '(':
 	rotate--;
 	if (rotate < 0)
@@ -1148,32 +948,14 @@ keyaction(data)
 	    optionredrawoption(&rotate);
 	rotate_all();
 	break;
-#endif
 
-#ifdef RECORDER
     case control('r'):
 	stopRecorder();
 	break;
-#endif
 
-#ifdef SOUND
-    case control('s'):
-	S_SoundWindow();
-	break;
-#endif
-#ifdef TOOLS
     case '\"':
 	showToolsWin();
 	break;
-#endif
-#ifdef AMIGA
-    case 'A':
-	{
-	    extern int flush_speech;
-	    flush_speech = 1;
-	    break;
-	}
-#endif				/* AMIGA */
     default:
 	W_Beep();
 	break;
@@ -1181,15 +963,12 @@ keyaction(data)
 }
 
 static void
-buttonaction(data)
-    W_Event *data;
+buttonaction(W_Event *data)
 {
     unsigned char course;
 
-#ifdef NOWARP
     if (messageon)
 	message_off();		/* ATM */
-#endif
 
     if (data->Window != w && data->Window != mapw
 	&& data->Window != scanwin)
@@ -1199,10 +978,6 @@ buttonaction(data)
     if (data->key >= 0 && data->key < 12) {
 	if (myship->s_buttonmap[data->key] != '\0') {
 	    data->key = myship->s_buttonmap[data->key];
-#if 0				/* do NOT bypass keymap */
-	    data->key += 256;	/* simulate alt key so keymap is bypassed
-				   [BDyess] */
-#endif
 	    keyaction(data);
 	    return;
 	} else
@@ -1234,24 +1009,11 @@ buttonaction(data)
 
 
 int
-getcourse(ww, x, y)
-    W_Window ww;
-    int     x, y;
+getcourse(W_Window ww, int x, int y)
 {
     if (ww == mapw) {
 	int     me_x, me_y;
 
-#if 0
-	if (blk_zoom) {
-	    gwidth = blk_gwidth / 2;
-	    offsetx = zoom_offset(me->p_x);
-	    offsety = zoom_offset(me->p_y);
-	} else {
-	    gwidth = blk_gwidth;
-	    offsetx = 0;
-	    offsety = 0;
-	}
-#endif /*0*/
 	me_x = scaleMapX(me->p_x);
 	me_y = scaleMapY(me->p_y);
 
@@ -1269,9 +1031,8 @@ getcourse(ww, x, y)
       return (unsigned char) (int) floor (result + 0.5);
     }
 }
+
 static void
-scan(window, x, y)
-    W_Window window;
-    int     x, y;
+scan(W_Window window, int x, int y)
 {
 }

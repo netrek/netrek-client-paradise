@@ -5,33 +5,14 @@
  * Conditions in "copyright.h"          
  */
 
-#include "defines.h"
 #include <stdio.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#else
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
-#endif
-#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#endif
 #include <signal.h>
 #include <sys/stat.h>
-#include "data.h"
-#include "uname.h"
-
+#include <data.h>
 
 
 static int f;
@@ -61,6 +42,8 @@ void init_sound ()
 #endif
 #endif
 
+  /* XXX FIXME */
+  /* MACHINE_UNAME was in uname.c.  Use uname(), sys/utsname.h instead. */
   char *arch = MACHINE_UNAME;
 
   signal(SIGCHLD, SIG_IGN);

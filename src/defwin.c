@@ -1,5 +1,3 @@
-#include "config.h"
-#ifdef XTREKRC_HELP
 /*
  * taken from helpwin.c
  * (copyright 1991 ERic mehlhaff Free to use, hack, etc. Just keep
@@ -9,36 +7,19 @@
  *
  */
 
-#include "defines.h"
-#include <stdio.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <math.h>
+#include "config.h"
 
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#include <sys/time.h>
-#endif
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
 
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "proto.h"
 #include "data.h"
-#if defined(HAVE_STRING_H)
-#include <string.h>
-#else
-#include <string.h>
-#endif
 
-void def_write 
-P((char *file));
+void def_write P((char *file));
 
 /* this is the number of help messages there are */
 
@@ -53,9 +34,7 @@ P((char *file));
 #define MAX_VLINES	58
 
 extern int updateSpeed;
-#ifdef RECORD
 extern char *recordFileName;
-#endif
 
 #define DEFMESSAGES	(sizeof(def_messages)/ sizeof(struct def))
 
@@ -144,20 +123,6 @@ struct def {
 	    },
 	},
     },
-#if 0
-    {
-	"altBitmaps", BOOL_DEF, "Use alternate ship bitmaps",
-	&blk_altbits,
-	{
-	    {
-		0, NULL, ""
-	    },
-	    {
-		0, NULL, NULL
-	    },
-	},
-    },
-#endif
     {
 	"showStars", BOOL_DEF, "Show star background on tactical",
 	&blk_showStars,
@@ -278,7 +243,6 @@ struct def {
 	    },
 	},
     },
-#ifdef VARY_HULL
     {
 	"warnHull", BOOL_DEF, "Warn hull state based on damage",
 	&vary_hull,
@@ -291,7 +255,6 @@ struct def {
 	    },
 	},
     },
-#endif
     {
 	"warpStreaks", BOOL_DEF, "Streak stars when entering warp",
 	&warpStreaks,
@@ -370,7 +333,6 @@ struct def {
 	    },
 	},
     },
-#ifdef CONTINUOUS_MOUSE
     {
 	"continuousMouse", BOOL_DEF, "Continuous mouse input",
 	&continuousMouse,
@@ -383,7 +345,6 @@ struct def {
 	    },
 	},
     },
-#endif
     {
 	"tryUdp", BOOL_DEF, "Try UDP automatically",
 	&tryUdp,
@@ -636,7 +597,6 @@ struct def {
 	    },
 	},
     },
-#ifdef SHORT_PACKETS
     {
 	"tryShort", BOOL_DEF, "Try SHORT-PACKETS at startup",
 	&tryShort,
@@ -649,25 +609,9 @@ struct def {
 	    },
 	},
     },
-#endif
-#ifdef IGNORE_SIGNALS_SEGV_BUS
-    {
-	"ignoreSignals", BOOL_DEF, "Ignore SIGSEGV and SIGBUS",
-	&ignore_signals,
-	{
-	    {
-		0, NULL, ""
-	    },
-	    {
-		0, NULL, NULL
-	    },
-	},
-    },
-#endif
-#ifdef SHIFTED_MOUSE
     {
 	"shiftedMouse", BOOL_DEF, "More mouse buttons with shift",
-	&extended_mouse,
+	&extendedMouse,
 	{
 	    {
 		0, NULL, ""
@@ -677,8 +621,6 @@ struct def {
 	    },
 	},
     },
-#endif
-#ifdef BEEPLITE
     {
 	"UseLite", BOOL_DEF, "Use message highliting",
 	&UseLite,
@@ -703,7 +645,6 @@ struct def {
 	    },
 	},
     },
-#endif
     {
 	"saveFileName", STR_DEF, "Name to save defaults as(click here)",
 	&(saveFileName),
@@ -715,18 +656,16 @@ struct def {
     },
 };
 
-char   *
-itos(v)
-    int     v;
+char *
+itos(int v)
 {
     static char value[10];
     sprintf(value, "%d", v);
     return value;
 }
 
-char   *
-btoa(v)
-    int     v;
+char *
+btoa(int v)
 {
     if (v)
 	return "on";
@@ -735,8 +674,7 @@ btoa(v)
 }
 
 static void
-def_redraw(d)
-    struct def *d;
+def_redraw(struct def *d)
 {
     int     xo = d->loc.x, yo = d->loc.y;
     int     x, y, j;
@@ -748,11 +686,11 @@ def_redraw(d)
 
     W_ClearArea(defWin, d->loc.x, d->loc.y, d->loc.rt - d->loc.x, d->loc.bot - d->loc.y);
 
-    W_WriteText(defWin, x, y, W_Yellow, d->name, (int)strlen(d->name),
+    W_WriteText(defWin, x, y, W_Yellow, d->name, strlen(d->name),
 		W_RegularFont);
     x += NAME_WIDTH;
 
-    W_WriteText(defWin, x, y, textColor, d->desc, (int)strlen(d->desc),
+    W_WriteText(defWin, x, y, textColor, d->desc, strlen(d->desc),
 		W_RegularFont);
     y++;
     x = xo + INDENT;
@@ -764,7 +702,7 @@ def_redraw(d)
 	    else
 		val = itos(d->values[0].i_value);
 
-	    W_WriteText(defWin, x, y, W_Green, val, (int)strlen(val),
+	    W_WriteText(defWin, x, y, W_Green, val, strlen(val),
 			W_RegularFont);
 	    y++;
 	}
@@ -775,7 +713,7 @@ def_redraw(d)
 		if (d->values[j].i_value == *(int *)d->variable) {
 		    col = W_Green;
 
-		    W_WriteText(defWin, x, y, col, val, (int)strlen(val),
+		    W_WriteText(defWin, x, y, col, val, strlen(val),
 				W_RegularFont);
 		    if (W_Mono()) {
 			W_WriteText(defWin, x + 1, y, col, "*", 1,
@@ -784,19 +722,19 @@ def_redraw(d)
 		} else {
 		    col = textColor;
 
-		    W_WriteText(defWin, x, y, col, val, (int)strlen(val),
+		    W_WriteText(defWin, x, y, col, val, strlen(val),
 				W_RegularFont);
 		}
 		x = xo + NAME_WIDTH;
 		W_WriteText(defWin, x, y, col, d->values[j].desc,
-			    (int)strlen(d->values[j].desc), W_RegularFont);
+			    strlen(d->values[j].desc), W_RegularFont);
 		y++;
 		x = xo + INDENT;
 		break;
 
 	    case BOOL_DEF:
 		val = btoa(*(int *)d->variable);
-		W_WriteText(defWin, x, y, W_Green, val, (int)strlen(val),
+		W_WriteText(defWin, x, y, W_Green, val, strlen(val),
 			    W_RegularFont);
 		y++;
 		x = xo + INDENT;
@@ -808,16 +746,17 @@ def_redraw(d)
 	}
     } else if (d->variable && *(int *)d->variable) {
 	W_WriteText(defWin, x, y, W_Green, (char *)*(int *)d->variable,
-		    (int)strlen((char *)(*(int *)d->variable)),
+		    strlen((char *)(*(int *)d->variable)),
 		    W_RegularFont);
     }
 }
 
 
 void
-showdef()
+showdef(void)
 {
-    register int i, j, x = 0, y = 0, xo = 0, yo = 0, max_desc = 0, height = 1, width = 1;
+    register int i, j, x = 0, y = 0, xo = 0, yo = 0;
+    register int max_desc = 0, height = 1, width = 1;
     register struct def *d;
     char   *val;
     W_Color col;
@@ -842,13 +781,13 @@ showdef()
 	d->loc.x = x;
 	d->loc.y = y;
 
-	W_WriteText(defWin, x, y, W_Yellow, d->name, (int)strlen(d->name),
+	W_WriteText(defWin, x, y, W_Yellow, d->name, strlen(d->name),
 		    W_RegularFont);
 	x += NAME_WIDTH;
 
-	W_WriteText(defWin, x, y, textColor, d->desc, (int)strlen(d->desc),
+	W_WriteText(defWin, x, y, textColor, d->desc, strlen(d->desc),
 		    W_RegularFont);
-	if ((int)strlen(d->desc) > max_desc) {
+	if (strlen(d->desc) > max_desc) {
 	    max_desc = strlen(d->desc);
 	    width = MAX(width, x + max_desc);
 	}
@@ -862,7 +801,7 @@ showdef()
 		else
 		    val = itos(d->values[0].i_value);
 
-		W_WriteText(defWin, x, y, W_Green, val, (int)strlen(val),
+		W_WriteText(defWin, x, y, W_Green, val, strlen(val),
 			    W_RegularFont);
 		y++;
 	    }
@@ -873,7 +812,7 @@ showdef()
 		    if (d->values[j].i_value == *(int *)d->variable) {
 			col = W_Green;
 
-			W_WriteText(defWin, x, y, col, val, (int)strlen(val),
+			W_WriteText(defWin, x, y, col, val, strlen(val),
 				    W_RegularFont);
 			if (W_Mono()) {
 			    W_WriteText(defWin, x + 1, y, col, "*", 1,
@@ -882,19 +821,19 @@ showdef()
 		    } else {
 			col = textColor;
 
-			W_WriteText(defWin, x, y, col, val, (int)strlen(val),
+			W_WriteText(defWin, x, y, col, val, strlen(val),
 				    W_RegularFont);
 		    }
 		    x = xo + NAME_WIDTH;
 		    W_WriteText(defWin, x, y, col, d->values[j].desc,
-				(int)strlen(d->values[j].desc), W_RegularFont);
+				strlen(d->values[j].desc), W_RegularFont);
 		    y++;
 		    x = xo + INDENT;
 		    break;
 
 		case BOOL_DEF:
 		    val = btoa(*(int *)d->variable);
-		    W_WriteText(defWin, x, y, W_Green, val, (int)strlen(val),
+		    W_WriteText(defWin, x, y, W_Green, val, strlen(val),
 				W_RegularFont);
 		    y++;
 		    x = xo + INDENT;
@@ -906,7 +845,7 @@ showdef()
 	    }
 	} else if (d->variable && *(int *)d->variable) {
 	    W_WriteText(defWin, x, y, W_Green, (char *)*(int *)d->variable,
-			(int)strlen((char *)(*(int *)d->variable)),
+			strlen((char *)(*(int *)d->variable)),
 			W_RegularFont);
 	    y++;
 	}
@@ -930,8 +869,7 @@ showdef()
 }
 
 void
-def_action(ev)
-    W_Event *ev;
+def_action(W_Event *ev)
 {
     int     i, j, x, y, line;
     register struct def *d;
@@ -996,8 +934,7 @@ def_action(ev)
 }
 
 void
-def_write(file)
-    char   *file;
+def_write(char *file)
 {
     int     i;
     struct def *d;
@@ -1023,6 +960,3 @@ def_write(file)
 
     fclose(f);
 }
-
-
-#endif

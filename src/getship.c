@@ -4,20 +4,12 @@
  * This file has been mangled so it only sets the ship characteristics needed.
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <sys/types.h>
 #include "config.h"
-#include "Wlib.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
@@ -27,7 +19,7 @@
 static void getship_default P((struct ship * shipp, int s_type));
 
 void
-init_shiptypes()
+init_shiptypes(void)
 {
     int     i;
     struct shiplist *temp;
@@ -46,69 +38,21 @@ init_shiptypes()
 }
 
 void
-init_galaxy_class()
+init_galaxy_class(void)
 {
-#if 0
-    /*
-       hack to allow galaxy class ships.  By the time the client knows it's
-       connected to a paradise server, the defaults must already have been
-       run. [BDyess]
-    */
-    struct shiplist *temp;
-
-    for (temp = shiptypes; temp->ship->s_type != GALAXY; temp = temp->next)
-	 /* null body */ ;
-    getship_default(temp->ship, GALAXY);
-
-// 2.4p1a does not slurp bitmaps
-
-//#ifdef XPM
-//    if(xpm)
-//      slurp_ship_pixmaps();
-//    else
-//#endif /*XPM [BDyess]*/
-//      slurp_ship_bitmaps();
-
-
-    return;
-#endif /*0*/
 }
 
-#if 0
-void
-init_puck()
-{
-    /* ditto above init_galaxy_class(), but this time for hockey and puck.
-       [BDyess] */
-    struct shiplist *temp;
-
-    temp = shiptypes;
-    while(temp->next) temp = temp->next;
-    temp->next = (struct shiplist*)malloc(sizeof(struct shiplist));
-    temp = temp->next;
-    temp->ship = (struct ship*)malloc(sizeof(struct ship));
-    getship_default(temp->ship, PUCK);
-    temp->next = NULL;
-
-    slurp_ship_bitmaps();
-
-    return;
-}
-#endif /*0*/
-  
 /* now returns a pointer to where the ship data is located.  This way
    if the data is later changed by the server everybody gets updated.
    Plus as a bonus it's more efficient :)   [Bill Dyess] */
 struct ship *
-getship(s_type)
-    int     s_type;
+getship(int s_type)
 {
     struct shiplist *temp, *new;
 
     temp = shiptypes;
     while (temp) {
 	if (temp->ship->s_type == s_type) {
-	    /* bcopy(temp->ship, shipp, sizeof(struct ship)); */
 	    return temp->ship;
 	}
 	temp = temp->next;
@@ -123,7 +67,6 @@ getship(s_type)
     while (temp) {
 	if (temp->ship->s_type == DEFAULT) {
 	    printf("Adding ship type %d\n", s_type);
-	    /* bcopy(temp->ship, shipp, sizeof(struct ship)); */
 	    /* now add the new ship to the list */
 	    new = (struct shiplist *) malloc(sizeof(struct shiplist));
 	    new->ship = (struct ship *) malloc(sizeof(struct ship));
@@ -132,7 +75,7 @@ getship(s_type)
 	    if (shiptypes)
 		shiptypes->prev = new;
 	    shiptypes = new;
-	    bcopy(temp->ship, new->ship, sizeof(struct ship));
+	    memmove(new->ship, temp->ship, sizeof(struct ship));
 	    new->ship->s_type = s_type;
 	    return new->ship;
 	}
@@ -145,9 +88,7 @@ getship(s_type)
 /* fill in ship characteristics */
 
 static void
-getship_default(shipp, s_type)
-    struct ship *shipp;
-    int     s_type;
+getship_default(struct ship *shipp, int s_type)
 {
     switch (s_type) {
     case SCOUT:

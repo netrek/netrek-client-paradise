@@ -1,27 +1,23 @@
-#include "config.h"
-#ifdef BEEPLITE
 /*
  * beeplite.c
  */
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <ctype.h>
-#ifndef SERVER
+
 #include "Wlib.h"
-#endif
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
 
+static int makelite P((struct distress *dist, char *pm));
 
 void
-rcdlite(dist)
-    struct distress *dist;
+rcdlite(struct distress *dist)
 {
     char    message[100];
     int     len = 0;
@@ -44,7 +40,7 @@ rcdlite(dist)
 
 
 void
-litedefaults()
+litedefaults(void)
 {
     if (distlite[take] == NULL)
 	distlite[take] = "/c/l";
@@ -57,9 +53,7 @@ litedefaults()
 }
 
 void
-liteplanet(l, col)
-    struct planet *l;
-    W_Color col;
+liteplanet(struct planet *l, W_Color col)
 {
     if (!(F_beeplite_flags & LITE_PLANETS))
 	return;
@@ -67,15 +61,10 @@ liteplanet(l, col)
     emph_planet_seq_n[l->pl_no] = beep_lite_cycle_time_planet;
     emph_planet_color[l->pl_no] = col;
     l->pl_flags |= PLREDRAW;	/* Leave redraw on until done highlighting */
-#if 0
-    l->pl_flags |= PLCLEAR;	/* Leave redraw on until done highlighting */
-#endif
 }
 
 void
-liteplayer(j, col)
-    struct player *j;
-    W_Color col;
+liteplayer(struct player *j, W_Color col)
 {
     if (!(F_beeplite_flags & (LITE_PLAYERS_MAP | LITE_PLAYERS_LOCAL)) &&
 	!((j == me) && (F_beeplite_flags & LITE_SELF)))
@@ -98,15 +87,12 @@ liteplayer(j, col)
 			        macro
 */
 
-int
-makelite(dist, pm)
-    struct distress *dist;
-    char   *pm;
+static int
+makelite(struct distress *dist, char *pm)
 {
     struct player *sender;
     struct player *j;
     struct planet *l;
-    char   *strcap();
     char    c;
     W_Color lcol;
 
@@ -216,7 +202,8 @@ makelite(dist, pm)
 ** the message will be parsed without whatever argument has occurred. - jn
 */
 		warning("Bad Macro character in distress!");
-		fprintf(stderr, "Unrecognizable special character in distress pass 1: %c\n", *(pm - 1));
+		fprintf(stderr, "Unrecognizable special character in "
+		                "distress pass 1: %c\n", *(pm - 1));
 		break;
 	    }
 	} else {
@@ -228,4 +215,3 @@ makelite(dist, pm)
 
     return (1);
 }
-#endif				/* BEEPLITE */

@@ -7,14 +7,11 @@
  *  determining when parts of the galactic map need to be redrawn.
  */
 #include "copyright2.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#include <math.h>
 #include "config.h"
+#include <stdlib.h>
+#include <math.h>
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
@@ -72,29 +69,16 @@ static void redrawStarSector P((int sectorx, int sectory));
 
 */
 char    redraws[DETAIL][DETAIL][DEPTH];
-#ifdef ASTEROIDS
 struct point *asteroid_footprints;
 int max_asteroid_footprints = 100;
 int next_asteroid_footprint = 0;
-#endif /* ASTEROIDS */
 static int initialized = 0;
-
-/*
-   since planets may be moved, the redraw matrix must be updated.  This
-   function is for updating just one planet.  This should help the moving
-   planet efficiency problems quite a bit.  [BDyess]
-*/
-void
-initOnePlanet(pl)
-    struct planet *pl;
-{
-}
 
 /*
    rewritten to repair UNBELIEVABLE inefficiencies in the original [BDyess]
 */
 void
-initPlanets()
+initPlanets(void)
 {
     register int i, j, k, x, y, z, r, s;
     struct planet *pl;
@@ -102,11 +86,9 @@ initPlanets()
     int     maxdepth = 0;
 #endif				/* PROFILE1 */
 
-#ifdef ASTEROIDS
     /* initialize asteroid footfall table [BDyess] */
     asteroid_footprints = (struct point*)
 			  malloc(sizeof(struct point)*max_asteroid_footprints);
-#endif /* ASTEROIDS */
 
     /* initialize lookup array */
     for (i = 0; i < DETAIL; i++) {
@@ -155,58 +137,6 @@ initPlanets()
 		    j -= s;
 	    }
 	}
-#if 0				/* this works, and allows the radius around
-				   the hot spot to be changed. It's disabled
-				   because a less-flexible piece of code
-				   (above) is a bit faster.  Plus, it's hard
-				   to generalize about that extra added
-				   lines.  [BDyess] */
-	ADDPLANET(i, j, k)
-	    for (r = 1; r <= RADIUS; r++) {
-	    /* draw box sides in all four directions */
-	    /* bottom */
-	    i += r;
-	    ADDPLANET(i, j, k)
-		for (s = 1; s <= r; s++) {
-		j += s;
-		ADDPLANET(i, j, k)
-		    j -= 2 * s;
-		ADDPLANET(i, j, k)
-		    j += s;
-	    }
-	    /* top */
-	    i -= 2 * r;
-	    ADDPLANET(i, j, k)
-		for (s = 1; s <= r; s++) {
-		j += s;
-		ADDPLANET(i, j, k)
-		    j -= 2 * s;
-		ADDPLANET(i, j, k)
-		    j += s;
-	    }
-	    /* left */
-	    i += r;
-	    j += r;
-	    ADDPLANET(i, j, k)
-		for (s = 1; s < r; s++) {
-		i += s;
-		ADDPLANET(i, j, k)
-		    i -= 2 * s;
-		ADDPLANET(i, j, k)
-		    i += s;
-	    }
-	    /* right */
-	    j -= 2 * r;
-	    ADDPLANET(i, j, k)
-		for (s = 1; s < r; s++) {
-		i += s;
-		ADDPLANET(i, j, k)
-		    i -= 2 * s;
-		ADDPLANET(i, j, k)
-		    i += s;
-	    }
-	}
-#endif				/* 0 */
     }
     initialized = 1;
 #ifdef PROFILE1
@@ -215,8 +145,7 @@ initPlanets()
 }
 
 void
-checkRedraw(x, y)
-    int     x, y;
+checkRedraw(int x, int y)
 {
     int     j;
     char    i;
@@ -227,7 +156,6 @@ checkRedraw(x, y)
     x /= SIZE;
     y /= SIZE;
 
-#ifdef ASTEROIDS
     if(received_terrain_info) {
       /* add the footprint to the list if not already there [BDyess] */
       for(j = 0; j < next_asteroid_footprint; j++) {
@@ -245,7 +173,6 @@ checkRedraw(x, y)
 					     max_asteroid_footprints *= 2);
       }
     }
-#endif /* ASTEROIDS */
 
     for (j = 0; j < DEPTH; j++) {
 	i = redraws[x][y][j];
@@ -267,7 +194,7 @@ static int starsX[NUMSTARS];
 static int starsY[NUMSTARS];
 
 void
-_initStars()
+_initStars(void)
 {
     register int i;
 
@@ -278,7 +205,7 @@ _initStars()
 }
 
 void
-_drawStars()
+_drawStars(void)
 {
     int     i;
     int     x, y;
@@ -304,7 +231,7 @@ _drawStars()
 static struct _star stars[10][10][16];
 
 void
-initStars()
+initStars(void)
 {
     register int i, j, k;
 
@@ -320,7 +247,7 @@ initStars()
 }
 
 int
-randcolor()
+randcolor(void)
 {
     switch (random() % 10) {
 	case 0:return W_Yellow;
@@ -336,7 +263,7 @@ randcolor()
 }
 
 void
-drawStars()
+drawStars(void)
 {
     /*
        note: cpp symbols in expressions (WINSIDE*SCALE) will be precalculated
@@ -404,8 +331,7 @@ drawStars()
 }
 
 static void
-redrawStarSector(sectorx,sectory)
-    int sectorx,sectory;
+redrawStarSector(int sectorx, int sectory)
 {
     register int i, dx, dy, dxx, dyy, xbase = sectorx * fullview, 
              ybase = sectory * fullview;
@@ -485,38 +411,11 @@ redrawStarSector(sectorx,sectory)
 	dx = scaleLocal(dx);
 	dy = scaleLocal(dy);
 	W_CachePoint(w, dx, dy, s->s_color);
-#ifndef AMIGA
 	/*
 	   this is a minor kludge: as long as there are less then 128 stars
 	   in a sector these cached requests will not actually be written to
 	   the X server until the next redraw cycle begins.
 	*/
 	W_CacheClearArea(w, dx, dy, 1, 1);
-#else
-	clearline[0][clearlcount] = dx;
-	clearline[1][clearlcount] = dy;
-	clearline[2][clearlcount] = dx;
-	clearline[3][clearlcount] = dy;
-	clearlcount++;
-#endif
     }
 }
-
-#if 0
-void
-clearStars()
-{
-    int     i;
-    int     x, y;
-
-    for (i = 0; i < NUMSTARS; i++) {
-	x = starsX[i] - me->p_x;
-	y = starsY[i] - me->p_y;
-	if (ABS(x) < 10000 && ABS(y) < 10000) {
-	    x = scaleLocal(x);
-	    y = scaleLocal(y);
-	    W_CacheClearArea(w, x, y, 1, 1);
-	}
-    }
-}
-#endif

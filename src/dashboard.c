@@ -10,25 +10,21 @@
  */
 
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
 #include "config.h"
+#include <stdio.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
 #include "images.h"
+
+#ifdef UNIX_SOUND
 #include "sound.h"
+#endif
 
 #define DB_NOFILL 0
 #define DB_LINE 1
@@ -50,7 +46,6 @@ int     BAR_LENGTH_THIRD = 18;
 
 int     column[4];
 
-#ifdef PACKET_LIGHTS
 /* code to draw and erase packet lights 2/5/94 [BDyess] */
 
 #define SENDX 		7
@@ -59,14 +54,9 @@ int     column[4];
 #define RECEIVEY	1
 
 int     send_lit = 0, receive_lit = 0;
-/* pointer to the function being used to write text. [BDyess] */
-/*
-void  (*W_WriteText) P((W_Window window, int x, int y, W_Color color,
-                         char *str, int len, W_Font font)) = W_WriteText;
-*/
 
 void
-light_send()
+light_send(void)
 {
     if (packetLights == 0 || send_lit)
 	return;
@@ -78,7 +68,7 @@ light_send()
 }
 
 void
-light_receive()
+light_receive(void)
 {
     if (packetLights == 0 || receive_lit)
 	return;
@@ -90,7 +80,7 @@ light_receive()
 }
 
 void
-light_erase()
+light_erase(void)
 {
     if (receive_lit == 1) {
 	W_DrawPoint(tstatw, RECEIVEX, RECEIVEY, backColor);
@@ -109,11 +99,9 @@ light_erase()
     if (send_lit)
 	send_lit--;
 }
-#endif				/* PACKET_LIGHTS */
 
 void
-db_box(x, y, width, height, f, color)
-    int     x, y, f, color, width, height;
+db_box(int x, int y, int width, int height, int f, int color)
 {
     int     border = W_White;
 
@@ -141,9 +129,8 @@ db_box(x, y, width, height, f, color)
 }
 
 void
-db_bar(lab, x, y, value, tmpmax, max, digits, color)
-    char   *lab;
-    int     x, y, value, tmpmax, max, digits, color;
+db_bar(char *lab, int x, int y, 
+       int value, int tmpmax, int max, int digits, int color)
 {
     unsigned int wt, wv, tc, tw;
     char    valstr[32];
@@ -187,9 +174,8 @@ db_bar(lab, x, y, value, tmpmax, max, digits, color)
 }
 
 void
-db_color_bar(lab, x, y, barvalue, numvalue, tmpmax, max, digits)
-    char   *lab;
-    int     x, y, barvalue, numvalue, digits, tmpmax, max;
+db_color_bar(char *lab, int x, int y, 
+             int barvalue, int numvalue, int tmpmax, int max, int digits)
 {
     unsigned int wt, wv, tw, tc;
     char    valstr[32];
@@ -218,11 +204,6 @@ db_color_bar(lab, x, y, barvalue, numvalue, tmpmax, max, digits)
 	wt = 0;
 	wv = 0;
     }
-#if 0				/* this code turns the color to red when it
-				   exceeds the bar length */
-    if (wv > wt)
-	color = W_Red;
-#endif				/* 0 */
     if (wt > BAR_LENGTH)
 	wt = BAR_LENGTH;
     if (wv > BAR_LENGTH)
@@ -235,41 +216,39 @@ db_color_bar(lab, x, y, barvalue, numvalue, tmpmax, max, digits)
 	db_box(x + tw, y, wt, W_Textheight - 1, DB_LINE, color);
 
     /* draw rainbow bars */
-#ifdef XPM
     if(xpm)
       W_DrawImageBar(tstatw, x + tw, y, wv, getImage(I_RAINBOW));
     else 
-#endif /*XPM [BDyess]*/
     {
       if (wv > 0)
-	  db_box(x + tw, y, wv > BAR_LENGTH_THIRD ? BAR_LENGTH_THIRD : wv, W_Textheight - 1, DB_FILL, W_Green);
+	  db_box(x + tw, y, wv > BAR_LENGTH_THIRD ? BAR_LENGTH_THIRD : wv, 
+	         W_Textheight - 1, DB_FILL, W_Green);
       if (wv > BAR_LENGTH_THIRD)
-	  db_box(x + tw + BAR_LENGTH_THIRD, y, wv > 2 * BAR_LENGTH_THIRD ? BAR_LENGTH_THIRD
-		 : wv - BAR_LENGTH_THIRD, W_Textheight - 1, DB_FILL, W_Yellow);
+	  db_box(x + tw + BAR_LENGTH_THIRD, y, 
+	         wv > 2 * BAR_LENGTH_THIRD ? BAR_LENGTH_THIRD
+		  : wv - BAR_LENGTH_THIRD, W_Textheight - 1, 
+		 DB_FILL, W_Yellow);
       if (wv > 2 * BAR_LENGTH_THIRD)
-	  db_box(x + tw + 2 * BAR_LENGTH_THIRD, y, (wv > BAR_LENGTH ? BAR_LENGTH : wv) -
-		 2 * BAR_LENGTH_THIRD, W_Textheight - 1, DB_FILL, W_Red);
+	  db_box(x + tw + 2 * BAR_LENGTH_THIRD, y, 
+	         (wv > BAR_LENGTH ? BAR_LENGTH : wv) -
+		   2 * BAR_LENGTH_THIRD, W_Textheight - 1, DB_FILL, W_Red);
     }
 }
 
-#ifdef TIMER
-void
-db_timer(fr, xloc, yloc)
-    int     fr, xloc, yloc;
 /* handles the dashboard timer [BDyess] 10/29/93 */
+void
+db_timer(int fr, int xloc, int yloc)
 {
     static time_t oldtime = -1;
     static int lastTimerType = -1;
     time_t  now = 0;
-    static char lasttimer[9], *timer;
+    static char lasttimer[TIMESTRLEN], *timer;
     int     left, right, x, pos;
 
-#ifdef RECORDER
     if(playback) {
 	pb_framectr(xloc, yloc);
 	return;
     }
-#endif
     if (timerType != lastTimerType || fr) {
 	char *s = NULL;
 
@@ -277,8 +256,9 @@ db_timer(fr, xloc, yloc)
 	lastTimerType = timerType;
 	switch (timerType) {
 	case T_NONE:
-	    W_ClearArea(tstatw, xloc, yloc, 12 * W_Textwidth, W_Textheight);
-	    strcpy(lasttimer, "        ");
+	    W_ClearArea(tstatw, xloc, yloc, (TIMESTRLEN+3) * W_Textwidth,
+	                W_Textheight);
+	    memset(lasttimer, ' ', TIMESTRLEN);
 	    oldtime = now;
 	    break;
 	case T_DAY:
@@ -318,9 +298,9 @@ db_timer(fr, xloc, yloc)
 	*/
 	if (fr) {
 	    W_WriteText(tstatw, x, yloc, textColor, timer,
-			8, W_RegularFont);
+			TIMESTRLEN, W_RegularFont);
 	} else {
-	    while (pos < 8) {
+	    while (pos < TIMESTRLEN) {
 		if (timer[pos] == lasttimer[pos]) {
 		    if (left <= right)
 			W_WriteText(tstatw, x + left * W_Textwidth, yloc, textColor,
@@ -340,11 +320,9 @@ db_timer(fr, xloc, yloc)
     }
     return;
 }
-#endif				/* TIMER */
 
 void
-db_flags(fr)
-     int	fr;
+db_flags(int fr)
 {
     static float old_kills = -1.0;
     static int old_torp = -1;
@@ -423,14 +401,6 @@ db_flags(fr)
 	    W_WriteText(tstatw, 2 + 6 * W_Textwidth, 3, textColor, " Stopped", 8,
 			W_RegularFont);
 	W_WriteText(tstatw, 2, 3 + (W_Textheight + SPACING), textColor, buf, 12, W_RegularFont);
-#if 0				/* colored G/Y/R status flags.  Looked stupid */
-	if (me->p_flags & PFGREEN)
-	    W_WriteText(tstatw, 2 + W_Textwidth, 3 + W_Textheight + SPACING, W_Green, "G", 1, W_RegularFont);
-	else if (me->p_flags & PFYELLOW)
-	    W_WriteText(tstatw, 2 + W_Textwidth, 3 + W_Textheight + SPACING, W_Yellow, "Y", 1, W_RegularFont);
-	else
-	    W_WriteText(tstatw, 2 + W_Textwidth, 3 + W_Textheight + SPACING, W_Red, "R", 1, W_RegularFont);
-#endif				/* 0 */
 	old_flags = me->p_flags;
 	old_spd = me->p_speed;
     } else if ( (me->p_speed == 0 && old_spd) ||
@@ -457,7 +427,7 @@ db_flags(fr)
 	if (me->p_kills > 0.0) {
 /*	  W_WriteText (tstatw, column[3], 3+W_Textheight + SPACING, textColor, "Kills:", 6, W_RegularFont);*/
 	    sprintf(buf, "Kills: %5.2f", me->p_kills);
-	    W_WriteText(tstatw, column[3], 3 + W_Textheight + SPACING, textColor, buf, (int)strlen(buf), W_RegularFont);
+	    W_WriteText(tstatw, column[3], 3 + W_Textheight + SPACING, textColor, buf, strlen(buf), W_RegularFont);
 	} else {
 	    W_ClearArea(tstatw, column[3], 3 + W_Textheight + SPACING, 12 * W_Textwidth, W_Textheight);
 	}
@@ -471,7 +441,7 @@ db_flags(fr)
 	    sprintf(buf, "Torps: %d", me->p_ntorp);
 	    W_WriteText(tstatw, column[3] + 17 * W_Textwidth, 
 	    	        3 + W_Textheight + SPACING, textColor, buf, 
-			(int)strlen(buf), W_RegularFont);
+			strlen(buf), W_RegularFont);
 	} else {
 	    W_ClearArea(tstatw, column[3] + 17 * W_Textwidth, 3 + W_Textheight + SPACING, 8 * W_Textwidth, 10);
 	}
@@ -479,7 +449,8 @@ db_flags(fr)
     }
     /* code to show the number of drones out */
     strcpy(buf, "Missiles ");
-    if (fr || me->p_totmissiles != old_totmissiles || me->p_ndrone != old_drone) {
+    if (fr || me->p_totmissiles != old_totmissiles || me->p_ndrone != old_drone)
+    {
 	if (me->p_totmissiles > 0)
 	    sprintf(buf + strlen(buf), "Left: %d ", me->p_totmissiles);
 	old_totmissiles = me->p_totmissiles;
@@ -493,44 +464,12 @@ db_flags(fr)
 		buf[i] = ' ';
 	    buf[24] = 0;
 	    W_WriteText(tstatw, column[3], 3 + 2 * (W_Textheight + SPACING), textColor, buf, 24, W_RegularFont);
+        }
     }
-    }
-#if 0
-    if (fr || me->p_ndrone != old_drone) {
-	if (me->p_ndrone > 0) {
-	    if (!missile_text) {
-		W_WriteText(tstatw, column[3], 30, textColor,
-			    "Missiles", 8, W_RegularFont);
-	    }
-	    sprintf(buf, "Out: %d", me->p_ndrone);
-	    W_WriteText(tstatw, column[3] + W_Textwidth * 18, 30, textColor, buf, strlen(buf), W_RegularFont);
-	} else {
-	    W_ClearArea(tstatw, column[3] + W_Textwidth * 18, 30, 7 * W_Textwidth, W_Textheight);
-	}
-	old_drone = me->p_ndrone;
-    }
-    if (fr || me->p_totmissiles != old_totmissiles) {
-	if (me->p_totmissiles > 0) {
-	    if (!missile_text) {
-		W_WriteText(tstatw, column[3], 30, textColor,
-			    "Missiles", 8, W_RegularFont);
-	    }
-	    sprintf(buf, "Left: %d", me->p_totmissiles);
-	    W_WriteText(tstatw, column[3] + W_Textwidth * 9, 3 + 2 * (W_Textheight + SPACING),
-			textColor, buf, strlen(buf), W_RegularFont);
-	} else {
-	    W_ClearArea(tstatw, column[3], 3 + 2 * (W_Textheight + SPACING), 8 * W_Textwidth, W_Textheight);
-	}
-	old_totmissiles = me->p_totmissiles;
-    }
-    if (missile_text && !me->p_totmissiles && !me->p_ndrone)	/* clear missile text */
-	W_ClearArea(tstatw, column[3], 30, 9 * W_Textwidth, 10);
-#endif				/* 0 */
 }
 
 void
-db_redraw_krp(fr)
-    int     fr;
+db_redraw_krp(int fr)
 {
     static int old_spd = -1, old_cur_spd = -1;
     static int old_shl = -1, old_dam = -1;
@@ -540,24 +479,16 @@ db_redraw_krp(fr)
     register int cur_max;
     register int value;
     int     color;
-    int     index = 0;
     register int mid;
-    
-    if (me->p_ship->s_type == STARBASE)	/* SB */
-	index = 1;
 
     if (fr)
 	W_ClearWindow(tstatw);
 
     db_flags(fr);
 
-#ifdef TIMER
     db_timer(fr, 1, 3 + 2 * (W_Textheight + SPACING));
-#endif				/* TIMER */
 
-#ifdef PACKET_LIGHTS
     light_erase();
-#endif				/* PACKET_LIGHTS */
 
     if (paradise)
 	cur_max = me->p_ship->s_maxspeed - (int) ((float) me->p_ship->s_maxspeed
@@ -672,8 +603,7 @@ db_redraw_krp(fr)
 
 
 void
-db_redraw_BRM(fr)
-    int     fr;
+db_redraw_BRM(int fr)
 {
     static int old_spd = -1, old_cur_spd = -1;
     static int old_shl = -1, old_dam = -1;
@@ -683,24 +613,16 @@ db_redraw_BRM(fr)
     register int cur_max;
     register int value;
     int     color;
-    int     index = 0;
     register int mid;
     register int tmp;
-    
-    if (me->p_ship->s_type == STARBASE)	/* SB */
-	index = 1;
 
     if (fr)
 	W_ClearWindow(tstatw);
 
     db_flags(fr);
 
-#ifdef TIMER
     db_timer(fr, 1, 3 + 2 * (W_Textheight + SPACING));
-#endif				/* TIMER */
-#ifdef PACKET_LIGHTS
     light_erase();
-#endif				/* PACKET_LIGHTS */
 
     cur_max = (me->p_ship->s_maxspeed + 1) - ((me->p_ship->s_maxspeed + 1) * me->p_damage)
 	/ me->p_ship->s_maxdamage;
@@ -881,8 +803,7 @@ db_redraw_BRM(fr)
 }
 
 void
-db_redraw(fr)
-    int     fr;
+db_redraw(int fr)
 {
     static int oldDashboard = -1;
 
@@ -905,8 +826,7 @@ db_redraw(fr)
 }
 
 void
-stline(flag)
-    int     flag;
+stline(int flag)
 {
     static char buf1[80];
     static char buf2[80];
@@ -930,13 +850,9 @@ stline(flag)
 	db_redraw(flag);
 	return;
     }
-#ifdef TIMER
     /* Do da clock */
     db_timer(flag, W_WindowWidth(tstatw) - (12 * W_Textwidth + 5), 27);
-#endif				/* TIMER */
-#ifdef PACKET_LIGHTS
     light_erase();
-#endif				/* PACKET_LIGHTS */
 
 
     /* Instead of one sprintf, we do all this by hand for optimization */
@@ -986,7 +902,6 @@ stline(flag)
 
     buf[13] = ' ';
 
-#if 1
 /* w/i indicator is a kludge - it just guesses based on the speed of
    the ship */
     sprintf(buf + 14, "%2d%c   %3d %3d  %1d  %6.2f %3d %6d  %4d %4d  ",
@@ -994,126 +909,6 @@ stline(flag)
 	    me->p_flags & PFWARP ? 'w' : me->p_flags & PFAFTER ? 'a' : 'i',
 	    me->p_damage, me->p_shield, me->p_ntorp, me->p_kills,
 	    me->p_armies, me->p_fuel, me->p_wtemp / 10, me->p_etemp / 10);
-#else
-#if 0
-    TWODIGIT_L(&buf[14], me->p_speed);
-    buf[16] = 'i';
-    buf[17] = ' ';
-    buf[18] = ' ';
-    buf[19] = ' ';
-    THREEDIGIT_R(&buf[20], me->p_damage);
-    buf[23] = ' ';
-    THREEDIGIT_R(&buf[24], me->p_shield);
-    buf[27] = ' ';
-    TWODIGIT_R(&buf[28], me->p_ntorp);
-    buf[30] = ' ';
-    buf[31] = ' ';
-    SIXnTWOf_R(&buf[32], me->p_kills);
-    buf[38] = ' ';
-    THREEDIGIT_C(&buf[39], me->p_armies);
-    buf[42] = ' ';
-    SIXDIGIT_R(&buf[43], me->p_fuel);
-    buf[49] = ' ';
-    buf[50] = ' ';
-    FOURDIGIT_R(&buf[51], me->p_wtemp);
-    buf[55] = ' ';
-    FOURDIGIT_R(&buf[56], me->p_wtemp);
-    buf[60] = ' ';
-    buf[61] = ' ';
-#else				/* 0 */
-    buf[14] = '0' + ((me->p_speed % 100) / 10);
-    if (buf[14] == '0')
-	buf[14] = ' ';
-    buf[15] = '0' + (me->p_speed % 10);	/* speed */
-    buf[16] = ' ';
-    buf[17] = ' ';
-    buf[18] = '0' + (me->p_damage / 100);
-    if (buf[18] == '0')
-	buf[18] = ' ';
-    buf[19] = '0' + ((me->p_damage % 100) / 10);
-    if ((buf[19] == '0') && (me->p_damage < 100))
-	buf[19] = ' ';
-    buf[20] = '0' + (me->p_damage % 10);
-    buf[21] = ' ';
-    buf[22] = '0' + (me->p_shield / 100);
-    if (buf[22] == '0')
-	buf[22] = ' ';
-    buf[23] = '0' + ((me->p_shield % 100) / 10);
-    if ((buf[23] == '0') && (me->p_shield < 100))
-	buf[23] = ' ';
-    buf[24] = '0' + (me->p_shield % 10);
-    buf[25] = ' ';
-    buf[26] = ' ';
-    buf[27] = '0' + ((me->p_ntorp % 100) / 10);
-    if (buf[27] == '0')
-	buf[27] = ' ';
-    buf[28] = '0' + (me->p_ntorp % 10);
-    buf[29] = ' ';
-    buf[30] = ' ';
-    buf[31] = ' ';
-    buf[32] = ' ';
-    buf[33] = '0' + ((int) (me->p_kills / 10));
-    if (buf[33] == '0')
-	buf[33] = ' ';
-    buf[34] = '0' + (((int) me->p_kills) % 10);
-    buf[35] = '.';
-    buf[36] = '0' + (((int) (me->p_kills * 10)) % 10);
-    buf[37] = '0' + (((int) (me->p_kills * 100)) % 10);
-    buf[38] = ' ';
-    buf[39] = ' ';
-    buf[40] = ' ';
-    buf[41] = '0' + ((me->p_armies % 100) / 10);
-    if (buf[41] == '0')
-	buf[41] = ' ';
-    buf[42] = '0' + (me->p_armies % 10);
-    buf[43] = ' ';
-    buf[44] = ' ';
-    buf[45] = ' ';
-
-    buf[46] = '0' + (me->p_fuel / 100000);
-    if (buf[46] == '0')
-	buf[46] = ' ';
-    buf[47] = '0' + ((me->p_fuel % 100000) / 10000);
-    if ((buf[47] == '0') && (me->p_fuel < 100000))
-	buf[47] = ' ';
-    buf[48] = '0' + ((me->p_fuel % 10000) / 1000);
-    if ((buf[48] == '0') && (me->p_fuel < 10000))
-	buf[48] = ' ';
-    buf[49] = '0' + ((me->p_fuel % 1000) / 100);
-    if ((buf[49] == '0') && (me->p_fuel < 1000))
-	buf[49] = ' ';
-    buf[50] = '0' + ((me->p_fuel % 100) / 10);
-    if ((buf[50] == '0') && (me->p_fuel < 100))
-	buf[50] = ' ';
-    buf[51] = '0' + (me->p_fuel % 10);
-    buf[52] = ' ';
-    buf[53] = ' ';
-    buf[54] = ' ';
-
-    buf[55] = '0' + ((me->p_wtemp / 10) / 100);
-    if (buf[55] == '0')
-	buf[55] = ' ';
-    buf[56] = '0' + (((me->p_wtemp / 10) % 100) / 10);
-    if ((buf[56] == '0') && (me->p_wtemp < 1000))
-	buf[56] = ' ';
-    buf[57] = '0' + ((me->p_wtemp / 10) % 10);
-
-    buf[58] = ' ';
-    buf[59] = ' ';
-    buf[60] = ' ';
-    buf[61] = '0' + ((me->p_etemp / 10) / 1000);
-    if (buf[61] == '0')
-	buf[61] = ' ';
-    buf[62] = '0' + (((me->p_etemp / 10) % 1000) / 100);
-    if (buf[62] == '0' && me->p_etemp < 1000)
-	buf[62] = ' ';
-    buf[63] = '0' + (((me->p_etemp / 10) % 100) / 10);
-    if ((buf[63] == '0') && (me->p_etemp < 1000))
-	buf[63] = ' ';
-    buf[64] = '0' + ((me->p_etemp / 10) % 10);
-    buf[65] = ' ';
-#endif				/* 0 */
-#endif
 
     if (whichbuf == 0) {
 	/* Draw status line */
@@ -1151,29 +946,22 @@ stline(flag)
 }
 
 void
-redrawTstats()
+redrawTstats(void)
 {
     char    buf[100];
-#ifdef BUFFERING
     int	buffered = W_IsBuffered(tstatw);
-#endif /*BUFFERING [BDyess]*/
     
-#ifdef BUFFERING
     if(buffered) {
       W_ClearBuffer(tstatw);
     } else {
       W_ClearWindow(tstatw);
     }
-#else
-    W_ClearWindow(tstatw);
-#endif /*BUFFERING [BDyess]*/
 
     /* use new dashboard if possible */
     if (Dashboard) {
 	db_redraw(1);
-#ifdef BUFFERING
-	if(buffered) W_DisplayBuffer(tstatw);
-#endif /*BUFFERING [BDyess]*/
+	if(buffered)
+	  W_DisplayBuffer(tstatw);
 	return;
     }
     stline(1);			/* This is for refresh.  We redraw player
@@ -1182,7 +970,7 @@ redrawTstats()
 											   Dam Shd Torps  Kills
 											   Armies   Fuel  Wtemp
 	       Etemp" */ );
-    W_WriteText(tstatw, TSTATW_BASEX, 5, textColor, buf, (int)strlen(buf), 
+    W_WriteText(tstatw, TSTATW_BASEX, 5, textColor, buf, strlen(buf), 
     		W_RegularFont);
     sprintf(buf,
 	    "Maximum:      %2d    %3d %3d  8         %3d %6d  %4d %4d ",
@@ -1190,9 +978,9 @@ redrawTstats()
 	    me->p_ship->s_maxshield, me->p_ship->s_maxarmies,
 	    me->p_ship->s_maxfuel, me->p_ship->s_maxwpntemp / 10,
 	    me->p_ship->s_maxegntemp / 10);
-    W_WriteText(tstatw, TSTATW_BASEX, 27, textColor, buf, (int)strlen(buf), 
+    W_WriteText(tstatw, TSTATW_BASEX, 27, textColor, buf, strlen(buf), 
     		W_RegularFont);
-#ifdef BUFFERING
-    if(buffered) W_DisplayBuffer(tstatw);
-#endif /*BUFFERING [BDyess]*/
+
+    if(buffered)
+      W_DisplayBuffer(tstatw);
 }

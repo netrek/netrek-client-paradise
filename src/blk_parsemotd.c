@@ -2,22 +2,16 @@
  *
  */
 
-#include "defines.h"
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include "config.h"
-#include "Wlib.h"
+#include "str.h"
+
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
 
 void
-blk_parsemotd(line)
-    char   *line;
+blk_parsemotd(char *line)
 {
     /*
        Verify it's our line.

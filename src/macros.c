@@ -3,59 +3,39 @@
 /* BRM code, i.e. it's somewhat organized :)*/
 /* Bill Dyess  10/05/93	            [BDyess]*/
 
-#include "config.h"
-#ifdef MACROS
 #include "copyright.h"
-#include "defines.h"
-#include<stdio.h>
 
-#if defined(STDC_HEADERS) || defined(STRING_H)
-#include<string.h>
-#else
-#include<strings.h>
-#endif
-
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
+#include "config.h"
 #include <ctype.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
-#include "data.h"
 #include "defs.h"
 #include "struct.h"
-#include "gameconf.h"
+#include "data.h"
 #include "proto.h"
+
 #include "packets.h"
+#include "gppackets.h"
 
 #define MAXMACRO 4096
-
-#if 0		/* these are useless with prototypes */
-extern char *strdup();
 
 /* prototypes */
 void doMacro2 P((struct macro * m, W_Event * data));
 void handle_dollar P((char **locpntr, char **destpntr, W_Event * data));
 void handle_special P((char **locpntr, char **destpntr, W_Event * data));
-char   *strtoupper P((char *buf));
-char   *strtolower P((char *buf));
 void handle_test P((char **locpntr, char **destpntr, W_Event * data));
 void handle_conditional P((char **locpntr, char **destpntr, W_Event * data));
 void getTestString P((char *buf, char **locpntr, char **destpntr, W_Event * data));
 void getConditionalString P((char **locpntr, char **destpntr, W_Event * data));
 void ignoreConditionalString P((char **locpntr));
-#endif
 
 int     abortflag = 0;
 
 void
-initMacros()
+initMacros(void)
 {
     struct stringlist *s;
     char   *loc;
@@ -69,16 +49,13 @@ initMacros()
     char  *str;
 
     /* initialize macro lookup tables */
-    bzero(macrotable, sizeof(struct macro *) * 256);
+    memset(macrotable, 0, sizeof(struct macro *) * 256);
 
-#ifdef RC_DISTRESS
     /* sizeof doesn't work if it isn't in the same source file, shoot me */
-    MCOPY(dist_defaults, dist_prefered, sizedist);
-#endif
+    memcpy(dist_prefered, dist_defaults, sizedist);
 
     for (s = defaults; s; s = s->next) {
-#ifdef RC_DISTRESS
-	if (strncmpi(s->string, "dist.", 5) == 0) {
+	if (strncasecmp(s->string, "dist.", 5) == 0) {
 	    str = (s->string) + 5;
 	    if (*str == '^') {
 		str++;
@@ -98,12 +75,12 @@ initMacros()
 	    notdone = 1;
 	    for (dm = &dist_prefered[take], dm_def = &dist_defaults[take], i = take;
 		 dm->name && notdone; dm++, dm_def++, i++) {
-		if (strcmpi(str, dm->name) == 0) {
+		if (strcasecmp(str, dm->name) == 0) {
 		    dm->macro = strdup(s->value);
 		    if (c) {
 			if (!macrotable[c]) {
 			    macrotable[c] = (struct macro *) malloc(sizeof(struct macro));
-			    bzero(macrotable[c], sizeof(struct macro));
+			    memset(macrotable[c], 0, sizeof(struct macro));
 			}
 			macrotable[c]->flags |= MACRCD;
 			macrotable[c]->to = i;
@@ -115,10 +92,8 @@ initMacros()
 		}
 	    }
 	}
-#endif				/* RC_DISTRESS */
-#ifdef BEEPLITE
 
-	else if (strncmpi(s->string, "lite.", 5) == 0) {
+	else if (strncasecmp(s->string, "lite.", 5) == 0) {
 	    int     offset = 5;
 	    char  **lt;
 
@@ -129,7 +104,7 @@ initMacros()
 
 	    for (lt = &distlite[take], dm = &dist_prefered[take];
 		 dm->name && notdone; dm++, lt++) {
-		if (strcmpi(s->string + offset, dm->name) == 0) {
+		if (strcasecmp(s->string + offset, dm->name) == 0) {
 		    *lt = strdup(s->value);
 /*                    printf("lite.%s: %s\n",dm->name,*lt);*/
 
@@ -139,11 +114,10 @@ initMacros()
 	    if (notdone)
 		fprintf(stderr, "Unknown lite %s\n", s->string + offset);
 	}
-#endif				/* BEEPLITE */
-	if (!strncmpi("mac", s->string, 3)) {
+	if (!strncasecmp("mac", s->string, 3)) {
 	    if (s->string[3] == '.')
 		loc = s->string + 4;
-	    else if (strncmpi("ro.", s->string + 3, 3))
+	    else if (strncasecmp("ro.", s->string + 3, 3))
 		continue;
 	    else
 		loc = s->string + 6;
@@ -171,16 +145,14 @@ initMacros()
 		    continue;
 		}
 		macrotable[ch] = m = (struct macro *) malloc(sizeof(struct macro));
-		bzero(m, sizeof(struct macro));
+		memset(m, 0, sizeof(struct macro));
 	    } else {
-#ifdef RC_DISTRESS
 		if (macrotable[ch]->flags & MACRCD) {
 		    m = macrotable[ch];
 		    m->flags &= ~(MACRCD);	/* in case singleMacro was
 						   set */
 		    m->next = 0;
 		} else
-#endif
 		{
 		    m = (struct macro *) malloc(sizeof(struct macro));
 		    m->next = macrotable[ch];
@@ -201,7 +173,7 @@ initMacros()
 		}
 	    }
 	    m->string = strdup(s->value);
-	} else if (!strncmpi("singlemacro", s->string, 11)) {
+	} else if (!strcasencmp("singlemacro", s->string, 11)) {
 	    loc = s->value;
 	    while (*loc) {
 		ch = *(loc++);
@@ -212,7 +184,7 @@ initMacros()
 		}
 		if (!macrotable[ch]) {
 		    m = macrotable[ch] = (struct macro *) malloc(sizeof(struct macro));
-		    bzero(m, sizeof(struct macro));
+		    memset(m, 0, sizeof(struct macro));
 		    m->flags = MACSINGLE;
 		} else {
 		    for (m = macrotable[ch]; m; m = m->next)
@@ -238,7 +210,6 @@ initMacros()
 	    }
 	    }
 	}
-#ifdef RC_DISTRESS
     /*
        make macro entries for the default RCD keys, if those keys don't have
        macros defined
@@ -246,18 +217,16 @@ initMacros()
     for (dm = &dist_prefered[take], i = take; dm->name; dm++, i++) {
 	if (!macrotable[dm->c]) {
 	    macrotable[dm->c] = (struct macro *) malloc(sizeof(struct macro));
-	    bzero(macrotable[dm->c], sizeof(struct macro));
+	    memset(macrotable[dm->c], 0, sizeof(struct macro));
 	    macrotable[dm->c]->flags = MACRCD;
 	    macrotable[dm->c]->to = i;
 	}
     }
-#endif
 }
 
 /* takes a key as input and creates a string that is then sent to smessage*/
 void
-doMacro(data)
-    W_Event *data;
+doMacro(W_Event *data)
 {
     static struct macro *m;
     int     key = data->key;
@@ -275,13 +244,11 @@ doMacro(data)
 	macroState = 0;
 	return;			/* no macro */
     }
-#ifdef RC_DISTRESS
     if (m->flags & MACRCD) {
 	rcd(m->to, data);
 	macroState = 0;
 	return;
     }
-#endif
     while (m) {
 	if (macroState == 2) {
 	    m->to = key;
@@ -299,9 +266,7 @@ doMacro(data)
 }
 
 void
-doMacro2(m, data)
-    struct macro *m;
-    W_Event *data;
+doMacro2(struct macro *m, W_Event *data)
 {
     int     group = -1, recip = 0;
     char    buf[MAXMACRO], sourcebuf[MAXMACRO];
@@ -389,9 +354,7 @@ doMacro2(m, data)
 }
 
 void
-handle_special(locpntr, destpntr, data)
-    char  **locpntr, **destpntr;
-    W_Event *data;
+handle_special(char **locpntr, char **destpntr, W_Event *data)
 {
     char    ch = **locpntr;
     char   *buf = *destpntr;
@@ -400,15 +363,8 @@ handle_special(locpntr, destpntr, data)
     int     targettype = 0;
     struct id *id;
     /* for pingstats */
-#if 0
-    extern int ping_iloss_sc;	/* inc % loss 0--100, server to client */
-    extern int ping_iloss_cs;	/* inc % loss 0--100, client to server */
-#endif				/* 0 */
     extern int ping_tloss_sc;	/* total % loss 0--100, server to client */
     extern int ping_tloss_cs;	/* total % loss 0--100, client to server */
-#if 0
-    extern int ping_lag;	/* delay in ms of last ping */
-#endif				/* 0 */
     extern int ping_av;		/* average rt */
     extern int ping_sd;		/* standard deviation */
 
@@ -529,7 +485,7 @@ handle_special(locpntr, destpntr, data)
     case 'Z':
 	id = getTargetID(data->Window, data->x, data->y, TARG_PLANET);
 	strcpy(buf, teaminfo[id->team].shortname);
-	strtolower(buf);
+	strlower(buf);
 	break;
     case 'b':			/* nearest planet to sender */
     case 'B':
@@ -606,7 +562,7 @@ handle_special(locpntr, destpntr, data)
 	break;
     }
     if (isupper(ch))
-	strtoupper(buf);
+	strupper(buf);
     (*locpntr)++;
     while (**destpntr)
 	(*destpntr)++;
@@ -614,9 +570,7 @@ handle_special(locpntr, destpntr, data)
 }
 
 void
-handle_test(locpntr, destpntr, data)
-    char  **locpntr, **destpntr;
-    W_Event *data;
+handle_test(char **locpntr, char **destpntr, W_Event *data)
 {
     char    l[MAXMACRO], r[MAXMACRO], condition = 0;
     short   trueflag = 0;
@@ -650,9 +604,7 @@ handle_test(locpntr, destpntr, data)
 }
 
 void
-handle_conditional(locpntr, destpntr, data)
-    char  **locpntr, **destpntr;
-    W_Event *data;
+handle_conditional(char **locpntr, char **destpntr, W_Event *data)
 {
     (*locpntr)++;
     **destpntr = 0;
@@ -671,8 +623,7 @@ handle_conditional(locpntr, destpntr, data)
 }
 
 void
-ignoreConditionalString(locpntr)
-    char  **locpntr;
+ignoreConditionalString(char **locpntr)
 {
     int     depth = 0, breakflag = 0;
 
@@ -711,9 +662,7 @@ ignoreConditionalString(locpntr)
 }
 
 void
-getConditionalString(locpntr, destpntr, data)
-    char  **locpntr, **destpntr;
-    W_Event *data;
+getConditionalString(char **locpntr, char **destpntr, W_Event *data)
 {
     char   *dest = *destpntr;
 
@@ -743,9 +692,7 @@ getConditionalString(locpntr, destpntr, data)
 }
 
 void
-getTestString(buf, locpntr, destpntr, data)
-    char   *buf, **locpntr, **destpntr;
-    W_Event *data;
+getTestString(char *buf, char **locpntr, char **destpntr, W_Event *data)
 {
     char   *dest = buf;
 
@@ -815,9 +762,7 @@ getTestString(buf, locpntr, destpntr, data)
 */
 
 void
-handle_dollar(locpntr, destpntr, data)
-    char  **locpntr, **destpntr;
-    W_Event *data;
+handle_dollar(char **locpntr, char **destpntr, W_Event *data)
 {
     char   *buf = *destpntr;
     struct id *target;
@@ -964,6 +909,7 @@ handle_dollar(locpntr, destpntr, data)
 	    x = players[target->number].p_x;
 	    y = players[target->number].p_y;
 	}
+	rotate_coord(&x, &y, -rotate_deg, blk_gwidth/2, blk_gwidth/2);
 	sprintf(buf, "%d-%d", x / GRIDSIZE + 1, y / GRIDSIZE + 1);
 	break;
     case 'A':			/* Arable or AGRI */
@@ -1022,4 +968,3 @@ handle_dollar(locpntr, destpntr, data)
 	(*destpntr)++;
     return;
 }
-#endif				/* MACROS */

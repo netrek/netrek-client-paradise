@@ -5,19 +5,12 @@
  *
  */
 #include "copyright2.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <pwd.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <ctype.h>
 #include "config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
@@ -31,17 +24,18 @@
 #define WAITICONWIDTH  50
 
 /* Prototypes */
-static void mapWaitCount P((W_Window countWin, int count));
+static void mapWaitCount P((W_Window countWin, unsigned int count));
 static void mapWaitQuit P((W_Window quitwin));
 static void mapWaitWin P((W_Window waitWin));
 static void mapMotdButtonWin P((W_Window motdButtonWin));
 static void mapWaitIcon P((W_Window waitIcon, int count, 
 			   int *motdMapLater));
 
-    extern int newMotdStuff;	/* from newwin.c */
+extern int newMotdStuff;	/* from newwin.c */
 
 
-    int     findslot()
+int
+findslot(void)
 {
     int     oldcount = -1;
     W_Window waitWin, quitwin, countWin, motdButtonWin, waitIcon;
@@ -83,14 +77,10 @@ static void mapWaitIcon P((W_Window waitIcon, int count,
 			    NULL, NULL, BORDER, foreColor);
     W_SetIconWindow(waitWin, waitIcon);
     /* showMotdWin(); */
-#ifndef AMIGA
     W_MapWindow(waitWin);
     W_MapWindow(countWin);
     W_MapWindow(quitwin);
     W_MapWindow(motdButtonWin);
-#else
-    W_MapWindow(waitIcon);
-#endif
     for (;;) {
 	socketPause(0, 10000);
 	readFromServer();
@@ -107,22 +97,6 @@ static void mapWaitIcon P((W_Window waitIcon, int count,
 		if (event.Window == motdWin) {
 		    motdWinEvent(&event);
 		}
-#ifdef AMIGA
-		else if (event.Window == waitIcon) {
-		    switch (event.key) {
-		    case 'q':
-		    case 'Q':
-			printf("OK, bye!\n");
-			EXIT(0);
-		    case 'm':
-		    case 'M':
-			showMotdWin();
-			break;
-		    default:
-			break;
-		    }
-		}
-#endif
 	    case W_EV_BUTTON:	/* fall through */
 		if (event.Window == quitwin) {
 		    printf("OK, bye!\n");
@@ -165,9 +139,6 @@ static void mapWaitIcon P((W_Window waitIcon, int count,
 	}
 	if (me != NULL) {
 	    W_DestroyWindow(waitWin);
-#ifdef AMIGA
-	    W_DestroyWindow(waitIcon);
-#endif
 	    printf("*** socket %d, player %d ( -s %d -G %d [-2] ) ***\n",
 		   nextSocket, me->p_no,
 		   nextSocket, me->p_no);
@@ -177,8 +148,7 @@ static void mapWaitIcon P((W_Window waitIcon, int count,
 }
 
 static void
-mapWaitWin(waitWin)
-    W_Window waitWin;
+mapWaitWin(W_Window waitWin)
 {
     char   *s = "Netrek: Game is full.";
 
@@ -186,8 +156,7 @@ mapWaitWin(waitWin)
 }
 
 static void
-mapWaitQuit(quitwin)
-    W_Window quitwin;
+mapWaitQuit(W_Window quitwin)
 {
     char   *s = "Quit";
 
@@ -195,9 +164,7 @@ mapWaitQuit(quitwin)
 }
 
 static void
-mapWaitCount(countWin, count)
-    W_Window countWin;
-    int count;
+mapWaitCount(W_Window countWin, unsigned int count)
 {
     char   *s = "Wait";
     char   *t = "Queue";
@@ -215,8 +182,7 @@ mapWaitCount(countWin, count)
 }
 
 static void
-mapMotdButtonWin(motdButtonWin)
-    W_Window motdButtonWin;
+mapMotdButtonWin(W_Window motdButtonWin)
 {
     char   *s = "MOTD";
 
@@ -224,31 +190,17 @@ mapMotdButtonWin(motdButtonWin)
 }
 
 static void
-mapWaitIcon(waitIcon, count, motdMapLater)
-    W_Window waitIcon;
-    int count;
-    int    *motdMapLater;
+mapWaitIcon(W_Window waitIcon, int count, int *motdMapLater)
 {
     char    buf[5];
     int     len;
 
     sprintf(buf, "%d", count);
     len = strlen(buf);
-#ifndef AMIGA
     if (motdMapLater && W_IsMapped(motdWin)) {
 	*motdMapLater = 1;
 	showMotdWin();
     }
     W_WriteText(waitIcon, WAITICONWIDTH / 2 - 10, W_Textheight, textColor, buf, len,
 		W_BigFont);
-#else
-
-    W_WriteText(waitIcon, WAITICONWIDTH / 2 - 10, W_Textheight, textColor, buf, len,
-		W_RegularFont);
-/* using the iconWin in place of the 4 separate windows I get otherwise. -JR */
-    W_WriteText(waitIcon, 0, 0, textColor, serverName, (int)strlen(serverName), W_RegularFont);
-    W_WriteText(waitIcon, 0, 2 * W_Textheight, textColor, "Q to quit", 9, W_RegularFont);
-    W_WriteText(waitIcon, 0, 3 * W_Textheight, textColor, "M for Motd", 10, W_RegularFont);
-#endif
-
 }

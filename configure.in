@@ -8,251 +8,175 @@ dnl @LIBS@	- -l and -L options to pass to linker.
 dnl xxxxxxxxxx
 
 dnl Process this file with autoconf to produce a configure script
-AC_INIT(src/Wlib.h)
+AC_INIT(Makefile.in)
+
+AC_CONFIG_HEADER($srcdir/include/config.h)
+
+dnl Checks for programs
+AC_PROG_CC
+
+dnl Allows use of $(MAKE)
+AC_PROG_MAKE_SET
+
+dnl Checks for header files.
+AC_PATH_X
+AC_PATH_XTRA
+
+dnl Check for compression lib
+ZLIB=""
+AC_CHECK_LIB(z, uncompress, [ZLIB=-lz],
+[
+  echo
+  echo "*** Could not find compression library (libz)."
+  echo "*** Make sure that it is installed and set"
+  echo "*** the LDFLAGS environment variable to point to it"
+  echo "*** with -L(path) before re-running configure."
+  echo
+  exit 1
+]
+)
+
+dnl Check for XPM lib
+XPMLIB=""
+AC_CHECK_LIB(Xpm, XpmCreatePixmapFromData, [XPMLIB=-lXpm],
+[
+  echo
+  echo "*** Could not find XPM library (libXpm)."
+  echo "*** Make sure that it is installed and set"
+  echo "*** the LDFLAGS environment variable to point to it"
+  echo "*** with -L(path) before re-running configure."
+  echo
+  exit 1
+]
+)
 
 dnl some initial definitions
-XPMDIR=xpm
-ZLIBDIR=zlib
-GMPDIR=gmp
 RSADIR=rsa
 
-AC_SUBST(XPMDIR)
-AC_SUBST(ZLIBDIR)
-AC_SUBST(GMPDIR)
-AC_SUBST(RSADIR)
+dnl NOTE: AC_HEADER_STDC searches for ANSI-compliant header files.
+dnl NOTE: If STDC_HEADERS is defined, this includes these files:
+dnl NOTE: assert.h ctype.h  float.h  limits.h math.h
+dnl NOTE: setjmp.h signal.h stdarg.h stdio.h  stdlib.h
+dnl NOTE: string.h time.h   errno.h  stddef.h
+dnl NOTE: (*) locale.h wchar.h  iso646.h wctype.h
+dnl NOTE:
+dnl NOTE: this is essentially a useless check, as I'm going to assume
+dnl NOTE: an ANSI-standard environment on whatever this builds on.
+dnl NOTE: If you don't have an ANSI-standard environment, you need to
+dnl NOTE: upgrade ;)
 
-dnl xxxxxxxxxx
-dnl May want to use AC_CONFIG_HEADER(defines.h) and create a defines.h.in;
-dnl   this will cause all -D options to become #defines in defines.h.
-AC_CONFIG_HEADER(src/defines.h)
-dnl xxxxxxxxxx
+dnl NOTE: in theory, we could define _POSIX_SOURCE and get these
+dnl NOTE: headers automatically as well, however I'm not convinced
+dnl NOTE: yet that all platforms conform to this.. doh
+dnl NOTE: termios.h dirent.h fcntl.h unistd.h grp.h pwd.h 
+dnl NOTE: sys/stat.h sys/wait.h sys/time.h sys/types.h sys/utsname.h
 
-dnl Checks for programs.
-dnl AC_PROG_CC sets @CC@, _and_ sets @GCC@ to yes if gcc.
-AC_PROG_CC
-dnl Checks for @CPP@
-AC_PROG_CPP
-dnl Checks for @RANLIB@
-AC_PROG_RANLIB
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(fcntl.h sys/time.h unistd.h memory.h sys/utsname.h)
+AC_CHECK_HEADERS(pwd.h strings.h bstring.h)
+AC_CHECK_HEADERS(netinet/in.h netinet/tcp.h netdb.h sys/select.h sys/socket.h)
+AC_CHECK_HEADERS(sys/param.h sys/stat.h sys/types.h)
+AC_CHECK_HEADERS(arpa/inet.h assert.h)
+AC_CHECK_HEADERS(zlib.h, [/bin/true],
+[
+  echo
+  echo "*** Could not find compression library header (zlib.h)."
+  echo "*** Make sure that it is installed and set"
+  echo "*** the CPPFLAGS environment variable to point to it"
+  echo "*** with -I(path) before re-running configure."
+  echo
+  exit 1
+]
+)
 
-dnl Check for perl (needed for images) -- will set @PERL@ to perl if found.
-dnl   In fact, it will set it to the entire path so we can do #! line 
-dnl   substitution in the scripts.  Cool.  And we can do it from within
-dnl   configure, getting rid of the scripts option in the Makefiles. :)
-AC_PATH_PROG(PERL,perl,no)
-if test "$PERL" = no; then
-  AC_MSG_ERROR(perl is required to build the Ted Turner client)
-fi
+AC_CHECK_HEADERS(xpm.h, [/bin/true],
+[
+  echo
+  echo "*** Could not find XPM library header (xpm.h)."
+  echo "*** Make sure that it is installed and set"
+  echo "*** the CPPFLAGS environment variable to point to it"
+  echo "*** with -I(path) before re-running configure."
+  echo
+  exit 1
+]
+)
+
+dnl Check for typedefs, structs, and compiler characteristics
+AC_C_CONST
+AC_C_CHAR_UNSIGNED
+AC_HEADER_TIME
+AC_STRUCT_TM
+AC_STRUCT_TIMEZONE
+
+dnl Checks for lib. functions
+AC_PROG_GCC_TRADITIONAL
+AC_TYPE_SIGNAL
+AC_FUNC_WAIT3
+AC_CHECK_FUNCS(gettimeofday strdup strstr uname)
 
 dnl Check for install program.  Sets INSTALL, INSTALL_PROGRAM(755),
 dnl   and INSTALL_DATA(644).  We MUST have install-sh in our distribution if
 dnl   this is used.
 AC_PROG_INSTALL
 
-dnl xxxxxxxxxx
-dnl AC_PROG_MAKE_SET checks for make setting the variable MAKE.  If it does,
-dnl define SET_MAKE to be empty, otherwise SET_MAKE='MAKE=make' (@SET_MAKE@)
-dnl xxxxxxxxxx
-AC_PROG_MAKE_SET
+AUTH_OBJS=""
+AUTH_DEFS=""
+SCRAMBLER="echo"
 
-AC_MSG_CHECKING(for X)
-AC_CACHE_VAL(ac_cv_have_x,
-[# One or both of the vars are not set, and there is no cached value.
-ac_x_includes=NO ac_x_libraries=NO
-AC_PATH_X_DIRECT
-AC_PATH_X_XMKMF
-if test "$ac_x_includes" = NO || test "$ac_x_libraries" = NO; then
-  AC_MSG_ERROR([Can't find X includes. Please check your installation and add the correct paths!])
-else
-  # Record where we found X for the cache.
-  ac_cv_have_x="have_x=yes \
-                ac_x_includes=$ac_x_includes ac_x_libraries=$ac_x_libraries"
-fi])dnl
-eval "$ac_cv_have_x"
- 
-if test "$have_x" != yes; then
-  AC_MSG_RESULT($have_x)
-  no_x=yes
-else
-  # If each of the values was on the command line, it overrides each guess.
-  test "x$x_includes" = xNONE && x_includes=$ac_x_includes
-  test "x$x_libraries" = xNONE && x_libraries=$ac_x_libraries
-  # Update the cache value to reflect the command line values.
-  ac_cv_have_x="have_x=yes \
-                ac_x_includes=$x_includes ac_x_libraries=$x_libraries"
-  AC_MSG_RESULT([libraries $x_libraries, headers $x_includes])
+AC_CHECK_PROG(PERL, perl, perl, echo)
+
+ac_have_rsa="yes"
+if test "x$PERL" = xecho; then
+  ac_have_rsa="no"
 fi
 
-if test -z "$x_includes" || test "x$x_includes" = xNONE; then
-  X_INCLUDES=""
-  x_includes="."; dnl better than nothing :-
- else
-  X_INCLUDES="-I$x_includes"
-fi
+AC_ARG_ENABLE(rsa,
+[  --enable-rsa[=EXPIRE]   Enable RSA authentication in client
+                             [EXPIRE=today+2 yrs or MM-DD-YYYY or MM/DD/YYYY]],
+  [ if test "x$ac_have_rsa" = xyes; then ]
+    AC_CHECK_HEADERS(gmp.h, [/bin/true],
+                     [ echo "  *** Cannot find gmp.h"
+		       ac_have_rsa="no" ])
+    AC_CHECK_LIB(gmp, mpz_init, [/bin/true],
+                 [ echo "  *** Cannot find GNU MP library (libgmp)"
+	           ac_have_rsa="no" ])
+    AC_CHECK_FILE($srcdir/src/rsa/rsa_box.c,
+                  [/bin/true],
+		  [ echo "  *** Cannot find rsa_box*.c in $srcdir/src/rsa"
+		    ac_have_rsa="no" ])
+  [ else
+      echo "  *** Cannot find perl (needed to scramble object link order)"
+    fi
 
-if test -z "$x_libraries" || test "x$x_libraries" = xNONE; then
-  X_LDFLAGS=""
-  x_libraries="/usr/lib"; dnl better than nothing :-
-  all_libraries=""
- else
-  X_LDFLAGS="-L$x_libraries"
-  all_libraries=$X_LDFLAGS
-  LDFLAGS="$LDFLAGS $X_LDFLAGS"
-fi
+    if test "x$ac_have_rsa" = xno; then
+      echo "  *** Building without RSA authentication"
+    else
+      if test "x$enable_rsa" = xyes; then
+        EXPIRE_DATE=`${PERL} $srcdir/src/rsa/expire.perl`
+      else
+        EXPIRE_DATE=`${PERL} $srcdir/src/rsa/expire.perl $enable_rsa`
+      fi
+      AUTH_LIBS="-lgmp"
+      AUTH_SRCS="expire.c `(cd src && echo rsa/rsa_box*.c)`"
+      AUTH_OBJS=`echo $AUTH_SRCS | sed -e 's,\.c,\.o,g'`
+      AUTH_DEFS="-DAUTHORIZE"
+      SCRAMBLER="$(PERL) rsa/scrambleargs.perl"
+    fi ]
+)
 
-AC_SUBST(X_INCLUDES)
-AC_SUBST(X_LDFLAGS)
-AC_SUBST(x_libraries)
-AC_SUBST(x_includes)
-all_includes=$X_INCLUDES
+AC_SUBST(RSADIR)
+AC_SUBST(ZLIB)
+AC_SUBST(XPMLIB)
+AC_SUBST(AUTH_LIBS)
+AC_SUBST(AUTH_SRCS)
+AC_SUBST(AUTH_OBJS)
+AC_SUBST(AUTH_DEFS)
+AC_SUBST(SCRAMBLER)
+AC_SUBST(EXPIRE_DATE)
 
+AC_OUTPUT(Makefile src/Makefile src/expire.c)
 
-dnl Checks for libraries.
-dnl xxxxxx
-dnl AC_CHECK_LIB(lib,func) does these things:
-dnl   adds -l(lib) to LIBS
-dnl   defines HAVE_LIB(LIB)
-AC_CHECK_LIB(m, atan2)
-AC_CHECK_LIB(gmp,mpz_init,,builtin_gmplib=no)
-AC_CHECK_LIB(z,uncompress,,builtin_zlib=no)
-AC_CHECK_LIB(socket,socket)
-AC_CHECK_LIB(resolv,gethostbyname)
-AC_CHECK_LIB(nsl,clnt_tli_create)
-AC_CHECK_LIB(bsd,strlen)
-AC_CHECK_LIB(X11, XOpenDisplay)
-AC_CHECK_LIB(Xext, XextCreateExtension)
-AC_CHECK_LIB(Xt, XtCreateApplicationShell)
-AC_CHECK_LIB(Xmu, XmuCursorNameToIndex)
-AC_CHECK_LIB(Xpm,XpmCreateImageFromXpmImage,,builtin_xpmlib=no)
+dnl AC_OUTPUT(src/rsa/Makefile scripts/make_shippicfile.perl scripts/mkcredits scripts/mkimgsrc scripts/netrektoxbm scripts/numtoship scripts/scrambleargs scripts/unused_images)
 
-dnl Check for the older sun libraries.  This is for IRIX 4 only.
-dnl AC_CHECK_LIB(sun, 
-
-dnl Checks for header files.
-dnl sets shell variables x_includes and x_libraries unless they are default.
-dnl This is useless after we check for libraries..
-dnl AC_PATH_X
-
-dnl defines STDC_HEADERS if the system has ANSI C headers.  Checks for:
-dnl   stdlib.h stdarg.h string.h float.h.  Also checks for 8bit ctype.h macros
-AC_HEADER_STDC
-
-dnl defines HAVE_SYS_WAIT_H if sys/wait.h AND is POSIX (int stores status)
-dnl   Use to define WEXIT,WIFEXIT macros if H_S_W_H not defined.
-AC_HEADER_SYS_WAIT
-
-dnl Checks for specific header files.
-dnl   Defines HAVE_FCNTL_H, SYS_FILE_H SYS_IOCTL_H SYS_TIME_H UNISTD_H
-dnl   if they are available.
-AC_CHECK_HEADERS(fcntl.h sys/file.h sys/ioctl.h time.h sys/time.h unistd.h)
-AC_CHECK_HEADERS(sys/select.h sys/timeb.h assert.h stddef.h wait.h)
-
-dnl Check for string.h and strings.h as well, sys/fcntl.h, and memory.h
-dnl   (for memset/memmove-type instructions)
-AC_CHECK_HEADERS(string.h strings.h sys/fcntl.h memory.h machine/endian.h)
-AC_CHECK_HEADERS(limits.h values.h)
-
-dnl Check to see if some of our source tree is built in
-AC_CHECK_HEADERS(xpm.h,,builtin_xpmlib=no)
-AC_CHECK_HEADERS(gmp.h,,builtin_gmplib=no)
-AC_CHECK_HEADERS(zlib.h,,builtin_zlib=no)
-
-dnl Check for unsigned char.
-AC_C_CHAR_UNSIGNED
-
-dnl Checks for typedefs, structures, and compiler characteristics.
-dnl If the compiler doesn't understand const, #define const to be empty.
-AC_C_CONST
-
-dnl Checks for the type of mode.  If mode_t is not defined, this defines
-dnl   mode_t to be type int.
-AC_TYPE_MODE_T
-
-dnl Checks for time & sys/time.  Defines TIME_WITH_SYS_TIME_H if both may be
-dnl   included.  If not, just include sys/time.h if SYS_TIME_H is defined,
-dnl   else just include time.h
-AC_HEADER_TIME
-
-dnl If time.h doesn't define struct tm, then define TM_IN_SYS_TIME, so
-dnl   sys/time.h is necessary to be included.
-AC_STRUCT_TM
-
-dnl If struct tm has a tm_zone member, defines HAVE_TM_ZONE, otherwise, if
-dnl   exterm tzname[] is found, defines HAVE_TZNAME (probably useless for us)
-AC_STRUCT_TIMEZONE
-
-dnl If uid_t is not defined, define uid_t and gid_t to be int.
-AC_TYPE_UID_T
-
-dnl Checks for library functions.
-dnl Will add -traditional to CDEFS if gcc & it is required.
-AC_PROG_GCC_TRADITIONAL
-
-dnl adds memcmp.o to LIBOBJS if memcmp isn't available or doesn't work on 
-dnl   8-bit data (SunOS 4.1.3)
-AC_FUNC_MEMCMP
-
-dnl Signal return type.  If void (*), then define RETSIGTYPE to be void, 
-dnl   otherwise define it as int.
-AC_TYPE_SIGNAL
-
-dnl If vprintf is found, defines HAVE_VPRINTF, if _doprnt is found, define
-dnl   HAVE_DOPRNT.
-AC_FUNC_VPRINTF
-
-dnl If wait3 is found & fills contents of the third arg with struct rusage *,
-dnl   (not HP-UX), define HAVE_WAIT3
-AC_FUNC_WAIT3
-
-dnl Defines HAVE_(FUNC) if these are available.
-AC_CHECK_FUNCS(ftime gettimeofday mkfifo select socket strdup strerror strstr strtol strcmpi strncmpi strcasecmp strncasecmp)
-
-AC_CHECK_FUNCS(index rindex strchr strrchr bzero bcopy memset memmove memcpy)
-AC_CHECK_FUNCS(srandom random srand48 lrand48 signal tolower toupper)
-
-dnl xxxxxxxxxx
-dnl Need to check for builtins AFTER we check for functions, otherwise
-dnl compiler gets hung up on libraries if they aren't built in
-dnl xxxxxxxxxx
-
-dnl If no builtin XPMlib, then search for xmkmf.
-if test "$builtin_xpmlib" = no; then
-  LIBS="-L./${XPMDIR}/lib -lXpm ${LIBS}"
-  CPPFLAGS="${CPPFLAGS} -I./${XPMDIR}/lib"
-  AC_PATH_PROG(XMKMF,xmkmf,no)
-  if test "$XMKMF" = no; then
-    XMKMF_BUILD="cp Makefile.noX Makefile"
-  else
-    XMKMF_BUILD="${XMKMF} -a"
-  fi
-  MYDEPLIBS="${MYDEPLIBS} ${XPMDIR}/lib/libXpm.a"
-  AC_SUBST(XMKMF_BUILD)
-fi
-
-dnl If no builtin zlib, we need to build
-if test "$builtin_zlib" = no; then
-  LIBS="${ZLIBDIR}/libz.a ${LIBS}"
-  CPPFLAGS="${CPPFLAGS} -I./${ZLIBDIR}"
-  MYDEPLIBS="${MYDEPLIBS} ${ZLIBDIR}/libz.a"
-fi
-
-dnl If no builtin libgmp, we *may* need to build libgmp
-if test "$builtin_gmplib" = no; then
-  AUTHLIBS="-L./${GMPDIR} ${LIBS} -L./${RSADIR} -lrsa -lgmp"
-  CPPFLAGS="${CPPFLAGS} -I./${GMPDIR}"
-  MYDEPAUTHLIBS="${MYDEPAUTHLIBS} ${GMPDIR}/libgmp.a"
-else
-  AUTHLIBS='${LIBS} -L./${RSADIR} -lrsa -lgmp'
-fi
-AC_SUBST(AUTHLIBS)
-AC_SUBST(MYDEPLIBS)
-AC_SUBST(MYDEPAUTHLIBS)
-
-dnl xxxxxxxxxx
-dnl AC_OUTPUT(file [file2 [file 3...]]) to read fileX.in and create file,
-dnl replacing @Y@-type variables with configure-determined ones in the
-dnl process.
-dnl xxxxxxxxxx
-AC_OUTPUT(Makefile src/Makefile src/rsa/Makefile scripts/expiretime scripts/make_shippicfile.perl scripts/mkcredits scripts/mkimgsrc scripts/netrektoxbm scripts/numtoship scripts/scrambleargs scripts/unused_images)
-
-chmod +x scripts/*
+dnl chmod +x scripts/*

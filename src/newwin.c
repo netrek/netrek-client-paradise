@@ -2,58 +2,27 @@
  * newwin.c
  */
 #include "copyright.h"
-#include "defines.h"
 
+#include "config.h"
 #include <stdio.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
-#endif
-#include <signal.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
 #endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
-#include <math.h>
-#include "config.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "gameconf.h"
-#include "images.h"
-
-#if 0
-#include "oldbitmaps.h"
-#include "bitmaps_pr.h"
-#include "bitmaps3.h"
-#include "hullbitmaps.h"
-#include "planetbitmaps.h"
-#include "rabbitbitmaps.h"
-#include "starbitmaps.h"
-
-#ifdef BEEPLITE
-#include "emph_planet_seq.h"
-#include "emph_player_seq.h"
-#include "emph_player_seql.h"
-#endif
-#endif /*0*/
-
-#include "packets.h"
 #include "proto.h"
-#include "version.h"
+#include "images.h"
 
 #define NRHEADERS	4
 /* elapsed time in outfit window [BDyess] */
@@ -89,8 +58,7 @@ void light_erase P((void));
 extern int helpmessages;
 
 void
-newwin(hostmon, progname)
-    char   *hostmon, *progname;
+newwin(char *hostmon, char *progname)
 {
     int     i;
     W_Image *image;
@@ -136,10 +104,6 @@ newwin(hostmon, progname)
                                YOFF + winside + 2 * BORDER + 2 * MESSAGESIZE,
 		               160, helpmessages / 4 + 1, NULL, (char *) 0, 
 			       BORDER);
-#if 0
-    W_SetWindowKeyDownHandler(metaWin, metaaction);
-    W_SetWindowButtonHandler(metaWin, metaaction);
-#endif				/* 0 */
 
     initMessageWindows();
 
@@ -148,15 +112,11 @@ newwin(hostmon, progname)
     udpWin = W_MakeMenu("UDP", winside + 10, -BORDER + 10, 40, UDP_NUMOPTS,
 			NULL, 2);
 
-#ifdef SHORT_PACKETS
     spWin = W_MakeMenu("network", winside + 10, -BORDER + 10, 40, SPK_NUMFIELDS,
 		       NULL, 2);
-#endif
 
-#ifdef TOOLS
   toolsWin = W_MakeScrollingWindow("tools", winside + BORDER, BORDER,
 				   80, TOOLSWINLEN, NULL, "xterm", BORDER);
-#endif
 
     motdWin = W_MakeWindow("Motd"
 			   ,-BORDER, -BORDER, winside, winside, NULL,
@@ -192,7 +152,7 @@ newwin(hostmon, progname)
 }
 
 void
-mapAll()
+mapAll(void)
 {
     initinput();
     W_MapWindow(mapw);
@@ -238,16 +198,13 @@ mapAll()
 }
 
 static void
-saveimages()
+saveimages(void)
 {
     load_default_teamlogos();
 }
 
 void
-get_N_dispatch_outfit_event(team, s_type, lastplayercount)
-    int    *team;
-    int    *s_type;
-    int    *lastplayercount;
+get_N_dispatch_outfit_event(int *team, int *s_type, int *lastplayercount)
 {
     W_Event event;
     int     validshipletter = 0;
@@ -462,11 +419,6 @@ get_N_dispatch_outfit_event(team, s_type, lastplayercount)
 	else if (event.Window == w)
 	    showMotd(w);
 	else if (event.Window == mapw) {
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
-	    if(showMapAtMotd) {
-		map();
-	    } else
-#endif
 		showValues(mapw);
 	    redraw_death_messages();
 	} else
@@ -486,8 +438,7 @@ get_N_dispatch_outfit_event(team, s_type, lastplayercount)
 }
 
 void
-new_entrywindow(team, s_type)
-    int    *team, *s_type;
+new_entrywindow(int *team, int *s_type)
 {
     int     i;
     int     lastplayercount[4];	/* number of players on each team */
@@ -505,10 +456,8 @@ new_entrywindow(team, s_type)
     }
     lastOkayMask = okayMask = tournMask;
 
-#ifdef PACKET_LIGHTS
     /* erase packet lights to make Bob happy [BDyess] */
     light_erase();
-#endif				/* PACKET_LIGHTS */
 
     /*
        map all team selection windows, and stripe out those that are
@@ -530,11 +479,6 @@ new_entrywindow(team, s_type)
     /* I don't know why this restriction is in place - RF */
     if (me->p_whydead != KWINNER && me->p_whydead != KGENOCIDE) {
 	showMotd(w);
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
-	if(showMapAtMotd) {
-	    map();
-	} else
-#endif
 	W_ClearWindow(mapw);
 	showValues(mapw);
 	redraw_death_messages();
@@ -547,9 +491,7 @@ new_entrywindow(team, s_type)
 	    /* no window events, just process socket stuff */
 	    fd_set  mask;
 
-#ifdef PACKET_LIGHTS
 	    light_erase();
-#endif				/* PACKET_LIGHTS */
 
 	    readFromServer();
 
@@ -557,40 +499,17 @@ new_entrywindow(team, s_type)
 		/* wait up to a half-second for input from the window system */
 		struct timeval tv;
 
-#ifndef AMIGA
 		tv.tv_sec = 0;
 		tv.tv_usec = 500000;
 
 		FD_ZERO(&mask);
 		FD_SET(W_Socket(), &mask);
 		select(W_Socket() + 1, &mask, 0, 0, &tv);
-#else
-		StartTimer(0, 500000);
-		while (1) {
-#ifdef DNET
-		    sigsPending = Wait(W_Socket() | portmask | sockMask | udpSockMask | SIGBREAKF_CTRL_C);
-#else
-/* something else.... */
-#endif
-		    if (sigsPending & SIGBREAKF_CTRL_C) {
-			printf("Ctrl-c break from entrywindow!\n");
-			StopTimer();
-			exit(0);
-		    }
-		    if ((sigsPending & (W_Socket() | sockMask | udpSockMask)) ||
-			(CheckIO(&(ior->tr_node))))
-			break;
-		}		/* timer returns false signals, wish I knew
-				   why. :-( */
-		StopTimer();
-#endif				/* AMIGA */
 	    }
 
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
 	    if(showMapAtMotd) {
 		map();
 	    }
-#endif
 	    redraw_death_messages();
 
 	    if (me->p_status == PTQUEUE)
@@ -601,10 +520,8 @@ new_entrywindow(team, s_type)
 
 		if (startTime == -1) {	/* we were on the tqueue */
 		    /* I hate this [BDyess] */
-#if 1
 		    W_Deiconify(baseWin);	/* we changed status.  alert
 						   the user */
-#endif
 		    startTime = time(0);
 		    spareTime = 480;	/* Allow them extra time, as long */
 		    /* as they are active */
@@ -623,11 +540,6 @@ new_entrywindow(team, s_type)
 
 		if (newMotdStuff) {
 		    showMotd(w);
-#ifdef COW_HAS_IT_WHY_SHOULDNT_WE
-		    if(showMapAtMotd) {
-			map();
-		    } else
-#endif
 			showValues(mapw);
 		    redraw_death_messages();
 		}
@@ -648,10 +560,8 @@ new_entrywindow(team, s_type)
 	    lastOkayMask = okayMask;
 	}
 
-#ifdef RECORDER
 	if (playback)  /* silly.  Shouldn't even be mapping team windows. */
 	    break;
-#endif
 	/* they quit or ran out of time */
 	if (*team == number_of_teams) {
 	    me->p_status = PFREE;	/* exit outer while loop */
@@ -680,9 +590,7 @@ new_entrywindow(team, s_type)
 
     } while ((me->p_status == POUTFIT ||
 	      me->p_status == PTQUEUE)
-#ifdef RECORDER
 	     && (!pb_update)
-#endif
 	);
 
     if (*team >= 0) {
@@ -694,12 +602,10 @@ new_entrywindow(team, s_type)
 	sprintf(buf, "Welcome aboard %s!", get_players_rank_name(me));
 	warning(buf);
     }
-#ifdef RECORDER
     if (playback) {
 	extern int lastTeamReq;
 	*team = me->p_teami = lastTeamReq;
     } else
-#endif
 	/* if they quit or ran out of time */
     if (me->p_status == PFREE)
 	*team = -1;
@@ -718,23 +624,14 @@ new_entrywindow(team, s_type)
 
 /* Attempt to pick specified team & ship */
 static int
-teamRequest(team, ship)
-    int     team, ship;
+teamRequest(int team, int ship)
 {
     int     lastTime;
 
-#ifdef RECORDER
     extern int lastTeamReq;
 
     if (!playback)
 	lastTeamReq = team;
-#endif
-#ifdef TIMELORD
-    if (!allowed_to_keep_playing()) {
-	warning("You've played enough for today.  Get back to work!");
-	return 0;
-    }
-#endif
     pickOk = -1;
     sendTeamReq(team, ship);
     lastTime = time(NULL);
@@ -763,29 +660,17 @@ teamRequest(team, ship)
 	    pickOk = 0;
 	    break;
 	}
-#if 0				/* >this< is redundant ;-) */
-	if (me->p_status == PALIVE) {	/* well, something happened and we've
-					   got a ship! */
-	    pickOk = 1;
-	    break;
-	}
-#endif
     }
 
-#if 1				/* this is not redundant? */
     if (pickOk) {
 	me->p_status = PALIVE;	/* we got a ship.  We must be alive */
-#ifdef TIMER
 	timeBank[T_SHIP] = time(NULL);
-#endif				/* TIMER */
     }
-#endif
     return (pickOk);
 }
 
 static int
-numShips(owner)
-    int     owner;
+numShips(int owner)
 {
     int     i, num = 0;
     struct player *p;
@@ -797,49 +682,10 @@ numShips(owner)
     return (num);
 }
 
-#if 0
-int
-realNumShips(owner)
-    int     owner;
-{
-    int     i, num = 0;
-    struct player *p;
-
-    for (i = 0, p = players; i < MAXPLAYER; i++, p++)
-	if (p->p_status != PFREE &&
-	    p->p_team == owner)
-	    num++;
-    return (num);
-}
-#endif
-
-#if 0
-int
-deadTeam(owner)
-    int     owner;
-/* The team is dead if it has no planets and cannot coup it's home planet */
-{
-    int     i, num = 0;
-    struct planet *p;
-
-    if (planets[remap[owner] * 10 - 10].pl_couptime == 0)
-	return (0);
-    for (i = 0, p = planets; i < MAXPLANETS; i++, p++) {
-	if (p->pl_owner & owner) {
-	    num++;
-	}
-    }
-    if (num != 0)
-	return (0);
-    return (1);
-}
-#endif
-
-static int
-checkBold(line)
 /* Determine if that line should be highlighted on sign-on screen */
 /* Which is done when it is the players own score being displayed */
-    char   *line;
+static int
+checkBold(char *line)
 {
     char   *s, *t;
     int     i;
@@ -877,10 +723,8 @@ struct list {
 static struct list *sysdefptr = NULL;
 
 void
-showMotd(win)
-    W_Window win;
+showMotd(W_Window win)
 {
-    FILE   *fopen();
     int     i;
     struct list *data;
     int     count;
@@ -897,11 +741,9 @@ showMotd(win)
 
     headernum = currpage->page % NRHEADERS;
     W_ClearWindow(win);
-#ifdef XPM
     if(xpm) 
       W_DrawImageNoClip(win, 0, 0, 0, getImage(I_HEADER), 0);
     else 
-#endif /*XPM [BDyess]*/
     {
       W_Image *headerA, *headerB, *header1;
       headerA = getImage(I_HEADERA);
@@ -917,11 +759,6 @@ showMotd(win)
 		       foreColor);
       if (headernum == 2) {	/* fill in client: */
 	  /* note: font dependant */
-#if 0
-	  W_WriteText(win, headerA_width + header3_x_hot, 
-	  	headerB_height + header3_y_hot - 7, textColor, CLIENTVERS, 
-		(int)strlen(CLIENTVERS), W_BoldFont);
-#endif /* 0 */
       } else if (headernum == 3) {/* fill in server: */
 	  ;
       }
@@ -943,10 +780,10 @@ showMotd(win)
 
 	if (data->bold) {
 	    W_WriteText(win, 20, i * (paradise ? 10 : W_Textheight), textColor, data->data,
-			(int)strlen(data->data), W_BoldFont);
+			strlen(data->data), W_BoldFont);
 	} else {
 	    W_WriteText(win, 20, i * (paradise ? 10 : W_Textheight), textColor, data->data,
-			(int)strlen(data->data), W_RegularFont);
+			strlen(data->data), W_RegularFont);
 	}
 	data = data->next;
 	count--;
@@ -955,7 +792,7 @@ showMotd(win)
     if (win == w) {
 	count = (int)W_StringWidth(blk_refitstring, W_RegularFont) / 2;
 	W_WriteText(mapw, 250 - count, 480, textColor, blk_refitstring,
-		    (int)strlen(blk_refitstring), W_RegularFont);
+		    strlen(blk_refitstring), W_RegularFont);
     }
     showPics(win);
 /*    showValues(mapw); Should be handled in event loop now RF */
@@ -965,15 +802,12 @@ showMotd(win)
       W_MaskText(w, center - (warncount / 2) * W_Textwidth, HUD_Y, W_Green,
                   warningbuf, warncount, W_RegularFont);
     }
-#ifdef BUFFERING
     /* flush buffer if one exists [BDyess] */
     if(W_IsBuffered(win)) W_DisplayBuffer(win);	
-#endif /*BUFFERING [BDyess]*/
 }
 
 static void
-showPics(win)
-    W_Window win;
+showPics(W_Window win)
 {
     struct piclist *temp;
     int     page;
@@ -1008,8 +842,7 @@ showPics(win)
  * ATM: show the current values of the .sysdef parameters.
  */
 void
-showValues(win)
-    W_Window win;
+showValues(W_Window win)
 {
     int     i;
     struct list *data;
@@ -1022,15 +855,13 @@ showValues(win)
 	    break;
 	if (data->data[0] == '+')	/* quick boldface hack */
 	    W_WriteText(win, 20, i * W_Textheight, textColor, data->data + 1,
-			(int)strlen(data->data) - 1, W_BoldFont);
+			strlen(data->data) - 1, W_BoldFont);
 	else
 	    W_WriteText(win, 20, i * W_Textheight, textColor, data->data,
-			(int)strlen(data->data), W_RegularFont);
+			strlen(data->data), W_RegularFont);
 	data = data->next;
     }
-#ifdef BUFFERING
     W_DisplayBuffer(win);
-#endif /*BUFFERING [BDyess]*/
 }
 
 #define	BETWEEN_PAGES	0
@@ -1045,7 +876,7 @@ static int linecount = 0;
 static struct piclist **motd_buftail = &motdPics;
 
 void
-erase_motd()
+erase_motd(void)
 {
     struct piclist *temppic;
     struct page *temppage;
@@ -1087,9 +918,7 @@ erase_motd()
 }
 
 void
-newMotdPic(x, y, width, height, bits, page)
-    int     x, y, page, width, height;
-    char   *bits;
+newMotdPic(int x, int y, int width, int height, char *bits, int page)
 {
     struct piclist *tmp;
 
@@ -1116,8 +945,7 @@ newMotdPic(x, y, width, height, bits, page)
 }
 
 void
-newMotdLine(line)
-    char   *line;
+newMotdLine(char *line)
 {
 
     /*
@@ -1170,17 +998,13 @@ newMotdLine(line)
 
 /*ARGSUSED*/
 static void
-getResources(prog)
-    char   *prog;
+getResources(char *prog)
 {
     getColorDefs();
 }
 
 static void
-redrawTeam(win, teamNo, lastnum)
-    W_Window win;
-    int     teamNo;
-    int    *lastnum;
+redrawTeam(W_Window win, int teamNo, int *lastnum)
 {
     char    buf[BUFSIZ];
     int     num = numShips(teamNo);
@@ -1195,7 +1019,7 @@ redrawTeam(win, teamNo, lastnum)
     W_DrawImageNoClip(teamWin[teamNo], 0, 0, 0, teaminfo[teamNo].shield_logo,
                 shipCol[teamNo + 1]);
     (void) sprintf(buf, "%d", num);
-    W_MaskText(win, 5, 46, shipCol[teamNo + 1], buf, (int)strlen(buf),
+    W_MaskText(win, 5, 46, shipCol[teamNo + 1], buf, strlen(buf),
 	       W_BigFont);
     if (!(tournMask & (1 << teamNo)))
       W_DrawImage(win, 0, 0, 0, getImage(I_NOENTRY), W_Red);
@@ -1203,7 +1027,7 @@ redrawTeam(win, teamNo, lastnum)
 }
 
 static void
-redrawQuit()
+redrawQuit(void)
 {
     /* W_WriteText(qwin, 5, 5, textColor, "Quit xtrek", 10, W_RegularFont); */
     if (me->p_status == PTQUEUE) {
@@ -1213,21 +1037,13 @@ redrawQuit()
 }
 
 void
-drawIcon()
+drawIcon(void)
 {
     if (!iconified) {
 	me_messages = 0;
 	team_messages = 0;
 	all_messages = 0;
     }
-#ifdef AMIGA
-    /*
-       not sure this isn't appropriate for X as well.  This is called from
-       redrawTeam(),  so iconified is set, and then all my personal messages
-       beep...iconified or not.
-    */
-    if (W_IsMapped(iconWin))
-#endif
 	iconified = 1;
     if (!infoIcon) {
         W_DrawImageNoClip(iconWin, 0, 0, 0, getImage(I_ICON), W_White);
@@ -1270,23 +1086,23 @@ drawIcon()
 	}
 	if (me_messages) {
 	    sprintf(buf, "Personal: %d", me_messages);
-	    W_WriteText(iconWin, 1, bottom + 2, W_White, buf, (int)strlen(buf),
+	    W_WriteText(iconWin, 1, bottom + 2, W_White, buf, strlen(buf),
 			W_RegularFont);
 	}
 	if (team_messages) {
 	    sprintf(buf, "Team:     %d", team_messages);
 	    W_WriteText(iconWin, 1, bottom + 2 + W_Textheight, W_White, buf,
-			(int)strlen(buf), W_RegularFont);
+			strlen(buf), W_RegularFont);
 	}
 	if (all_messages) {
 	    sprintf(buf, "All:      %d", all_messages);
 	    W_WriteText(iconWin, 1, bottom + 2 + 2 * W_Textheight, W_White, buf,
-			(int)strlen(buf), W_RegularFont);
+			strlen(buf), W_RegularFont);
 	}
 	if (me->p_status == POUTFIT) {
 	    sprintf(buf, "Time left: %d", autoQuit - elapsed);
 	    W_WriteText(iconWin, 1, bottom + 2 + W_Textheight, W_White, buf,
-			(int)strlen(buf), W_RegularFont);
+			strlen(buf), W_RegularFont);
 	}
     }
 }
@@ -1295,13 +1111,8 @@ drawIcon()
 #define CLOCK_HEI	BOXSIDE
 #define CLOCK_BDR	0
 
-#ifndef PI
-#define PI		3.141592654
-#endif				/* PI */
-
 static void
-showTimeLeft(t, max)
-    int     t, max;
+showTimeLeft(int t, int max)
 {
     char    buf[BUFSIZ];
     int     cx, cy, ex, ey, tx, ty;
@@ -1327,13 +1138,12 @@ showTimeLeft(t, max)
     cy = BOXSIDE / 2 - 1;
     tx = cx - (int)W_StringWidth(buf, W_RegularFont) / 2;
     ty = cy - W_Textheight;
-    W_WriteText(qwin, tx, ty, textColor, buf, (int)strlen(buf), W_RegularFont);
+    W_WriteText(qwin, tx, ty, textColor, buf, strlen(buf), W_RegularFont);
 }
 
 
 void
-do_refit(type)
-    int     type;
+do_refit(int type)
 {
     sendRefitReq(type);
     localflags &= ~PFREFIT;

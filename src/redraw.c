@@ -2,39 +2,22 @@
  * redraw.c
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <signal.h>
-#include <ctype.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <math.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
 #include "config.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "str.h"
+
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
-#include "gameconf.h"
-#include "images.h"
-#ifdef SOUND
-#include "Slib.h"
+
+#ifdef UNIX_SOUND
+#include "sound.h"
 #endif
 
 void local P((void));
@@ -43,7 +26,7 @@ void local P((void));
    initialize some constants that use them.  Most common computations
    involving WINSIDE and MAPSIDE are done once, here, and the result
    used over and over throughout the rest of the code.  [BDyess] */
-void recalcWindowConstants() 
+void recalcWindowConstants(void)
 {
   if(blk_zoom) {
     gwidth = blk_gwidth / 2;
@@ -68,7 +51,7 @@ void recalcWindowConstants()
 
 
 struct _clearzone *
-new_czone()
+new_czone(void)
 {
     if (clearzone == 0) {
 	czsize = 10;
@@ -82,21 +65,11 @@ new_czone()
 }
 
 void
-intrupt()
+intrupt(void)
 {
-#if 0
-    static long lastread;
-#endif /*0*/
     static struct timeval lastredraw = {0, 0};
     struct timeval t;
     static int needredraw=0;
-
-/* Same thing.  Include time.h, sys/time.h at top of file. */
-#if 0
-#ifndef __osf__
-    long    time();
-#endif
-#endif
 
     udcounter++;
     
@@ -109,15 +82,12 @@ intrupt()
 	needredraw = 0;
         lastredraw=t;
 
-#ifdef RECORDER
 	if (!playback || (pb_update && 
 			  ((!pb_scan) || !(udcounter % pb_advance))))
-#endif
 	{
 	    redraw();
 	    playerlist2();
 	}
-#ifdef RECORDER
 	if (playback) {
 	    if(!pb_scan) {
 		if (pb_advance > 0) {
@@ -153,24 +123,14 @@ intrupt()
 	}
 	if (recordGame)
 	    writeUpdateMarker();
-#endif
     }
-#if 0
-    if (lastread + 3 < time(NULL)) {
-	/*
-	   We haven't heard from server for awhile... Strategy:  send a
-	   useless packet to "ping" server.
-	*/
-	sendWarReq(me->p_hostile);
-    }
-#endif
     if (me->p_status == POUTFIT) {
 	death();
     }
 }
 
 void
-redraw()
+redraw(void)
 {
 
     /* erase warning line if necessary */
@@ -189,28 +149,13 @@ redraw()
                   backColor, hwarningbuf, hwarncount, W_BoldFont);
        hwarncount = 0;
     }
-      
-#if 0
-    if ((warntimer <= udcounter) && (warncount > 0)) {
-#ifndef AMIGA
-	/* XFIX */
-	W_ClearArea(warnw, 5, 5, W_Textwidth * warncount, W_Textheight);
-#else
-	W_ClearWindow(warnw);
-#endif
-	warncount = 0;
-    }
-#endif /*0*/
 
-#ifdef BUFFERING
     if(W_IsBuffered(w)) {   /* buffered, clear the entire buffer [BDyess] */
       W_ClearBuffer(w);
       clearcount = 0;
       clearlcount = 0;
       tractcurrent = tracthead;
     } else
-#endif /*BUFFERING [BDyess]*/
-
     {
       if (W_FastClear) {
 	  W_ClearWindow(w);
@@ -218,43 +163,23 @@ redraw()
 	  clearlcount = 0;
 	  tractcurrent = tracthead;
       } else {
-#if 0
-	  /* just to save a little time on all the function calls */
-	  /* all the normal clear functions are implemented as well. */
-	  W_FlushClearZones(w, clearzone, clearcount);
-	  clearcount = 0;
-#else
 	  while (clearcount) {
 	      clearcount--;
 	      /* XFIX */
 	      W_CacheClearArea(w, clearzone[clearcount].x,
 			 clearzone[clearcount].y, clearzone[clearcount].width,
 			       clearzone[clearcount].height);
-
-	      /*
-		 W_ClearArea(w, clearzone[clearcount].x,
-		 clearzone[clearcount].y, clearzone[clearcount].width,
-		 clearzone[clearcount].height);
-	      */
 	  }
-#endif
 	  while (clearlcount) {
 	      clearlcount--;
 	      /* XFIX */
 	      W_CacheLine(w, clearline[0][clearlcount],
 			  clearline[1][clearlcount], clearline[2][clearlcount],
 			  clearline[3][clearlcount], backColor);
-	      /*
-		 W_MakeLine(w, clearline[0][clearlcount],
-		 clearline[1][clearlcount], clearline[2][clearlcount],
-		 clearline[3][clearlcount], backColor);
-	      */
 	  }
 	  /* XFIX */
-#ifndef AMIGA
 	  W_FlushClearAreaCache(w);
 	  W_FlushLineCaches(w);
-#endif
 	  /* erase the tractor lines [BDyess] */
 	  for (tractrunner = tracthead; tractrunner != tractcurrent;
 	       tractrunner = tractrunner->next) {
@@ -276,11 +201,9 @@ redraw()
 
     stline(0);			/* draw dashboard [BDyess] */
 
-#ifdef BUFFERING
     /* flush buffers [BDyess] */
     W_DisplayBuffer(tstatw);	/* dashboard [BDyess] */
     W_DisplayBuffer(w);		/* local [BDyess] */
-#endif /*BUFFERING*/
 
 				/* would do it in W_EventsPending, just have
 				   it here so the display is updated sooner. */
@@ -298,18 +221,15 @@ redraw()
     /* XFIX: last since its least accurate information */
     if (mapmode) {
       map();
-#ifdef BUFFERING
       /* write the buffered data, if any [BDyess] */
       W_DisplayBuffer(mapw);
-#endif /*BUFFERING [BDyess]*/
     }
 }
 
 #define DRAWGRID		4
 
 int
-zoom_offset(v)
-    int     v;
+zoom_offset(int v)
 {
     int ov;
     /* offset to bring us into new zoom area */

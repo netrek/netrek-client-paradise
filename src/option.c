@@ -2,25 +2,17 @@
  * option.c
  */
 #include "copyright.h"
-#include "defines.h"
 
-#include <stdio.h>
-#include <ctype.h>
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
 #include "config.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "str.h"
+
 #include "Wlib.h"
-#ifdef SOUND
-#include "Slib.h"
-#endif
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "packets.h"
 #include "proto.h"
 
 #ifdef DEBUG
@@ -36,9 +28,7 @@ static int oldzoom = -2;
 static int clearPhaserStats = 1;
 static int reloadShipBitmaps = 1;
 
-#ifdef ROTATERACE
 static int old_rotate, old_rotate_deg;
-#endif
 
 static int old_ping;
 
@@ -58,7 +48,6 @@ char *keymapmes[] = {
     ""
 };
 
-#ifdef TIMER
 char   *timermes[] =
 {"Timer shows nothing (off)",
     "Timer shows time of day",
@@ -66,7 +55,6 @@ char   *timermes[] =
     "Timer shows time in ship",
     "Timer shows user-set time",
 ""};
-#endif				/* TIMER */
 
 char   *localmes[] =
 {"Show owner on local planets",
@@ -85,7 +73,6 @@ char   *galacticmes[] =
     "Show MOO facilities on galactic map",
 ""};
 
-#ifdef ROTATERACE
 char   *rotatemess[] =
 {"Don't rotate galaxy",
     "Rotate galaxy 90 degrees",
@@ -93,7 +80,6 @@ char   *rotatemess[] =
     "Rotate galaxy 270 degrees",
     ""
 };
-#endif
 
 char   *mapupdates[] =
 {"Don't update galactic map",
@@ -201,30 +187,22 @@ struct int_range redraw_delay_range =
 struct int_range Menus_Range =
 {1, 1, 1};
 
-#ifdef CONTINUOUS_MOUSE
 struct int_range clickDelay_range =
 {0, 20, 1};
-#endif				/* CONTINUOUS_MOUSE */
 
-#ifdef BEEPLITE
 struct int_range beeplite_planet_range =
 {0, 50, 1};
 struct int_range beeplite_player_range =
 {0, 50, 1};
-#endif
 
-#ifdef HOCKEY
 struct int_range puck_arrow_size_range =
 {0, 5, 1};
-#endif /*HOCKEY*/
 
 struct int_range zoom_override_range =
 {0, 99, 1};
 
-#ifdef LOCAL_SHIPSTATS
 struct int_range statHeight_range =
 {4,100, 4};
-#endif
 
 struct int_range planetChill_range =
 {1,10,1};
@@ -240,9 +218,7 @@ struct option Features_Menu[] =
     {0, &showgalactic, 0, 0, 0, galacticmes, NULL},
     {0, &showlocal, 0, 0, 0, localmes, NULL},
 #endif /*FIXME*/
-#ifdef SHOW_IND
     {"show IND planets", &showIND, 0, 0, 0, NULL, NULL},
-#endif
     {"send MOTD bitmaps", &sendmotdbitmaps, 0, 0, 0, NULL, NULL},
     {"reload ship bitmaps", &reloadShipBitmaps, 0, 0, 0, NULL, NULL},
     {"stay peaceful when reborn", &keeppeace, 0, 0, 0, NULL, NULL},
@@ -252,20 +228,13 @@ struct option Features_Menu[] =
     {"new buttonmap entries: %s_", 0, 0, newbuttons, 13, NULL, NULL},
     {"new cbuttonmap entries: %s_", 0, 0, newcbuttons, 13, NULL, NULL},
     {"report kill messages", &reportKills, 0, 0, 0, NULL, NULL},
-#if 0
-    /* need to figure out how to dispatch options */
-    {"recv variable packets", &recv_short, 0, 0, 0, NULL},
-    {"recv kill messages", &recv_kmesg, 0, 0, 0, NULL},
-#endif
     {"keep info %d upds (0=forever)", &keepInfo, 0, 0, 0, 0, &keepInfo_range},
     {"%d updates per second", &updateSpeed, 0, 0, 0, 0, &updates_range},
     {"%d/10 sec screen refresh delay", &redrawDelay, 0, 0, 0, 0, &redraw_delay_range}, 
     {"collect ping stats", &ping, 0, 0, 0, NULL, NULL},
     {"avoid message kludge", &niftyNewMessages, 0, 0, 0, NULL, NULL},
-#ifdef CONTINUOUS_MOUSE
     {"use continuous mouse", &continuousMouse, 0, 0, 0, NULL, NULL},
     {"%d updates repeat delay", &clickDelay, 0, 0, 0, 0, &clickDelay_range},
-#endif				/* CONTINUOUS_MOUSE */
 #ifdef UNIX_SOUND
     {"play sound effects", &playSounds, 0, 0, 0, NULL, NULL},
 #endif
@@ -287,19 +256,13 @@ struct option Window_Menu[] =
     {"show new ship statistics window", 0, &newstatwin, 0, 0, NULL, NULL},
     {"show network statistics window", 0, &pStats, 0, 0, NULL, NULL},
     {"show help window", 0, &helpWin, 0, 0, NULL, NULL},
-#ifdef XTREKRC_HELP
     {"show xtrekrc defaults window", 0, &defWin, 0, 0, NULL, NULL},
-#endif
-#ifdef TOOLS
     {"show shell tools window", 0, &toolsWin, 0, 0, NULL, NULL},
-#endif
     {0, &showPhaser, 0, 0, 0, phaseroptions, NULL},
     {"", &showLock, 0, 0, 0, lockoptions, NULL},
     {"show lock line", &lockLine, 0, 0, 0, NULL, NULL},
     {"sort planets by team", &mapSort, 0, 0, 0, NULL, NULL},
-#ifdef NOWARP
     {"enable message warp", &warp, 0, 0, 0, NULL, NULL},
-#endif
     {"use info icon", &infoIcon, 0, 0, 0, NULL, NULL},
     {"done", &notdone, 0, 0, 0, NULL, NULL},
     {NULL, 0, 0, 0, 0, NULL, NULL, /**/ -1}
@@ -309,18 +272,14 @@ struct option Display_Menu[] =
 {
     {"Features Display Menu", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
     {"Page %d (click here to change)", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-#ifdef ROTATERACE
     {0, &rotate, 0, 0, 0, rotatemess, NULL},
-#endif
     {"draw background stars", &blk_showStars, 0, 0, 0, NULL},
     {"show warp/star streaks", &warpStreaks, 0, 0, 0, NULL, NULL},
     {"show tractor/pressor", &showTractorPressor, 0, 0, 0, NULL, NULL},
     {"show all tractors/pressors", &showAllTractorPressor, 0, 0, 0, NULL, NULL},
     {"show shields", &showShields, 0, 0, 0, NULL, NULL},
     {"show shield damage", &show_shield_dam, 0, 0, 0, NULL, NULL},
-#ifdef VARY_HULL
     {"show hull damage indicators", &vary_hull, 0, 0, 0, NULL, NULL},
-#endif				/* VARY_HULL */
 
     {"show tactical planet names", &namemode, 0, 0, 0, NULL, NULL},
 
@@ -333,14 +292,12 @@ struct option Display_Menu[] =
     {"show sector numbers", &sectorNums, 0, 0, 0, NULL, NULL},
     {"show view box", &viewBox, 0, 0, 0, NULL, NULL},
     {0, &autoSetWar, 0, 0, 0, autoSetWarOpts, NULL},
-#ifdef BEEPLITE
     {"use RCD highlighting", &UseLite, 0, 0, 0, NULL, NULL},
     {"highlight/use default RCDs", &DefLite, 0, 0, 0, NULL, NULL},
     {"No. of updates to highlight player: %d", &beep_lite_cycle_time_player,
     0, 0, 0, NULL, &beeplite_player_range},
     {"No. of updates to highlight planet: %d", &beep_lite_cycle_time_planet,
     0, 0, 0, NULL, &beeplite_planet_range},
-#endif
     {"show number of armies on local", &show_armies_on_local, 
     0, 0, 0, NULL, NULL},
     {"Planet rotation chill factor: %d", &planetChill, 0, 0, 0, NULL, 
@@ -360,23 +317,16 @@ struct option Playerdash_Menu[] =
     {"hide 0.00 kills in playerlist", &hideNoKills, 0, 0, 0, NULL, NULL},
     {"sort outfitting to bottom", &sortOutfitting, 0, 0, 0, NULL, NULL},
     {0, &Dashboard, 0, 0, 0, dashboardoptions, NULL},
-#ifdef TIMER
     {0, &timerType, 0, 0, 0, timermes, NULL},
-#endif				/* TIMER */
-#ifdef LOCAL_SHIPSTATS
     {"show ship stats on local window",&localShipStats, 0, 0, 0, NULL, NULL},
     {"Local ship stats height: %d",&statHeight, 0, 0, 0, NULL, &statHeight_range},
-#endif
-#ifdef PACKET_LIGHTS
     {"show packet lights", &packetLights, 0, 0, 0, NULL, NULL},
-#endif
     {"keep phaser statistics", &phaserStats,0,0,0,NULL, NULL},
     {"clear phaser statistics", &clearPhaserStats, 0, 0, 0, NULL, NULL},
     {"done", &notdone, 0, 0, 0, NULL, NULL},
     {NULL, 0, 0, 0, 0, NULL, NULL, /**/ -1}
 };
 
-#ifdef HOCKEY
 struct option Hockey_Menu[] =
 {
     {"Hockey Menu", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
@@ -391,93 +341,6 @@ struct option Hockey_Menu[] =
     {"done", &notdone, 0, 0, 0, NULL, NULL},
     {NULL, 0, 0, 0, 0, NULL, NULL, /**/ -1}
 };
-#endif /*HOCKEY*/
-
-#if 0
-struct option Network_Menu[] =
-{
-    {"Network menu", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-    {"Page %d (click here to change)", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-
-    {"done", &notdone, 0, 0, 0, NULL, NULL},
-    {NULL, 0, 0, 0, 0, NULL, NULL, /**/ -1}
-};
-#endif				/* 0 */
-
-#if 0
-{
-    "show shields", &showShields, 0, 0, 0, NULL, NULL
-},
-{
-    "show UDP control window", 0, &udpWin, 0, 0, NULL, NULL
-},
-{
-    "show short packets window", 0, &spWin, 0, 0, NULL, NULL
-},
-struct option SillyFeatures_Menu[] =
-{
-    {"Silly Features Menu", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-    {"Page %d (click here to change)", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-    {"alert on extra border(s)", &extraBorder, 0, 0, 0, NULL, NULL},
-#ifdef BORGTEST
-    {"borg torp test", &bd, 0, 0, 0, NULL, NULL},	/* BORG TEST */
-#endif
-    {"done", &notdone, 0, 0, 0, NULL, NULL},
-    {NULL, 0, 0, 0, 0, NULL, NULL, /**/ -1}
-};
-#endif				/* 0 */
-
-#ifdef AMIGA
-
-static char *autopointmess[] = {
-    "AutoPoint: none",
-    "AutoPoint: Redirect input",
-    "AutoPoint: Activate window on input",
-    "AutoPoint: Full (inefficient)", ""
-};
-
-static char *dooshSoundMess[] = {
-    "Play doosh sound when YOU kill a carrier",
-    "Play doosh sound when ANY carrier dies",
-    ""
-};
-
-struct int_range soundVolRange = {0, 64, 4};
-struct int_range speechVolRange = {0, 64, 4};
-
-extern int speechVol;
-extern int S_AddPeriod;
-extern int monoBitmaps;
-
-struct option Amiga_Menu[] = {
-    {"Amiga Features Menu", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-    {"Page %d (click to change)", &MenuPage, 0, 0, 0, NULL, &Menus_Range},
-    {0, &autoPoint, 0, 0, 0, autopointmess, NULL},
-    {"do keyboard window depth", &W_KeyDepth, 0, 0, 0, NULL, NULL},
-    {"use AnimPointers", &animPointers, 0, 0, 0, NULL, NULL},
-    {"use one color bitmaps", &monoBitmaps, 0, 0, 0, NULL, NULL},
-    {"use Workbench screen", &useWorkbench, 0, 0, 0, NULL, NULL},
-    {"speak messages to \"all\"", &S_SpeakAll, 0, 0, 0, NULL, NULL},
-    {"speak messages to you", &S_SpeakYour, 0, 0, 0, NULL, NULL},
-    {"speak messages to team", &S_SpeakTeam, 0, 0, 0, NULL, NULL},
-    {"speak \"kill\" messages", &S_SpeakKill, 0, 0, 0, NULL, NULL},
-    {"speak messages from God", &S_SpeakGod, 0, 0, 0, NULL, NULL},
-    {"speak messages from YOU", &S_SpeakSelf, 0, 0, 0, NULL, NULL}, 
-    {"speak login/out messages", &S_SpeakLogins, 0, 0, 0, NULL, NULL},
-    {"ignore repeated messages", &S_IgnoreMultiple, 0, 0, 0, 0, 0},
-    {"add a period to the end of messages", &S_AddPeriod, 0, 0, 0, 0, 0},
-    {"Speech volume: %d", &speechVol, 0, 0, 0, NULL, &speechVolRange},
-#ifdef SOUND
-    {"play digitized sounds", &soundOn, 0, 0, 0, NULL, NULL},
-    {"Sound volume: %d", &soundVol, 0, 0, 0, NULL, &soundVolRange},
-    {"show sounds window", 0, &soundWin, 0, 0, NULL, NULL},
-    {0, &alwaysSoundDoosh, 0, 0, 0, dooshSoundMess, 0},
-#endif
-    {"done", &notdone, 0, 0, 0, NULL, NULL},
-    {NULL, 0, 0, 0, 0, NULL, NULL, /**/ -1}
-};
-
-#endif				/* AMIGA */
 
 #define NUMOPTIONS(menu) ((sizeof((menu))/sizeof((menu)[0]))-1)
 
@@ -497,7 +360,7 @@ static void optionrefresh P((register struct option * op));
 
 /* Set up the option menus and window. */
 void
-optionwindow()
+optionwindow(void)
 {
     /* Init not done flag */
     notdone = 1;
@@ -538,7 +401,7 @@ optionwindow()
 
 /* refresh all current options */
 static void
-RefreshOptions()
+RefreshOptions(void)
 {
     int     i;
     struct option_menu *option;
@@ -549,36 +412,14 @@ RefreshOptions()
     for (i = 0; i < option->numopt; i++) {
 	optionrefresh(&(option->menu[i]));
     }
-#ifdef nodef			/* if we resize, we don't need this */
-    if (option->numopt < MaxOptions)
-	for (i = option->numopt; i < MaxOptions; i++) {
-	    OptionClear(i);
-	}
-#endif
 }
-
-#ifdef nodef
-/* blank out option line 'i' */
-static void
-OptionClear(i)
-{
-    char   *blanktext = "                                               ";
-    if (optionWin && notdone)
-	W_WriteText(optionWin, 0, i, textColor, blanktext, OPTIONLEN, 0);
-}
-#endif
 
 /* Redraw the specified option entry */
 void
-optionredrawtarget(win)
+optionredrawtarget(W_Window win)
     W_Window win;
 {
     register struct option *op;
-
-#ifdef nodef
-    if (notdone == 0)
-	return;
-#endif
 
     for (op = CurrentMenu->menu; op->op_text; op++) {
 	if (op->op_targetwin && win == *op->op_targetwin) {
@@ -590,15 +431,9 @@ optionredrawtarget(win)
 
 /* Redraw the specified option option */
 void
-optionredrawoption(ip)
-    int    *ip;
+optionredrawoption(int *ip)
 {
     register struct option *op;
-
-#ifdef nodef
-    if (notdone == 0)
-	return;
-#endif
 
     for (op = CurrentMenu->menu; op->op_num >= 0; op++) {
 	if (ip == op->op_option) {
@@ -610,8 +445,7 @@ optionredrawoption(ip)
 
 /* Refresh the option window given by the option struct */
 static void
-optionrefresh(op)
-    register struct option *op;
+optionrefresh(struct option *op)
 {
     register int on;
     char    buf[BUFSIZ];
@@ -645,17 +479,16 @@ optionrefresh(op)
 	buf[0] = toupper(buf[0]);
 
     if (op->op_num == 0) {	/* title */
-	W_WriteText(optionWin, 0, op->op_num, W_Yellow, buf,(int)strlen(buf),0);
+	W_WriteText(optionWin, 0, op->op_num, W_Yellow, buf,strlen(buf),0);
     } else if (op->op_num == 1) {	/* "click" entry */
-	W_WriteText(optionWin, 0, op->op_num, W_Green, buf, (int)strlen(buf),0);
+	W_WriteText(optionWin, 0, op->op_num, W_Green, buf, strlen(buf),0);
     } else
-	W_WriteText(optionWin, 0, op->op_num, textColor,buf,(int)strlen(buf),0);
+	W_WriteText(optionWin, 0, op->op_num, textColor,buf,strlen(buf),0);
 }
 
 /* deal with events sent to the option window */
 int
-optionaction(data)
-    W_Event *data;
+optionaction(W_Event *data)
 {
     register struct option *op;
     int     i;
@@ -782,11 +615,6 @@ optionaction(data)
 	    reloadShipBitmaps = 1;
 	    warning("Kick a hacker to make it work");
 	}
-#ifdef AMIGA
-	else if(op->op_option == &useWorkbench) {
-	    switchScreen();
-	}
-#endif
     }
     /* Map/unmap window, if it exists */
     if (op->op_targetwin) {
@@ -802,18 +630,12 @@ optionaction(data)
 		udpwindow();
 	    else if (*op->op_targetwin == spWin)
 		spwindow();
-#ifdef SOUND
-	    else if (*op->op_targetwin == soundWin)
-		S_SoundWindow();
-#endif
 	    else
 		W_MapWindow(*op->op_targetwin);
 	    if (*op->op_targetwin == pStats)
 		redrawPStats();
-#ifdef XTREKRC_HELP
 	    if (*op->op_targetwin == defWin)
 		showdef();
-#endif
 	}
     }
     /* deal with possible menu change */
@@ -835,8 +657,7 @@ optionaction(data)
  * argument
  */
 static void
-SetMenuPage(pagenum)
-    int     pagenum;
+SetMenuPage(int pagenum)
 {
     int     i = 1;
     if (FirstMenu != NULL)
@@ -846,7 +667,7 @@ SetMenuPage(pagenum)
 }
 
 void
-optiondone()
+optiondone(void)
 {
     int shpn;
     struct ship *shp;
@@ -889,47 +710,20 @@ optiondone()
 	else
 	    stopPing();
     }
-#ifdef BEEPLITE
     if (DefLite)
 	litedefaults();
-#endif
 
-#ifdef ROTATERACE
     if (rotate != old_rotate) {
-
 	rotate_all();
-#if 0
-	register i;
-	register struct planet *l;
-	int     nplan = (paradise) ? nplanets : 40;
-
-	redrawall = 1;
-	reinitPlanets = 1;
-
-	for (i = 0, l = planets; i < nplan; i++, l++) {
-	    if (rotate) {
-		rotate_deg = -old_rotate_deg + rotate * 64;
-		rotate_coord(&l->pl_x, &l->pl_y, rotate_deg,
-			     blk_gwidth / 2, blk_gwidth / 2);
-		rotate_deg = rotate * 64;
-	    } else {
-		rotate_deg = -old_rotate_deg;
-		rotate_coord(&l->pl_x, &l->pl_y, rotate_deg,
-			     blk_gwidth / 2, blk_gwidth / 2);
-		rotate_deg = 0;
-	    }
-	}
-#endif
 	old_rotate = rotate;
 	old_rotate_deg = rotate_deg;
 
     }
-#endif
 }
 
 /* set up menus linked list */
 static int
-InitOptionMenus()
+InitOptionMenus(void)
 {
     int     i = 1;
     int     maxopts = 0;
@@ -941,12 +735,7 @@ InitOptionMenus()
     AddOptMenu(Window_Menu, 0);
     AddOptMenu(Display_Menu, 0);
     AddOptMenu(Playerdash_Menu, 0);
-#ifdef HOCKEY
     AddOptMenu(Hockey_Menu, 0);
-#endif /*HOCKEY*/
-#ifdef AMIGA
-    AddOptMenu(Amiga_Menu, 0);
-#endif
     /* AddOptMenu(SillyFeatures_Menu, 0); */
     /* AddOptMenu(Network_Menu, 0); */
 
@@ -964,9 +753,7 @@ InitOptionMenus()
 }
 
 static void
-AddOptMenu(NewMenu, updated)
-    struct option NewMenu[];
-    int     updated;
+AddOptMenu(struct option *NewMenu, int updated)
 {
     struct option_menu *menuptr;
     struct option_menu *newmenu;
@@ -999,8 +786,7 @@ AddOptMenu(NewMenu, updated)
 }
 
 static int
-NumOptions(OpMenu)
-    struct option OpMenu[];
+NumOptions(struct option *OpMenu)
 {
     int     i = 0;
     struct option *ptr;
@@ -1019,18 +805,3 @@ NumOptions(OpMenu)
     )
 	return i;
 }
-
-/*
- * a function that could be called regularly, to deal with menus that * might
- * be updated by external events. I.e. the udp menu!
- */
-#if 0
-static void
-UpdateOptions()
-{
-    if (notdone == 0)
-	return;			/* don't update if menu isn't in use */
-    if (CurrentMenu->updated)
-	RefreshOptions();
-}
-#endif				/* 0 */

@@ -4,8 +4,8 @@
  * Most of the unneeded stuff in the structures has been thrown away.
  */
 
-#ifndef struct_h_
-#define struct_h_
+#ifndef STRUCT_H
+#define STRUCT_H
 
 #include "copyright.h"
 #include "Wlib.h"
@@ -16,14 +16,12 @@ struct point {
   int y;
 };
 
-#ifdef HOCKEY
 /* hockey struct [BDyess] */
 struct hockeyLine {
   int vertical;		/* vertical or horizontal flag */
   W_Color color;
   int pos, end1, end2;	/* x or y constant and two endpoints */
 };
-#endif /*HOCKEY*/
 
 /* struct for keeping tractor line data [BDyess] */
 typedef struct tractor { 
@@ -208,7 +206,6 @@ struct status2 {		/* paradise status struct */
 };
 
 
-#ifdef METASERVER
 /* metaserver window struct */
 struct servers {
     char    address[LINE];
@@ -220,7 +217,6 @@ struct servers {
     char    typeflag;
     char    hilited;
 };
-#endif				/* METASERVER */
 
 /* MOTD structures */
 struct piclist {
@@ -519,9 +515,6 @@ struct plasmatorp {
 #define PHHIT  0x01		/* When it hits a person */
 #define PHMISS 0x02
 #define PHHIT2 0x04		/* When it hits a photon */
-#ifdef CHECK_DROPPED
-#define PHGHOST 0x80		/* fuse has exceeded longest received so far */
-#endif
 struct phaser {
     int     ph_status;		/* What it's up to */
     unsigned char ph_dir;	/* direction */
@@ -641,33 +634,22 @@ struct planet {
     int     pl_timestamp;	/* time the info was taken */
 };
 
-#ifdef ASTEROIDS
 struct t_unit {
 /*  int	    alt1;*/
 /*  int     alt2;*/		/* Terrain types. */
     char types;
 };
 
-#endif /* ASTEROIDS */
 struct _clearzone {
     int     x, y;
     int     width, height;
 };
 
-#ifndef SHORT_PACKETS
-#define MVALID 0x01
-#define MINDIV 0x02
-#define MTEAM  0x04
-#define MALL   0x08
-#define MGOD   0x10
-#else
 #define MVALID 0x01
 #define MGOD   0x10
 #define MMOO   0x12
 
-#ifdef TOOLS
 #define MTOOLS 0x14
-#endif
 
 /* order flags by importance (0x100 - 0x400) */
 /* restructuring of message flags to squeeze them all into 1 byte - jmn */
@@ -715,28 +697,6 @@ struct _clearzone {
 
 #define MWHOMSK  0x1f		/* mask with this to find who msg to */
 #define MWHATMSK 0xe0		/* mask with this to find what message about */
-
-/*   old flags...
-#define MVALID 0x01
-#define MINDIV 0x02
-#define MTEAM  0x04
-#define MALL   0x08
-#define MGOD   0x10
-
-#define MGENO  0x100            order these by importance (0x100 - 0x400)
-#define MCONQ  0x110
-#define MTAKE  0x120
-#define MDEST  0x130
-#define MKILLA 0x200
-#define MBOMB  0x210
-#define MKILLP 0x220
-#define MKILL  0x230
-#define MLEAVE 0x300
-#define MJOIN  0x310
-#define MGHOST 0x320
-#define MCOUP1 0x330
-#define MCOUP2 0x340    end of old flags  */
-#endif
 
 struct message {
     int     m_no;
@@ -796,7 +756,6 @@ struct plupdate {
     int     plu_x, plu_y;
 };
 
-#ifdef MACROS
 #define MACSINGLE 1
 #define MACRCD 2
 #define MACMULTI 4
@@ -808,7 +767,6 @@ struct macro {
 				   *distress if MACRCD flag set. -JR */
     char   *string;		/* string to be sent, % escapes intact */
 };
-#endif				/* MACROS */
 
 struct stringlist {
     char   *string;
@@ -816,4 +774,5 @@ struct stringlist {
     struct stringlist *next, *prev;
     int searched;
 };
+
 #endif

@@ -1,43 +1,25 @@
 
-#include "defines.h"
-#include <stdio.h>
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
-#include <sys/types.h>
-#include <netinet/in.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#if defined(HAVE_SYS_TIME_H) && defined(TIME_WITH_SYS_TIME)
-#include <sys/time.h>
-#endif
-#else
-#include <sys/time.h>
-#endif
-#ifdef STDC_HEADERS
-#include <stdlib.h>
-#endif
-
 #include "config.h"
-#include "gameconf.h"
-#include "data.h"
-#include "gppackets.h"
-#include "images.h"
-#include "strfuncs.h"
-
-/* These stupid danged system prototypes are starting to irritate me */
-#if 0
-extern char *strdup();
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#include "str.h"
 
-int     number_of_teams;
-
-struct teaminfo_s *teaminfo = 0;
+#include "Wlib.h"
+#include "defs.h"
+#include "struct.h"
+#include "data.h"
+#include "proto.h"
+#include "images.h"
+#include "gppackets.h"
 
 void
-load_default_teams()
+load_default_teams(void)
 {
     number_of_teams = 4;
 
@@ -73,7 +55,7 @@ load_default_teams()
 }
 
 void
-load_default_teamlogos()
+load_default_teamlogos(void)
 {
    switch(number_of_teams) {
      case 4:
@@ -88,7 +70,7 @@ load_default_teamlogos()
 }
 
 void
-load_generic_teams()
+load_generic_teams(void)
 {
 /* needs to be converted to xpm */
     /*
@@ -118,7 +100,7 @@ load_generic_teams()
 }
 
 void
-initialize_thingies()
+initialize_thingies(void)
 {
     int     i;
     int     n = (npthingies * nplayers + ngthingies);
@@ -131,13 +113,13 @@ initialize_thingies()
 }
 
 void
-initialize_players()
+initialize_players(void)
 {
     int     i;
 
     players = (struct player *) malloc(sizeof(*players) * nplayers);
 
-    bzero(players, (int)(sizeof(struct player) * nplayers));
+    memset(players, 0, (int)(sizeof(struct player) * nplayers));
 
     for (i = 0; i < nplayers; i++) {
 	players[i].p_status = PFREE;
@@ -152,7 +134,7 @@ initialize_players()
 }
 
 void
-initialize_torps()
+initialize_torps(void)
 {
     int     i;
 
@@ -166,7 +148,7 @@ initialize_torps()
 }
 
 void
-initialize_plasmas()
+initialize_plasmas(void)
 {
     int     i;
 
@@ -180,7 +162,7 @@ initialize_plasmas()
 }
 
 static void
-initialize_phasers()
+initialize_phasers(void)
 {
     int     i;
 
@@ -193,7 +175,7 @@ initialize_phasers()
 }
 
 void
-initialize_planets()
+initialize_planets(void)
 {
     int     i;
 
@@ -219,7 +201,7 @@ initialize_planets()
 }
 
 void
-init_ranks()
+init_ranks(void)
 {
     ranks2 = (struct rank2 *) malloc(sizeof(*ranks2) * nranks2);
     ranks2[0].genocides = 0;
@@ -350,7 +332,7 @@ init_ranks()
 }
 
 void
-init_royal()
+init_royal(void)
 {
     royal = (struct royalty *) malloc(sizeof(*royal) * nroyals);
 
@@ -359,33 +341,10 @@ init_royal()
     royal[2].name = strdup("Centurion");
     royal[3].name = strdup("Praetor");
     royal[4].name = strdup("Emperor");
-#if 0
-    royal[5].name = strdup("Wizard");
-    royal[6].name = strdup("Duke");
-    royal[7].name = strdup("Count");
-    royal[8].name = strdup("Baron");
-    royal[9].name = strdup("Knight");
-    royal[10].name = strdup("Dread");
-    royal[11].name = strdup("Lord of Destruction");
-    royal[12].name = strdup("BlitzMeister");
-    royal[13].name = strdup("Hitler");
-    royal[14].name = strdup("Terminator");
-    royal[15].name = strdup("Kamikaze");
-    royal[16].name = strdup("Speed Kamikaze");
-    royal[17].name = strdup("Carpet Bomber");
-    royal[18].name = strdup("NukeMeister");
-    royal[19].name = strdup("Terrorist");
-    royal[20].name = strdup("Democrat");
-    royal[21].name = strdup("Executioner");
-    royal[22].name = strdup("DooshMeister");
-    royal[23].name = strdup("Diplomat");
-    royal[24].name = strdup("speed Diplomat");
-    royal[25].name = strdup("Addict");
-#endif				/* 0 */
 }
 
 void
-reinit_ranks()
+reinit_ranks(void)
 {
     int     i;
     ranks2 = (struct rank2 *) malloc(sizeof(*ranks2) * nranks2);
@@ -396,7 +355,7 @@ reinit_ranks()
 }
 
 void
-reinit_royal()
+reinit_royal(void)
 {
     int     i;
     royal = (struct royalty *) malloc(sizeof(*royal) * nroyals);
@@ -408,7 +367,7 @@ reinit_royal()
 
 
 void
-resize_players()
+resize_players(void)
 {
     int     me_no = 0;
 
@@ -422,7 +381,7 @@ resize_players()
 }
 
 void
-free_teams()
+free_teams(void)
 {
     int     i;
     for (i = 0; i < number_of_teams; i++) {
@@ -434,35 +393,35 @@ free_teams()
 }
 
 void
-free_torps()
+free_torps(void)
 {
     free(torps);
     torps = 0;
 }
 
 void
-free_phasers()
+free_phasers(void)
 {
     free(phasers);
     phasers = 0;
 }
 
 void
-free_plasmas()
+free_plasmas(void)
 {
     free(plasmatorps);
     plasmatorps = 0;
 }
 
 void
-free_thingies()
+free_thingies(void)
 {
     free(thingies);
     thingies = 0;
 }
 
 void
-free_ranks()
+free_ranks(void)
 {
     int     i;
     for (i = 0; i < nranks2; i++)
@@ -473,7 +432,7 @@ free_ranks()
 }
 
 void
-free_royal()
+free_royal(void)
 {
     int     i;
     for (i = 0; i < nroyals; i++)
@@ -488,7 +447,7 @@ free_royal()
  */
 
 void
-build_default_configuration()
+build_default_configuration(void)
 {
     load_default_teams();
     /* can't load logos until we have some windows */
@@ -511,8 +470,7 @@ build_default_configuration()
 
 
 int
-compute_gameparam_size(buf)
-    char   *buf;
+compute_gameparam_size(char *buf)
 {
     struct gameparam_spacket *pkt = (struct gameparam_spacket *) buf;
 
@@ -542,8 +500,7 @@ compute_gameparam_size(buf)
 }
 
 static void
-handleGPsizes(pkt)
-    struct gp_sizes_spacket *pkt;
+handleGPsizes(struct gp_sizes_spacket *pkt)
 {
     free_ranks();
     free_royal();
@@ -581,8 +538,7 @@ handleGPsizes(pkt)
 }
 
 static void
-handleGPteam(pkt)
-    struct gp_team_spacket *pkt;
+handleGPteam(struct gp_team_spacket *pkt)
 {
     struct teaminfo_s *currteam;
 
@@ -603,8 +559,7 @@ handleGPteam(pkt)
 }
 
 static void
-handleGPteamlogo(pkt)
-    struct gp_teamlogo_spacket *pkt;
+handleGPteamlogo(struct gp_teamlogo_spacket *pkt)
 {
     static char buf[13 * 99];	/* 99x99 */
     static int curr_height = 0;
@@ -656,8 +611,7 @@ handleGPteamlogo(pkt)
 }
 
 static void
-handleGPshipshape(pkt)
-    struct gp_shipshape_spacket *pkt;
+handleGPshipshape(struct gp_shipshape_spacket *pkt)
 {
     if (pkt->race < -1 || pkt->race >= number_of_teams) {
 	fprintf(stderr, "race #%d out of range (-1..%d)\n", pkt->race,
@@ -676,8 +630,7 @@ handleGPshipshape(pkt)
 }
 
 static void
-handleGPshipbitmap(pkt)
-    struct gp_shipbitmap_spacket *pkt;
+handleGPshipbitmap(struct gp_shipbitmap_spacket *pkt)
 {
     if (pkt->race < -1 || pkt->race >= number_of_teams) {
 	fprintf(stderr, "race #%d out of range (-1..%d)\n", pkt->race,
@@ -695,8 +648,7 @@ handleGPshipbitmap(pkt)
 }
 
 static void
-handleGPrank(pkt)
-    struct gp_rank_spacket *pkt;
+handleGPrank(struct gp_rank_spacket *pkt)
 {
     struct rank2 *curr;
     if (pkt->rankn >= nranks2) {
@@ -707,17 +659,16 @@ handleGPrank(pkt)
     curr = &ranks2[pkt->rankn];
     free(curr->name);
 
-    curr->genocides = htonl((unsigned)pkt->genocides);
-    curr->di = htonl((unsigned)pkt->milliDI) / 1000.0;
-    curr->battle = htonl((unsigned)pkt->millibattle) / 1000.0;
-    curr->strategy = htonl((unsigned)pkt->millistrat) / 1000.0;
-    curr->specship = htonl((unsigned)pkt->millispec) / 1000.0;
+    curr->genocides = htonl(pkt->genocides);
+    curr->di = htonl(pkt->milliDI) / 1000.0;
+    curr->battle = htonl(pkt->millibattle) / 1000.0;
+    curr->strategy = htonl(pkt->millistrat) / 1000.0;
+    curr->specship = htonl(pkt->millispec) / 1000.0;
     curr->name = strdup(pkt->name);
 }
 
 static void
-handleGProyal(pkt)
-    struct gp_royal_spacket *pkt;
+handleGProyal(struct gp_royal_spacket *pkt)
 {
     if ((int) pkt->rankn >= nroyals) {
 	fprintf(stderr, "Royalty #%d %s out of range (0..%d)\n", pkt->rankn,
@@ -747,8 +698,7 @@ static unsigned char planet_bits[] = {
 #endif /*FIXME*/
 
 static void
-handleGPteamplanet(pkt)
-    struct gp_teamplanet_spacket *pkt;
+handleGPteamplanet(struct gp_teamplanet_spacket *pkt)
 {
 #ifdef FIXME
     {
@@ -797,10 +747,8 @@ handleGPteamplanet(pkt)
 #endif /* FIXME */
 }
 
-#ifndef __CEXTRACT__
 void
-handleGameparams(pkt)
-    struct gameparam_spacket *pkt;
+handleGameparams(struct gameparam_spacket *pkt)
 {
     switch (pkt->subtype) {
     case 0:
@@ -832,4 +780,3 @@ handleGameparams(pkt)
 		pkt->subtype);
     }
 }
-#endif /*__CEXTRACT__*/

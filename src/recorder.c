@@ -1,34 +1,29 @@
 
 #include "config.h"
-#ifdef RECORDER
-
-#include "defines.h"
 #include <stdio.h>
-#include <sys/types.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#include <sys/stat.h>
+#include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#include "str.h"
 
 #include "Wlib.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
-#include "packets.h"
 
 int     record_total;
 int     lastTeamReq = -1;
@@ -37,7 +32,7 @@ int     recfp = -1, playfp = -1;
 void pb_skip P((int frames));
 
 void
-startRecorder()
+startRecorder(void)
 {
     if ((recordGame = booleanDefault("recordGame", recordGame))) {
 	recordFile = stringDefault("recordFile", "/tmp/netrek.record");
@@ -55,7 +50,7 @@ startRecorder()
 }
 
 void
-stopRecorder()
+stopRecorder(void)
 {
     char    buf[80];
 
@@ -68,9 +63,7 @@ stopRecorder()
 }
 
 void
-recordPacket(data, len)
-    char   *data;
-    int     len;
+recordPacket(char *data, int len)
 {
     int     res;
 
@@ -87,7 +80,7 @@ recordPacket(data, len)
 	default:
 	    break;
 	}
-	res = write(recfp, data, (unsigned)len);
+	res = write(recfp, data, len);
 	record_total += res;
 	if ((maxRecord && (record_total > maxRecord)) || (res <= 0))
 	    stopRecorder();
@@ -95,7 +88,7 @@ recordPacket(data, len)
 }
 
 void
-writeUpdateMarker()
+writeUpdateMarker(void)
 {
     unsigned char update_buf[4];
 
@@ -111,7 +104,7 @@ writeUpdateMarker()
 }
 
 int
-startPlayback()
+startPlayback(void)
 {
     if (playback || (playback = booleanDefault("playback", 0))) {
 	if (!playFile)
@@ -131,9 +124,7 @@ startPlayback()
 }
 
 int
-readRecorded(fp, data, len)
-    int     fp, len;
-    char   *data;
+readRecorded(int fp, char *data, int len)
 {
     int     ret;
 
@@ -141,15 +132,14 @@ readRecorded(fp, data, len)
 	return -1;
     if (len > 4)		/* make sure we don't skip updates */
 	len = 4;
-    ret = read(playfp, data, (unsigned)len);
+    ret = read(playfp, data, len);
     if (ret <= 0)
 	EXIT(0);
     return ret;
 }
 
 void
-pb_dokey(event)
-W_Event *event;
+pb_dokey(W_Event *event)
 {
     switch (event->key&0xff) {
     case 'p':
@@ -236,8 +226,7 @@ W_Event *event;
 }
 
 void
-pb_skip(frames)
-     int frames;
+pb_skip(int frames)
 {
     while(frames) {
 	pb_update=0;
@@ -248,8 +237,7 @@ pb_skip(frames)
 }
 
 void
-pb_framectr(xloc, yloc)
-     int xloc, yloc;
+pb_framectr(int xloc, int yloc)
 {
     char buf[20];
 
@@ -285,7 +273,7 @@ pb_framectr(xloc, yloc)
 }
 
 void
-pb_input()
+pb_input(void)
 {
     W_Event data;
     fd_set  readfds;
@@ -321,7 +309,6 @@ pb_input()
 			   zoom doesn't make sense. */
 	    blk_zoom = 0;
 
-#ifndef AMIGA
 	FD_ZERO(&readfds);
 	FD_SET(wsock, &readfds);
 	if (paused) {
@@ -335,30 +322,8 @@ pb_input()
 	}
 	/* otherwise, in full blast mode, don't wait on anything. */
 
-#else				/* AMIGA */
-	if (paused) {
-	    sigsPending = Wait(wsock | SIGBREAKF_CTRL_C);
-	    continue;
-	} else if(pb_slow && !pb_scan) {
-	    StartTimer(0,200000);
-	    while(1) {
-		sigsPending = Wait(wsock | portmask | SIGBREAKF_CTRL_C);
-		if((sigsPending & (wsock | SIGBREAKF_CTRL_C)) ||
-		   CheckIO(&(ior->tr_node)))
-		    break;
-	    }
-		
-	    StopTimer();
-	}
-		
-	if (sigsPending & SIGBREAKF_CTRL_C) {
-	    printf("User break, Ctrl-C, exiting!\n");
-	    exit(0);
-	}
-#endif				/* AMIGA */
 	/* at this point, we're sure it's time for at least one frame. */
 	intrupt();
     }
 }
 
-#endif
