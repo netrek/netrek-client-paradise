@@ -3038,7 +3038,7 @@ fi
       AUTH_SRCS="expire.c `(cd src && echo rsa/rsa_box*.c)`"
       AUTH_OBJS=`echo $AUTH_SRCS | sed -e 's,\.c,\.o,g'`
       AUTH_DEFS="-DAUTHORIZE"
-      SCRAMBLER="$(PERL) rsa/scrambleargs.perl"
+      SCRAMBLER='$(PERL) rsa/scrambleargs.perl'
     fi 
 
 fi

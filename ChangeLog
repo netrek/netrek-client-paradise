@@ -1,15 +1,20 @@
-	$Id: ChangeLog,v 1.13 2000/04/07 03:40:48 watts Exp $
+	$Id: ChangeLog,v 1.14 2000/04/12 18:03:18 glamm Exp $
+
+2000-04-12	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Fixed configure.in; misquoted SCRAMBLEARGS replacement.
 
 2000-04-06	Jeffrey Watts <watts@users.sourceforge.net>
+
 	* Added some colors other than the primary colors to the *.colored
 	pixmaps.  This makes the colored pixmaps look a lot nicer.
 
-2000-04-05
+2000-04-05	Bob Glamm <glamm@users.sourceforge.net>
 	
 	* Fixed configure, configure.in to properly recognize libXpm.*
 	when it was stuck in the X11 lib directory.
 
-2000-04-03
+2000-04-03	Bob Glamm <glamm@users.sourceforge.net>
 
 	* Added two new boolean options, colorFriends (off by default)
 	and colorEnemies (on by default).  Controls whether to use the
