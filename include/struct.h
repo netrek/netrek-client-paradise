@@ -319,6 +319,7 @@ struct ship {
     short   s_type;
     int     s_torpspeed;
     char    s_letter;
+    char    s_armies;	/* new - gets army carrying cap. from server */
     /* char s_name[16]; */
     char    s_desig[2];
     short   s_bitmap;

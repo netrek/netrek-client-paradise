@@ -2281,7 +2281,6 @@ handleSequence(struct sequence_spacket *packet)
     }
 }
 
-
 /*
 static void
 dumpShip(struct ship *shipp)
@@ -2298,7 +2297,15 @@ dumpShip(struct ship *shipp)
   printf("torp speed = %d\n", shipp->s_torpspeed);
   printf("letter = %c\n", shipp->s_letter);
   printf("desig = %2.2s\n", shipp->s_desig);
-  printf("bitmap = %d\n\n", shipp->s_bitmap);
+  printf("bitmap = %d\n", shipp->s_bitmap);
+  if(F_armies_shipcap == 1)
+  {
+    printf("s_armies = 0x%x\n", shipp->s_armies);
+    if(shipp->s_armies & 0x80)
+      printf("SFNARMYNEEDKILL, %f armies per kill\n",
+             (float)(shipp->s_armies & 0x7f) / 10.0);
+  }
+  printf("\n");
 }
 */
 
@@ -2354,6 +2361,8 @@ handleShipCap(struct ship_cap_spacket *packet)		/* SP_SHIP_CAP */
 	    temp->ship->s_maxwpntemp = ntohl(packet->s_maxwpntemp);
 	    temp->ship->s_maxegntemp = ntohl(packet->s_maxegntemp);
 	    temp->ship->s_maxarmies = ntohs(packet->s_maxarmies);
+	    if(F_armies_shipcap == 1)
+  	      temp->ship->s_armies = packet->s_armies;
 	    temp->ship->s_letter = packet->s_letter;
 	    temp->ship->s_desig[0] = packet->s_desig1;
 	    temp->ship->s_desig[1] = packet->s_desig2;
@@ -2385,12 +2394,13 @@ handleShipCap(struct ship_cap_spacket *packet)		/* SP_SHIP_CAP */
     temp->ship->s_maxwpntemp = ntohl(packet->s_maxwpntemp);
     temp->ship->s_maxegntemp = ntohl(packet->s_maxegntemp);
     temp->ship->s_maxarmies = ntohs(packet->s_maxarmies);
+    temp->ship->s_armies = packet->s_armies;
     temp->ship->s_letter = packet->s_letter;
     temp->ship->s_desig[0] = packet->s_desig1;
     temp->ship->s_desig[1] = packet->s_desig2;
     temp->ship->s_bitmap = ntohs(packet->s_bitmap);
     buildShipKeymap(temp->ship);
-/*  dumpShip(temp->ship);*/
+  /*dumpShip(temp->ship);*/
 }
 
 static void

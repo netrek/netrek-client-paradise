@@ -479,6 +479,7 @@ unsigned char F_terrain_minor = 0;
 int	F_gz_motd = 0;		/* Can't handle gzipped MOTD yet */
 unsigned char	F_gz_motd_major = 0;	/* call it v0.0 then */
 unsigned char	F_gz_motd_minor = 0;
+int     F_armies_shipcap;	/* server sends ship army cap. in ship_cap */
 
 int     F_allow_beeplite = 1;
 unsigned char    F_beeplite_flags = LITE_PLAYERS_MAP |

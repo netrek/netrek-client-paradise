@@ -447,6 +447,7 @@ extern unsigned char F_terrain_minor;
 extern int F_gz_motd;
 extern unsigned char F_gz_motd_major;
 extern unsigned char F_gz_motd_minor;
+extern int F_armies_shipcap;
 
 extern int askforUpdate;
 

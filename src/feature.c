@@ -80,6 +80,8 @@ struct feature {
     {"TERRAIN", &F_terrain, 'S', 1, (char*)&F_terrain_major, (char*)&F_terrain_minor},
 /* Gzipped MOTD */
     {"GZ_MOTD", &F_gz_motd, 'S', 1, (char*)&F_gz_motd_major, (char*)&F_gz_motd_minor},
+/* armies in ship_cap_spacket */
+    {"ARMIES_IN_SHIPCAP", &F_armies_shipcap, 'S', 1, 0, 0},
     {0, 0, 0, 0, 0, 0}
 };
 

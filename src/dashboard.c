@@ -538,14 +538,28 @@ db_redraw_krp(int fr)
 	       DB_3DIGITS, color);
 	old_dam = me->p_damage;
     }
-    if (me->p_ship->s_type == ASSAULT)
-	cur_max = (((me->p_kills * 3) > me->p_ship->s_maxarmies) ?
-		   me->p_ship->s_maxarmies : (int) (me->p_kills * 3));
-    else if (me->p_ship->s_type == STARBASE)
-	cur_max = me->p_ship->s_maxarmies;
+
+    if(F_armies_shipcap != 1)
+    {
+      if (me->p_ship->s_type == ASSAULT)
+	  cur_max = (((me->p_kills * 3) > me->p_ship->s_maxarmies) ?
+		     me->p_ship->s_maxarmies : (int) (me->p_kills * 3));
+      else if (me->p_ship->s_type == STARBASE)
+	  cur_max = me->p_ship->s_maxarmies;
+      else
+	  cur_max = (((me->p_kills * 2) > me->p_ship->s_maxarmies) ?
+		     me->p_ship->s_maxarmies : (int) (me->p_kills * 2));
+    }
     else
-	cur_max = (((me->p_kills * 2) > me->p_ship->s_maxarmies) ?
-		   me->p_ship->s_maxarmies : (int) (me->p_kills * 2));
+    {
+      if (me->p_ship->s_armies & 0x80)
+        cur_max = me->p_kills * (me->p_ship->s_armies & 0x7f) / 10;
+      else
+        cur_max = me->p_ship->s_maxarmies;
+
+      if(cur_max > me->p_ship->s_maxarmies)
+        cur_max = me->p_ship->s_maxarmies;
+    }
 
     if (fr || me->p_armies != old_arm || cur_max != old_cur_arm) {
 	value = me->p_armies;
@@ -692,14 +706,27 @@ db_redraw_BRM(int fr)
 	}
 	old_dam = me->p_damage;
     }
-    if (me->p_ship->s_type == ASSAULT)
-	cur_max = (((me->p_kills * 3) > me->p_ship->s_maxarmies) ?
-		   me->p_ship->s_maxarmies : (int) (me->p_kills * 3));
-    else if (me->p_ship->s_type == STARBASE)
-	cur_max = me->p_ship->s_maxarmies;
+    if(F_armies_shipcap != 1)
+    {
+      if (me->p_ship->s_type == ASSAULT)
+	  cur_max = (((me->p_kills * 3) > me->p_ship->s_maxarmies) ?
+		     me->p_ship->s_maxarmies : (int) (me->p_kills * 3));
+      else if (me->p_ship->s_type == STARBASE)
+	  cur_max = me->p_ship->s_maxarmies;
+      else
+	  cur_max = (((me->p_kills * 2) > me->p_ship->s_maxarmies) ?
+		     me->p_ship->s_maxarmies : (int) (me->p_kills * 2));
+    }
     else
-	cur_max = (((me->p_kills * 2) > me->p_ship->s_maxarmies) ?
-		   me->p_ship->s_maxarmies : (int) (me->p_kills * 2));
+    {
+      if (me->p_ship->s_armies & 0x80)
+        cur_max = me->p_kills * (me->p_ship->s_armies & 0x7f) / 10;
+      else
+        cur_max = me->p_ship->s_maxarmies;
+
+      if(cur_max > me->p_ship->s_maxarmies)
+        cur_max = me->p_ship->s_maxarmies;
+    }
 
     /* doing rainbow colors for armies makes little since, so I don't */
     if (fr || me->p_armies != old_arm || cur_max != old_cur_arm) {
