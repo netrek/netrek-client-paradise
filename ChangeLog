@@ -1,4 +1,14 @@
-	$Id: ChangeLog,v 1.14 2000/04/12 18:03:18 glamm Exp $
+	$Id: ChangeLog,v 1.15 2000/04/17 07:03:15 watts Exp $
+
+2000-04-17	Jeffrey Watts <watts@users.sourceforge.net>
+
+	* Added images/planets/F/m*.xpm files.  These are full-color
+	galactic planet images.  Should be much nicer looking that the
+	XBMs they replace.
+	* Added images/planets/mwormhole.xpm.  Nice, full-color galactic
+	wormhole image.
+	* Added images/planets/mplan_noinfo.xpm.  Also a nice, full-color
+	galactic planet image for unexplored planets.
 
 2000-04-12	Bob Glamm <glamm@users.sourceforge.net>
 
