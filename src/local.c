@@ -893,9 +893,17 @@ local(void)
 	dx = scaleLocal(dx);
 	dy = scaleLocal(dy);
 	if (j->p_status == PALIVE) {
-            W_Image *shipimage;
+            W_Image *shipimage = NULL;
 
-            shipimage = getShipImage(j);
+            if(hockey)
+	    {
+	      if(!strcmp(j->p_name, "Puck"))
+	        shipimage = getImage(I_IND_PU);
+	      if(!strcmp(j->p_name, "Announcer"))
+	        shipimage = getImage(I_IND_SB);
+	    }
+	    if(!shipimage)
+	      shipimage = getShipImage(j);
 	    /*shipimage = getShipImage(j->p_teami + 1, j->p_ship->s_bitmap);*/
 	    if (j->p_flags & PFCLOAK && 
 	       (j->p_cloakphase == (cloakimage->frames - 1))) {
