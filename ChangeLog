@@ -1,4 +1,11 @@
-	$Id: ChangeLog,v 1.9 2000/03/24 06:04:40 ahn Exp $
+	$Id: ChangeLog,v 1.10 2000/03/24 23:50:08 glamm Exp $
+
+2000-03-24	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Tons of bugfixes.  Eliminated SEGVs on Bronco when OBserving
+	a player that just died and exiting the game.
+
+	* Planet display list fixed up to not display planetXX entries.
 
 2000-03-23	Dave Ahn <ahn@users.sourceforge.net>
 	
