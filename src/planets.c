@@ -289,8 +289,11 @@ drawStars(void)
     /*
        check first to make sure it's valid.  This is mainly important for if
        it tries to redraw and we're already dead
+
+       or if we exit - 3/24/2000 rpg
     */
-    if (sectorx < 0 || sectory < 0)
+    if (sectorx < 0 || sectory < 0 || 
+        sectorx >= MAXSECTOR || sectory >= MAXSECTOR)
 	return;
 
     l = sector_offx < view && sectorx > 0;
