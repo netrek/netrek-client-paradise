@@ -15,7 +15,7 @@
 
 #include "config.h"
 #include "defines.h"
-#include "die.h"
+#include <errno.h>
 #include <stdio.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>
@@ -1068,7 +1068,8 @@ w_MakeWindow(name, x, y, width, height, parent,
 	neww->scrolldata = (struct _scrolldata *)
 	                   malloc(sizeof(struct _scrolldata) * neww->maxlines);
 	if(neww->scrolldata == 0) {
-	  die("Error allocating scrollback storage: %!\n");
+	  perror("Error allocating scrollback storage");
+	  exit(errno);
 	}
 	break;
       default:
