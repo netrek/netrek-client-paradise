@@ -1,6 +1,10 @@
-$Id: TODO,v 1.3 2000/03/17 16:46:51 glamm Exp $
+$Id: TODO,v 1.4 2000/03/20 17:58:03 glamm Exp $
 
 Things to do for the TedTurner client:
+
+2000/03/17
+Sets of images need to be color-quantized (e.g., all FED ships should
+share the same set of colors).  This is mostly for old 8-bit displays..
 
 2000/03/15 (conversation with Rado):
 Messaging - when invoked with the message command (cursor on local or map),
