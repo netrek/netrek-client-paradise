@@ -154,7 +154,7 @@ W_Font  W_HighlightFont = (W_Font) & two, W_UnderlineFont = (W_Font) & three;
 W_Color W_White = WHITE, W_Black = BLACK, W_Red = RED, W_Green = GREEN;
 W_Color W_Yellow = YELLOW, W_Cyan = CYAN, W_Grey = LIGHT_GREY;
 int     W_Textwidth, W_Textheight;
-char   *strdup();
+/* char   *strdup(); */
 
 int     W_in_message = 0;	/* jfy -- for Jerry's warp message hack */
 
@@ -167,7 +167,7 @@ static XClassHint class_hint = {
 static XWMHints wm_hint = {
     InputHint | StateHint,
     True,
-    WithdrawnState,
+    NormalState,
     None,
     None,
     0, 0,

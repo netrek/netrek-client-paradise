@@ -1,6 +1,29 @@
-	$Id: ChangeLog,v 1.1 2000/01/06 21:26:44 ahn Exp $
+	$Id: ChangeLog,v 1.2 2000/01/13 20:14:58 ahn Exp $
 	
-2000-01-06	Dave Ahn <ahn@sourceforge.net>
+2000-01-13	Dave Ahn <ahn@users.sourceforge.net>
+	
+	* BUGFIX (x11window.c): Jeffrey Watts <watts@jayhawks.net>
+ 	submitted a patch to get TT to work under Window Make in Linux.
+	
+  	"I've noticed that TedTurner has certain problems when used with
+ 	Window Maker.  Specifically, the metaserver window fails to appear
+ 	when "-m" is passed to 'TedTurner'.  I tracked the problem down to
+ 	the way in which Window Maker handles the "WithdrawnState" hint
+ 	that TedTurner passes to WindowMaker."
+	
+	"I'm a complete novice when it comes to X, but as far as I can
+ 	gather, our windows shouldn't be passing "WithdrawnState".
+  	Instead, they probably should be passing "NormalState".  This
+ 	problem manifests itself with Window Maker since WM uses
+ 	"WithdrawnState" to mean an application that runs in its icon
+ 	(dock application)."
+	
+	"I've made a patch against "x11window.c" that corrects this
+ 	problem.  This patch also comments out "char *strdup();", which
+ 	was causing compilation to fail on my Linux system (Red Hat
+ 	6.1/x86 - all errata applied)."
+	
+2000-01-06	Dave Ahn <ahn@users.sourceforge.net>
 	
 	* VERSION: 1.3.1.1-export
 	
