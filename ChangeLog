@@ -1,4 +1,17 @@
-	$Id: ChangeLog,v 1.5 2000/03/17 18:18:24 glamm Exp $
+	$Id: ChangeLog,v 1.6 2000/03/20 23:54:13 glamm Exp $
+
+2000-03-20	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Added multipath support to shipBitmapPath, changed default
+	path.  shipBitmapPath is now a colon-separated list of paths
+	that specifies where to find the XBM or XPM images.  By default
+	it is "~/.tedturner/images:${datadir}/paradise/images".  The image
+	that is loaded is the first one found, so this default image path
+	also allows a user to override system-installed images by plopping
+	them down in their home directories.
+
+	* Fixed up ship XPMs.  Consistent colors and single-
+	view SBs are now present for all races.
 
 2000-03-17	Bob Glamm <glamm@users.sourceforge.net>
 

@@ -1816,6 +1816,7 @@ W_LoadExternalImage(W_Image *image)
   XpmAttributes attributes;
   int ErrorStatus;
   char *warn = NULL, *error = NULL;
+  char buf[256], *t, *pi;
   W_Image *imagetmp;
 
   if(xpm) {
@@ -1825,9 +1826,18 @@ W_LoadExternalImage(W_Image *image)
     /* take colors that are close [BDyess] */
     attributes.closeness = 40000;
 
-    sprintf(imagedirend,"%s.xpm",image->filename);
-    ErrorStatus = XpmReadFileToPixmap(W_Display, W_Root, imagedir, 
-			      &image->pixmap, &image->clipmask, &attributes);
+    pi = imagedir;
+    do
+    {
+      t = strchr(pi, ':');
+      strncpy(buf, pi, (t ? t - pi : strlen(pi)));
+      sprintf(buf + (t ? t - pi : strlen(pi)), "%s.xpm", image->filename);
+      ErrorStatus = XpmReadFileToPixmap(W_Display, W_Root, buf,
+                                        &image->pixmap, &image->clipmask,
+					&attributes);
+      pi = (t ? t+1 : t);
+    } while((ErrorStatus == XpmOpenFailed) && pi);
+
     switch (ErrorStatus) {
       case XpmColorError:
 	  warn = "Could not parse or alloc requested color";
@@ -1853,20 +1863,30 @@ W_LoadExternalImage(W_Image *image)
 
   if (error) {
     if(ErrorStatus != XpmOpenFailed && verbose_image_loading) {
-      printf("Error reading in %s%s: %s.\n", imagedir, image->filename, error);
+      printf("Error reading in %s: %s.\n", image->filename+1, error);
     }
     /* 
      * ok, can't find or load the xpm, try the xbm [BDyess] 
      */
-    sprintf(imagedirend,"%s.xbm",image->filename);
+    
+    pi = imagedir;
+    do
+    {
+      char *t, buf[256];
 
-/* NEW STUFF */
-    ErrorStatus = XReadBitmapFile(W_Display, W_Root, imagedir,
-		  &image->width, &image->height, &image->clipmask,NULL,NULL);
+      t = strchr(pi, ':');
+      strncpy(buf, pi, (t ? t - pi : strlen(pi)));
+      sprintf(buf + (t ? t - pi : strlen(pi)), "%s.xbm", image->filename);
+      ErrorStatus = XReadBitmapFile(W_Display, W_Root, buf,
+                                    &image->width, &image->height,
+				    &image->clipmask, NULL, NULL);
+      pi = (t ? t+1 : t);
+    } while((ErrorStatus != BitmapSuccess) && pi);
+
     if( ErrorStatus != BitmapSuccess) {
       if(verbose_image_loading)
         printf("Bitmap read failed for %s (%d).\n" , 
-	       imagedir, getImageNum(image));
+	       image->filename+1, getImageNum(image));
 /* NEW STUFF */
       /*abort();*/
       /* uh oh, no good image files.  Lets try the alternate [BDyess] */
@@ -1910,7 +1930,7 @@ W_LoadExternalImage(W_Image *image)
   }
   if(verbose_image_loading) printf("xpm\n");
   if (warn && verbose_image_loading)
-      printf("Warning reading in %s: %s.\n", imagedir, warn);
+      printf("Warning reading in %s: %s.\n", buf, warn);
   /* ok, xpm loaded successfully.  Lets store the data and get outta here
      [BDyess] */
   image->loaded = 1;
@@ -2038,7 +2058,7 @@ W_LoadImage(W_Image *image)
 
   if(!image->compiled_in && verbose_image_loading) {
     sprintf(buf,"%s %s...",image->compiled_in ? "Storing" : "Loading",
-            image->filename);
+            image->filename+1);
     warning(buf);
     if(verbose_image_loading) {
       puts(buf);
