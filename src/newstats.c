@@ -7,9 +7,7 @@
 
 #include "config.h"
 #include <stdio.h>
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
 
 #include "Wlib.h"
 #include "defs.h"

@@ -17,7 +17,7 @@ srcdir=@srcdir@
 
 INCLUDES=-I../include
 
-CPPFLAGS=@CPPFLAGS@ $(INCLUDES)
+CPPFLAGS=$(INCLUDES) @CPPFLAGS@
 DEFS=@DEFS@
 ZLIB=@ZLIB@
 XPMLIB=@XPMLIB@
@@ -93,7 +93,6 @@ OBJS = ${AUTH_OBJS} \
        ratings.o \
        recorder.o \
        redraw.o \
-       reserved.o \
        rotate.o \
        senddist.o \
        shortcomm.o \
