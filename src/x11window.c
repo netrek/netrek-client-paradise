@@ -270,7 +270,9 @@ static unsigned char solid[] = {
 };
 
 /* Prototypes */
-/*static int _myerror P((Display *d , XErrorEvent *e ));*/
+#ifdef ABORT_ON_ERROR
+static int _myerror P((Display *d , XErrorEvent *e ));
+#endif
 static void GetFonts P((void));
 static XFontStruct *find_font P((char *oldf, char **fnts));
 static void GetColors P((void));

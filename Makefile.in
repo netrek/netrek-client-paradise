@@ -47,7 +47,7 @@ install:
 	done
 
 	# cheat on installing the images
-	for i in `find images -name \*.x\[bp\]m -print | grep -v starwars`; do \
+	for i in `find images -name \*.x\[bp\]m -print`; do \
 	  $(INSTALL_DATA) $$i $(datadir)/paradise/$$i; \
 	done
 

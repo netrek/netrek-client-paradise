@@ -12,7 +12,7 @@
 #include "defs.h"
 #include "struct.h"
 
-int     useExternalImages = 0;	/* uses external images in preference to
+int     useExternalImages = 1;	/* uses external images in preference to
                                    compiled in images [BDyess] */
 
 int     rounded_asteroids = 1;	/* draws rounded asteroid belt [BDyess] */
