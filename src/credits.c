@@ -43,7 +43,7 @@ Xtrek copyright 1986 by:\n\
 Short packets by:                         Heiko Wengler and Ted Hadley\n\
 UDP by:                                   Andy Mcfadden\n\
 Bronco Release by:                        Terrence Chang\n\
-Ted Turner Client by:                     Bill Dyess\n\
+Full-Color Client by:                     Bill Dyess\n\
 Artists (alphabetical order):\n\
      Brandon Gillespie (Lynx)             Mike McGrath (Kaos)\n\
      Joe Rumsey (Ogre)\n\

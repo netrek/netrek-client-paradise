@@ -1,6 +1,9 @@
-	$Id: ChangeLog,v 1.7 2000/03/22 20:56:51 glamm Exp $
+	$Id: ChangeLog,v 1.8 2000/03/22 21:06:35 glamm Exp $
 
 2000-03-22	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Changed all instances of ted, tedturner, Ted, and Ted Turner,
+	to something involving Paradise.
 
 	* Made all XBM images compiled in by default as something for the
 	client to fall back on.  Also made rainbow dashboard XPM and

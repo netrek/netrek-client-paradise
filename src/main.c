@@ -529,7 +529,7 @@ Where options are\n\
     [-P] passwd        passwd to use to attempt autologin\n\
     [-R]               use RSA authorization (default)\n\
 \n\
-Paradise/TedTurner Client %s\n\
+Paradise Full-Color Client %s\n\
 For more information on how to play Paradise, go to\n\
     http://paradise.netrek.org/\n\n", prog,
 	    CLIENTVERS);

@@ -168,7 +168,7 @@ AC_ARG_ENABLE(rsa,
     fi ]
 )
 
-SHIP_BITMAP_PATH=~/.tedturner/images:${datadir}/paradise/images
+SHIP_BITMAP_PATH=~/.paradise/images:${datadir}/paradise/images
 
 AC_SUBST(RSADIR)
 AC_SUBST(ZLIB)
