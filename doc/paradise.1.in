@@ -207,7 +207,7 @@ What machine the metaserver is on.  Default is
 .I shipBitmapPath: <path>
 Colon-separated path of where to look for bitmaps or pixmaps of ships or
 other images.  Default is 
-.I @SHIP_BITMAP_PATH@.
+.I @MAN_SHIP_BITMAP_PATH@.
 
 .TP
 .I font, boldfont, italicfont, bigfont: <font-specification>

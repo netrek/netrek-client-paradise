@@ -11,11 +11,13 @@ mandir=@mandir@
 @SET_MAKE@
 INSTALL=@INSTALL@
 INSTALL_DATA=@INSTALL_DATA@
+SHIP_BITMAP_PATH=@SHIP_BITMAP_PATH@
 
 all:
 	(cd src && $(MAKE))
+	sed -e "s,@MAN_SHIP_BITMAP_PATH@,${SHIP_BITMAP_PATH},g" doc/paradise.1.in > doc/paradise.1
 
-install:
+install: all
 	-mkdir $(prefix)
 	-mkdir $(exec_prefix)
 	-mkdir $(bindir)
