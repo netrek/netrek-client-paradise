@@ -14,6 +14,7 @@
 #include "data.h"
 #include "proto.h"
 
+#define MSGLEN 80
 #define ADDRLEN 10
 #define M_XOFF	5
 #define M_YOFF	5

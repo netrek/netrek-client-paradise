@@ -679,6 +679,7 @@ struct _clearzone {
 #define MDISTR 0xC0
 
 #define MALL   0x08
+#define MCAST  0x18		/* not an offical msg dest */
 /* these go with MALL flag */
 #define MGENO  0x20		/* MGENO is not used in INL server but
 				   belongs here */

@@ -14,6 +14,8 @@
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
+#include "packets.h"
+#include "gppackets.h"
 
 /* Prototypes */
 static void dofulllist P((struct player * pptr, int vpos));

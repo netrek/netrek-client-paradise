@@ -417,7 +417,6 @@ RefreshOptions(void)
 /* Redraw the specified option entry */
 void
 optionredrawtarget(W_Window win)
-    W_Window win;
 {
     register struct option *op;
 

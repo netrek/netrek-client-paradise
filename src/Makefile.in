@@ -39,9 +39,9 @@ AUTH_LIBS=@AUTH_LIBS@
 AUTH_DEFS=@AUTH_DEFS@
 SCRAMBLER=@SCRAMBLER@
 
-CDEFS=-DUNIX_SOUND -DVISIBLE_WORMHOLES
+CDEFS=-DUNIX_SOUND
 
-LIBS=$(LDFLAGS) $(AUTH_LIBS) $(XPMLIB) $(X_LIBS) $(X_PRE_LIBS) @LIBS@ $(X_EXTRA_LIBS) $(ZLIB) -lm
+LIBS=$(LDFLAGS) $(AUTH_LIBS) $(XPMLIB) $(X_LIBS) $(X_PRE_LIBS) @LIBS@ $(X_EXTRA_LIBS) -lXmu -lX11 $(ZLIB) -lm
 CFLAGS=$(AUTH_DEFS) $(CDEFS) $(DEFS) $(X_CFLAGS) @CFLAGS@
 
 ###########################################################################
@@ -154,3 +154,9 @@ dynamic_images:
 
 unused_images:
 	$(SCRIPTDIR)/unused_images images.h $(SRCS)
+
+clean:
+	-rm -f netrek.paradise *.o rsa/*.o
+
+distclean:
+	-rm -f Makefile expire.c

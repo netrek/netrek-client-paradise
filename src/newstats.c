@@ -289,7 +289,7 @@ redrawNewStats()
     }
     /* change all the status values so that everything will be redrawn[BDyess]*/
     old_tourn = -1; 
-    old_flags = me->p_flags ^ MAXINT;
+    old_flags = me->p_flags ^ INT_MAX;
     old_armies = -1;
     updateNewStats();
 }

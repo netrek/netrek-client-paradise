@@ -12,6 +12,8 @@
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
+#include "packets.h"
+#include "gppackets.h"
 
 static int newhostile;
 

@@ -18,6 +18,8 @@
 #include "data.h"
 #include "proto.h"
 #include "images.h"
+#include "packets.h"
+#include "gppackets.h"
 
 #define DRAWGRID		4
 

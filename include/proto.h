@@ -426,7 +426,7 @@ void message_on P((void));
 void pmessage P((char *str, int recip, int group));
 void sendCharMessage P((char *buffer, int ch));
 void smessage P((int ichar));
-void smessage_ahead P((int head, int ichar));
+void smessage_ahead P((char head, char ichar));
 
 /* socket.c:
  * Socket.c
@@ -618,7 +618,7 @@ void writeUpdateMarker P((void));
  */
 
 struct distress * loaddistress P((enum dist_type i, W_Event *data));
-int pmacro P((int mnum, int who, W_Event *data));
+int pmacro P((int mnum, char who, W_Event *data));
 void rcd P((enum dist_type i, W_Event *data));
 
 /* tools.c: tools.c - shell escape, graphic toolsw - 10/10/93

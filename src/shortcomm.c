@@ -16,6 +16,8 @@
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
+#include "packets.h"
+#include "gppackets.h"
 
 #ifdef UNIX_SOUND
 #include "sound.h"

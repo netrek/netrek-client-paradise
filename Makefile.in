@@ -15,3 +15,13 @@ dynamic_images:
 
 unused_images:
 	(cd src && $(MAKE) unused_images)
+
+clean:
+	(cd src && $(MAKE) clean)
+
+distclean: clean
+	(cd src && $(MAKE) distclean)
+	-rm -f Makefile config.* include/config.h
+
+cvsclean: distclean
+	-rm -f configure

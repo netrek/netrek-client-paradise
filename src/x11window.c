@@ -12,6 +12,7 @@
 /* #define ABORT_ON_ERROR */
 
 #include "config.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
@@ -1196,7 +1197,6 @@ W_NextEvent(W_Event *wevent)
 
 static int
 W_SpNextEvent(W_Event *wevent)
-    W_Event *wevent;
 {
     XEvent  event;
     XKeyEvent *key;
@@ -2771,7 +2771,7 @@ checkGeometry(char *name, int *x, int *y, int *width, int *height)
 }
 
 static void
-checkParent(char *name, W_Window parent)
+checkParent(char *name, W_Window *parent)
 {
     char   *adefault;
     char    buf[100];
@@ -2783,14 +2783,14 @@ checkParent(char *name, W_Window parent)
     if (adefault == NULL)
 	return;
     /* parent must be name of other window or "root" */
-    if (strcmpi(adefault, "root") == 0) {
+    if (strcasecmp(adefault, "root") == 0) {
 	*parent = W_Window2Void(&myroot);
 	return;
     }
     for (i = 0; i < HASHSIZE; i++) {
 	windows = hashtable[i];
 	while (windows != NULL) {
-	    if (strcmpi(adefault, windows->window->name) == 0) {
+	    if (strcasecmp(adefault, windows->window->name) == 0) {
 		*parent = W_Window2Void(windows->window);
 		return;
 	    }

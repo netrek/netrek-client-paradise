@@ -173,7 +173,7 @@ initMacros(void)
 		}
 	    }
 	    m->string = strdup(s->value);
-	} else if (!strcasencmp("singlemacro", s->string, 11)) {
+	} else if (!strncasecmp("singlemacro", s->string, 11)) {
 	    loc = s->value;
 	    while (*loc) {
 		ch = *(loc++);

@@ -53,6 +53,7 @@
 #include "data.h"
 #include "proto.h"
 #include "packets.h"
+#include "gppackets.h"
 
 #ifdef UNIX_SOUND
 #include "sound.h"
@@ -509,7 +510,6 @@ isServerDead(void)
 
 void
 socketPause(int sec, int usec)
-    int     sec, usec;
 {
     struct timeval timeout;
     fd_set  readfds;
@@ -1489,7 +1489,7 @@ handleFlags(struct flags_spacket *packet)
 }
 
 static void
-handleKills(struct kill_spacket *packet)
+handleKills(struct kills_spacket *packet)
 {
 
     SANITY_PNUM(packet->pnum);

@@ -47,7 +47,7 @@ AC_CHECK_LIB(Xpm, XpmCreatePixmapFromData, [XPMLIB=-lXpm],
   echo "*** with -L(path) before re-running configure."
   echo
   exit 1
-]
+], -lX11
 )
 
 dnl some initial definitions

@@ -19,6 +19,8 @@
 #define W_XOFF 5
 #define W_YOFF 5
 
+static void warning2(char *, char *, int *, int *, int, W_Color, W_Font);
+
 /* returns a string of the form hour:minute:second [BDyess] */
 char *
 timeString(time_t t)

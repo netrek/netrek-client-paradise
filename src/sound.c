@@ -5,47 +5,67 @@
  * Conditions in "copyright.h"          
  */
 
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#include <sys/time.h>
+#endif
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #include <signal.h>
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
-#include <data.h>
+#endif
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+#include "conftime.h"
+#include "data.h"
 
 
 static int f;
 static char audioOK = 1;
 static char sound_flags[20]; /* Sound Flag for sound 1-19 */
 
+struct uts_sndsrv_map_s
+{
+  char *uts_name;
+  char *snd_name;
+} uts_sndsrv_map[] =
+{
+  { "Generic", "generic" },
+  { "Linux", "linux" },
+  { "FreeBSD", "freebsd" },
+  { "Sun", "sun" },
+  { NULL, NULL }
+};
 
+char *
+uts_map(void)
+{
+  struct utsname un;
+  int i;
 
-void init_sound ()
+  uname(&un);
+  for(i = 1; uts_sndsrv_map[i].uts_name; i++)
+  {
+    if(!strcasecmp(un.sysname, uts_sndsrv_map[i].uts_name))
+      return(uts_sndsrv_map[i].snd_name);
+  }
+  return(uts_sndsrv_map[0].snd_name);
+}
+
+void
+init_sound(void)
 {
   int i, pid, child;
   char *argv[3];
   char filename[512];
-#if 0 /* replaced with MACHINE_UNAME */
-#ifdef linux
-  char *arch = "linux";
-#else
-#ifdef sun
-  char *arch = "sun";
-#else
-#ifdef __FreeBSD__
-  char *arch = "freebsd";
-#else
-  char *arch = "generic";
-#endif
-#endif
-#endif
-#endif
+  char *arch;
 
-  /* XXX FIXME */
-  /* MACHINE_UNAME was in uname.c.  Use uname(), sys/utsname.h instead. */
-  char *arch = MACHINE_UNAME;
-
+  arch = uts_map();
   signal(SIGCHLD, SIG_IGN);
 
 if (unixSoundPath[0] == '?') { audioOK = 0; return; }
@@ -81,10 +101,8 @@ else if (!(child = fork ()))
   for (i = 0; i < 19; i++) sound_flags[i] = 0;
 } 
 
-
-
-void play_sound (k)
-int k;
+void
+play_sound(int k)
 {
   char c;
 
@@ -92,10 +110,8 @@ int k;
   if ((playSounds) && (audioOK)) write (f, &c, sizeof (c));
 }
 
-
-
-void maybe_play_sound (k)
-int k;
+void
+maybe_play_sound(int k)
 {
   char c;
 
@@ -107,17 +123,14 @@ int k;
   if ((playSounds) && (audioOK)) write (f, &c, sizeof (c));
 }
 
-
-
-void sound_completed (k)
-int k;
+void
+sound_completed(int k)
 {
   sound_flags[k] &= ~1;
 }
 
-
-
-void kill_sound ()
+void
+kill_sound(void)
 { 
   char c;
 

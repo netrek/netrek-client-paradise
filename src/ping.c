@@ -20,6 +20,8 @@
 #include "struct.h"
 #include "data.h"
 #include "proto.h"
+#include "packets.h"
+#include "gppackets.h"
 
 /* These are used only in pingstats.c */
 

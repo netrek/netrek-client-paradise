@@ -474,6 +474,6 @@ extern int showIND;
 extern struct teaminfo_s *teaminfo;
 extern int number_of_teams;
 
-extern char *CLIENTVERS;
+extern char CLIENTVERS[];
 
 #endif

@@ -23,6 +23,8 @@
 #include "data.h"
 #include "proto.h"
 #include "images.h"
+#include "packets.h"
+#include "gppackets.h"
 
 #define NRHEADERS	4
 /* elapsed time in outfit window [BDyess] */
@@ -507,9 +509,11 @@ new_entrywindow(int *team, int *s_type)
 		select(W_Socket() + 1, &mask, 0, 0, &tv);
 	    }
 
+#if SHOW_MAP_AT_MOTD_DATA_ITEM_IMPLEMENTED
 	    if(showMapAtMotd) {
 		map();
 	    }
+#endif
 	    redraw_death_messages();
 
 	    if (me->p_status == PTQUEUE)
