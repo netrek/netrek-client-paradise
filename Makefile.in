@@ -48,7 +48,7 @@ install:
 
 	# cheat on installing the images
 	for i in `find images -name \*.x\[bp\]m -print | grep -v starwars`; do \
-	  $(INSTALL_DATA) $i $(datadir)/paradise/$$i; \
+	  $(INSTALL_DATA) $$i $(datadir)/paradise/$$i; \
 	done
 
 	# install the man page

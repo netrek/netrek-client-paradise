@@ -564,8 +564,7 @@ getImageNum(W_Image *image)
 }
 
 W_Image *
-getImage(offset)
-  int offset;
+getImage(int offset)
 {
   W_Image * image = &imagearray[offset];
   if(!image->loaded) {
@@ -575,25 +574,19 @@ getImage(offset)
 }
 
 W_Image *
-getShipImage(team,ship)
-  int team,ship;
+getShipImage(int team, int ship)
 {
   return getImage(teamImageOffset[team] + shipImageOffset[ship]);
 }
 
-#ifndef __STDC__
-#define const
-#endif /*__STDC__*/
-
-int cmpfilenames(left,right)
-  const void *left, *right;
+int
+cmpfilenames(const void *left, const void *right)
 {
   return strcmp((char*)left,((W_Image*)right)->filename);
 }
 
 void
-loadImageByFilename(filename)
-  char *filename;
+loadImageByFilename(char *filename)
 {
   W_Image *image;
 
@@ -603,7 +596,7 @@ loadImageByFilename(filename)
 }
 
 void
-loadAllImages()
+loadAllImages(void)
 {
   int i;
   for(i=I_FIRST; i<=I_LAST; i++) 

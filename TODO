@@ -1,6 +1,14 @@
-$Id: TODO,v 1.2 2000/02/03 00:33:11 glamm Exp $
+$Id: TODO,v 1.3 2000/03/17 16:46:51 glamm Exp $
 
 Things to do for the TedTurner client:
+
+2000/03/15 (conversation with Rado):
+Messaging - when invoked with the message command (cursor on local or map),
+it stays in message-mode until one presses Enter or Esc, perhaps
+controlled by an .xtrekrc option. (it irritated [Rado] more than once when
+[he] typed something and came over the right border that it interpreted
+[his] text as commands, almost always draining or killing [him].)
+Suggestion for option-name: continuousMessage.
 
 On Sat, Feb 27, 1999 at 02:07:43PM +0100, Rado Smiljanic wrote:
 > Heja,
@@ -92,11 +100,6 @@ carry over to Paradise servers (i.e. no expiration at all)?
 >      remaining.
  
 >Not sure that helps... but it's there :)
- 
-
-- Do we want local zlib and xpm libs to be always used during compile?
-
-- Do we want the local zlib to be always used, or do we want 
 
 - Self-owned torps should be different color/size from friendly torps.
 
@@ -113,22 +116,12 @@ carry over to Paradise servers (i.e. no expiration at all)?
 - Some people have reported sluggishness with TT.  I don't notice this,
 but maybe some feedback or testing might help.
 
-- Remove -DAUTHORIZE and other makefile rules and add options to
-configure, such as ./configure --enable-RSA.  We want a Makefile that
-is more consistent with the GNU standards.
-
-- Cleanup the way XPM images.c is generated.
-
 - Port to Intel/Win32.  This is in the works now; if you want to help,
 please contact me.
 
 - Implement SP2.
 
 - Documentation.
-
-- Clean up numerous #ifdef and #if directives.
-
-- GMP 2.x?
 
 - Needed images (not complete):
 galactic surface images (STND, THIN, etc)

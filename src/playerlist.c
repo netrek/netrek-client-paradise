@@ -441,8 +441,9 @@ playerwEvent(W_Event *data)
     switch (key) {
     case 'l':			/* lock on [BDyess] */
 	target = gettarget(data->Window, data->x, data->y, TARG_PLAYER);
-	if(players[target->o_num].p_flags & PFCLOAK) {
+	if(!target || players[target->o_num].p_flags & PFCLOAK) {
 	  warning("Sorry sir, I can't get a lock on that vessel.");
+	  break;
 	}
 	sendPlaylockReq(target->o_num);
 	me->p_playerl = target->o_num;

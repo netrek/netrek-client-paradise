@@ -1,4 +1,13 @@
-	$Id: ChangeLog,v 1.3 2000/03/04 01:12:01 ahn Exp $
+	$Id: ChangeLog,v 1.4 2000/03/17 16:46:51 glamm Exp $
+
+2000-03-15	Bob Glamm <glamm@users.sourceforge.net>
+
+	* Added 'make install' target and addition of default images path
+	in client.
+
+	* dynamic_images is now the only supported build method.
+
+	* General preparation for first client release.
 	
 2000-03-03	Dave Ahn <ahn@users.sourceforge.net>
 	
