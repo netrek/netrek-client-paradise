@@ -27,7 +27,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- *      $Id: sound2.h,v 1.1 2000/01/06 21:26:45 ahn Exp $
+ *      $Id: sound2.h,v 1.1 2000/01/31 21:50:37 glamm Exp $
  */
 
 
