@@ -59,7 +59,7 @@ Tractor *tracthead = NULL,      /* data for remembering where tractor lines */
 
 int	xpm = 0;		/* use xpm's or not [BDyess] */
 char   *xpmPath = NULL;		/* path prefix used to find pixmaps [BDyess] */
-int     cookie = 1;		/* cookie mode [BDyess] */
+int     cookie = 0;		/* cookie mode [BDyess] */
 int	verbose_image_loading = 0; /* image loading logging [BDyess] */
 int     useOR = 0;		/* turn Rob's color allocator on so GXor can
                                    be used to draw images [BDyess] */

@@ -181,7 +181,7 @@ AC_SUBST(SCRAMBLER)
 AC_SUBST(EXPIRE_DATE)
 AC_SUBST(SHIP_BITMAP_PATH)
 
-AC_OUTPUT(Makefile src/Makefile src/expire.c)
+AC_OUTPUT(Makefile src/Makefile src/expire.c doc/paradise.1)
 
 dnl AC_OUTPUT(src/rsa/Makefile scripts/make_shippicfile.perl scripts/mkcredits scripts/mkimgsrc scripts/netrektoxbm scripts/numtoship scripts/scrambleargs scripts/unused_images)
 
