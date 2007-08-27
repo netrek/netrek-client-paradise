@@ -533,7 +533,7 @@ int statHeight=20, localStatsX=200, localStatsY=260;
 
 int showIND=0;
 
-char CLIENTVERS[MAX_CLIENT_VERSION_STRING] = "3.2.0";
+char CLIENTVERS[MAX_CLIENT_VERSION_STRING] = "3.3p0";
 
 /* old stuff from gameconf.h */
 struct teaminfo_s *teaminfo = NULL;

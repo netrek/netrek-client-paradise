@@ -2,7 +2,16 @@
         ------ Netrek II: Paradise - Client ChangeLog ------
 
 
-2000-04-17	Jeffrey Watts <watts@users.sourceforge.net>
+2007-08-27	Jeffrey Watts <watts@jayhawks.net>
+
+	* Paradise client 3.3p0 release.
+	* Moved doc/ to docs/ to be similar to the server source.
+	* Moved ChangeLog to docs/CHANGELOG.
+	* Moved TODO to docs/TODO.
+	* Moved README to docs/README.
+	* Added README that directs folks to docs/
+
+2000-04-17	Jeffrey Watts <watts@jayhawks.net>
 
 	* Added images/planets/F/m*.xpm files.  These are full-color
 	galactic planet images.  Should be much nicer looking that the
@@ -16,7 +25,7 @@
 
 	* Fixed configure.in; misquoted SCRAMBLEARGS replacement.
 
-2000-04-06	Jeffrey Watts <watts@users.sourceforge.net>
+2000-04-06	Jeffrey Watts <watts@jayhawks.net>
 
 	* Added some colors other than the primary colors to the 
 	*.colored pixmaps.  This makes the colored pixmaps look a lot 
@@ -254,4 +263,4 @@
 
 
 ########################################################################
-	$Id: ChangeLog,v 1.16 2000/04/18 21:37:12 watts Exp $
+	$Id: CHANGELOG,v 1.1 2007/08/27 21:30:19 watts Exp $
