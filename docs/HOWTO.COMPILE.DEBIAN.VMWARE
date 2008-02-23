@@ -10,7 +10,9 @@ work.  I also needed several packages to both compile and run the paradise
 client.  These included gcc, x-window-system-core, zlib1g-dev, libxmu-headers,
 and libxmu-dev.
 5) Run ./configure, make, make install.
-
+6) When running the client, values of UDPClientSend other than 0 were causing
+problems, with the symptom being the client controls lock up upon entry into
+game.  The reason for this problem is unknown at this time.
 That's it!
 
 Bill Balcerski
