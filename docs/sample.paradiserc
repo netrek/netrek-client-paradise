@@ -1,4 +1,4 @@
-# $Id: sample.paradiserc,v 1.1 2007/08/27 21:30:19 watts Exp $
+# $Id: sample.paradiserc,v 1.2 2008/02/23 15:48:26 modemhero Exp $
 # Sample .paradiserc file
 
 ## Default name
@@ -118,7 +118,7 @@ enemyPhasers:		INT
 showShieldDam:		on
 
 ## Updates per second
-updatespersecond:	INT
+updatespersecond:	10
 
 updateSpeed:		0
 
