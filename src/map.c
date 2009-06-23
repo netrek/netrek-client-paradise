@@ -859,18 +859,6 @@ map(void)
 			last_locky[1], backColor);
 	last_lockx[2] = 0;
     }
-    /* redraw warp beacon routes */
 
-    for (i = 0; i < ngthingies; i += 2) {
-	struct thingy *k = &thingies[i + nplayers * npthingies];
-	if (k[0].t_shape == SHP_WARP_BEACON &&
-	    k[1].t_shape == SHP_WARP_BEACON) {
-	    W_MakeLine(mapw, scaleMapX(k[0].t_x),
-		       scaleMapY(k[0].t_y),
-		       scaleMapX(k[1].t_x),
-		       scaleMapY(k[1].t_y),
-		       W_Grey);
-	}
-    }
   redrawall = 0;
 }

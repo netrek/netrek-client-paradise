@@ -1019,10 +1019,6 @@ handleThingy(struct thingy_spacket *packet)
 	rotate_gcenter(&thetorp->t_x, &thetorp->t_y);
 	rotate_dir(&thetorp->t_dir, rotate_deg);
     }
-
-    if (thetorp->t_shape == SHP_WARP_BEACON)
-	redrawall = 1;		/* shoot, route has changed */
-
 }
 
 static void
@@ -1035,9 +1031,6 @@ handleThingyInfo(struct thingy_info_spacket *packet)
     thetorp = &thingies[ntohs(packet->tnum)];
 
     thetorp->t_owner = ntohs(packet->owner);
-
-    if (thetorp->t_shape == SHP_WARP_BEACON)
-	redrawall = 1;		/* redraw the lines, I guess */
 
     if (ntohs(packet->shape) == SHP_BOOM && thetorp->t_shape == SHP_BLANK) {
 	/* FAT: redundant explosion; don't update p_ntorp */

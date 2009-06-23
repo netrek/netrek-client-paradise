@@ -414,16 +414,6 @@ draw_one_thingy(struct thingy *k)
 	image = getImage(friendlyThingy(k) ? I_MFIGHTER : I_EFIGHTER);
 	frame = (int) (k->t_dir * image->frames + 128) / 256;
 	break;
-    case SHP_WARP_BEACON:
-	image = getImage(I_WARPBEACON);
-	frame = udcounter;
-	if (k->t_fuse > 4) {
-	    image = getImage(I_WARPFLASH);
-	}
-	if (++(k->t_fuse) > 6) {
-	    k->t_fuse = 0;
-	}
-	break;
     default:
         fprintf(stderr,"Wierd...unknown thingy number (%d).\n", k->t_shape);
 	return;

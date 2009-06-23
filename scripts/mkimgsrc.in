@@ -809,8 +809,6 @@ sub init_lookup {
 '/rainbow_alternate',                    'I_DEFAULT',
 '/sbexplosion_alternate',                'I_DEFAULT',
 '/stipple_alternate',                    'I_DEFAULT',
-'/warpbeacon_alternate',                 'I_DEFAULT',
-'/warpflash_alternate',                  'I_DEFAULT',
 '/weapons/edrone_alternate',             'I_DEFAULT',
 '/weapons/edronecloud_alternate',        'I_DEFAULT',
 '/weapons/efighter_alternate',           'I_DEFAULT',

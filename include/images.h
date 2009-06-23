@@ -455,8 +455,6 @@
 #define I_RAINBOW              449
 #define I_SBEXPLOSION          450
 #define I_STIPPLE              451
-#define I_WARPBEACON           452
-#define I_WARPFLASH            453
 #define I_EDRONE               454
 #define I_EDRONECLOUD          455
 #define I_EFIGHTER             456

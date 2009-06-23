@@ -2,6 +2,10 @@
         ------ Netrek II: Paradise - Client ChangeLog ------
 
 
+2009-06-23	Bill Balcerski <billbalcerski@gmail.com>
+	* Removed warp flash and warp beacons, both client and server.
+	Unused, never fully coded gameplay feature.
+
 2007-08-27	Jeffrey Watts <watts@jayhawks.net>
 
 	* Paradise client 3.3p0 release.
@@ -263,4 +267,4 @@
 
 
 ########################################################################
-	$Id: CHANGELOG,v 1.1 2007/08/27 21:30:19 watts Exp $
+	$Id: CHANGELOG,v 1.2 2009/06/23 22:06:26 modemhero Exp $

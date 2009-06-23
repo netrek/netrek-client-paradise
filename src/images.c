@@ -9769,12 +9769,6 @@ static unsigned char sbexplosion_bits[] = {
 static unsigned char stipple_bits[] = {
    0x01, 0x02};
 
-static unsigned char warpbeacon_bits[] = {
-0x18, 0x24, 0x24, 0x24, 0x18, 0xdb, 0x3c, 0xdb, 0x18, 0x18, 0x3c, 0x18};
-
-static unsigned char warpflash_bits[] = {
-0x24, 0x18, 0x7e, 0x18, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
 static unsigned char weapons_edrone_bits[] = {
   0x0c, 0x0c, 0x0c, 0x0c, 0x1e, 0x1e,
   0x18, 0x18, 0x0c, 0x0e, 0x0f, 0x0e,
@@ -10648,8 +10642,6 @@ static W_Image imagearray[] = {
 /* {width,height,frames,xpm,filename,loaded,alternate,bad,compiled_in,xbmdata,xpmdata,pixmap,clipmask} */
    {80, 560, 0, 0, "/sbexplosion", 0, I_DEFAULT, 0, 1, sbexplosion_bits, NULL, 0, 0}, /* 450 */
    {2, 2, 0, 0, "/stipple", 0, I_DEFAULT, 0, 1, stipple_bits, NULL, 0, 0}, /* 451 */
-   {8, 12, 0, 0, "/warpbeacon", 0, I_DEFAULT, 0, 1, warpbeacon_bits, NULL, 0, 0}, /* 452 */
-   {8, 12, 0, 0, "/warpflash", 0, I_DEFAULT, 0, 1, warpflash_bits, NULL, 0, 0}, /* 453 */
    {6, 96, 0, 0, "/weapons/edrone", 0, I_DEFAULT, 0, 1, weapons_edrone_bits, NULL, 0, 0}, /* 454 */
    {13, 65, 0, 0, "/weapons/edronecloud", 0, I_DEFAULT, 0, 1, weapons_edronecloud_bits, NULL, 0, 0}, /* 455 */
    {5, 80, 0, 0, "/weapons/efighter", 0, I_DEFAULT, 0, 1, weapons_efighter_bits, NULL, 0, 0}, /* 456 */
